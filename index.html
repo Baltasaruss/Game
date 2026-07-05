@@ -172,7 +172,7 @@
             border-radius: 12px;
             padding: 1rem;
             width: 260px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 20 rgba(0, 0, 0, 0.4);
         }
 
         .stat-row {
@@ -696,6 +696,11 @@
             width: 0%;
             background: var(--orange-accent);
             transition: width 0.3s ease;
+        }
+
+        .train-boiler-box button {
+            background: var(--orange-accent);
+            border-color: var(--orange-accent);
         }
 
         .train-upgrade-list {
@@ -2919,7 +2924,7 @@
                 this.levelIndex = gameState.currentLocationIndex;
                 this.locationConfig = LOCATIONS[this.levelIndex];
                 
-                // Тайминги и клавиши
+                // Тайминг и клавиши
                 this.lastFireTime = 0;
                 this.lastStatTick = 0;
                 this.harvestProgress = 0;
@@ -2932,6 +2937,10 @@
 
                 // Фонарик
                 this.flashlight = null;
+
+                // Индексы тайлов для карты
+                this.wallTile = 7;
+                this.railTile = 8;
             }
 
             create() {
@@ -2954,9 +2963,11 @@
                 this.lootItems = this.physics.add.group(); // Предметы на полу
 
                 // 3. Добавление статичного паровоза на рельсы
-                // Наш паровоз стоит на координатах x: 300, y: 110 (рельсы по y=3, т.е. 96px)
-                this.train = this.physics.add.staticSprite(220, 110, 'prop_train_locomotive');
-                this.physics.add.staticSprite(90, 110, 'prop_train_carriage'); // Вагон
+                this.train = this.add.sprite(220, 110, 'prop_train_locomotive');
+                this.physics.add.existing(this.train, true);
+                
+                let carriage = this.add.sprite(90, 110, 'prop_train_carriage');
+                this.physics.add.existing(carriage, true);
                 
                 // Свечение фар поезда
                 this.trainLight = this.add.graphics();
@@ -2969,7 +2980,6 @@
                 this.trainLight.fill();
 
                 // 4. Добавление Игрока
-                // Спавним игрока чуть правее паровоза
                 this.player = this.physics.add.sprite(220, 180, 'player');
                 this.player.setCollideWorldBounds(true);
                 this.player.body.setCircle(10, 6, 6);
@@ -2977,6 +2987,7 @@
                 // Коллизии игрока с паровозом и границами карты
                 this.physics.add.collider(this.player, this.mapLayer);
                 this.physics.add.collider(this.player, this.train);
+                this.physics.add.collider(this.player, carriage);
 
                 // 5. Заполнение локации объектами и врагами
                 this.populateLevel();
@@ -2986,14 +2997,20 @@
                 this.physics.add.collider(this.enemies, this.mapLayer);
                 this.physics.add.collider(this.enemies, this.enemies); // Враги толкают друг друга
                 this.physics.add.collider(this.player, this.enemies, this.enemyMeleeAttack, null, this);
+                this.physics.add.collider(this.enemies, this.train);
+                this.physics.add.collider(this.enemies, carriage);
                 
                 // Пули игрока
                 this.physics.add.collider(this.bullets, this.mapLayer, (b) => { this.spawnSparkParticles(b.x, b.y); b.destroy(); });
                 this.physics.add.collider(this.bullets, this.enemies, this.damageEnemy, null, this);
+                this.physics.add.collider(this.bullets, this.train, (b) => { this.spawnSparkParticles(b.x, b.y); b.destroy(); });
+                this.physics.add.collider(this.bullets, carriage, (b) => { this.spawnSparkParticles(b.x, b.y); b.destroy(); });
 
                 // Пули врагов
                 this.physics.add.collider(this.enemyBullets, this.mapLayer, (b) => { this.spawnSparkParticles(b.x, b.y); b.destroy(); });
                 this.physics.add.collider(this.enemyBullets, this.player, this.damagePlayerFromBullet, null, this);
+                this.physics.add.collider(this.enemyBullets, this.train, (b) => { this.spawnSparkParticles(b.x, b.y); b.destroy(); });
+                this.physics.add.collider(this.enemyBullets, carriage, (b) => { this.spawnSparkParticles(b.x, b.y); b.destroy(); });
 
                 // 7. Камера слежения
                 this.cameras.main.setBounds(0, 0, this.mapWidth, this.mapHeight);
@@ -3051,12 +3068,12 @@
                 this.mapWidth = N * 32;
                 this.mapHeight = N * 32;
 
-                let defaultTile = 0; // трава по умолчанию
-                if (this.locationConfig.theme === 'sand') defaultTile = 3;
-                else if (this.locationConfig.theme === 'city') defaultTile = 2;
-                else if (this.locationConfig.theme === 'asphalt') defaultTile = 4;
-                else if (this.locationConfig.theme === 'tunnel') defaultTile = 5;
-                else if (this.locationConfig.theme === 'bunker') defaultTile = 2;
+                let defaultTile = 1; // 1 = Трава
+                if (this.locationConfig.theme === 'sand') defaultTile = 4;      // 4 = Песок
+                else if (this.locationConfig.theme === 'city') defaultTile = 3;   // 3 = Бетон
+                else if (this.locationConfig.theme === 'asphalt') defaultTile = 5;// 5 = Асфальт
+                else if (this.locationConfig.theme === 'tunnel') defaultTile = 6; // 6 = Туннель
+                else if (this.locationConfig.theme === 'bunker') defaultTile = 3; // 3 = Бетон
 
                 // Создаем двумерную матрицу
                 let grid = [];
@@ -3065,24 +3082,22 @@
                     for (let x = 0; x < N; x++) {
                         // Границы карты - стены
                         if (x === 0 || x === N-1 || y === 0 || y === N-1) {
-                            row.push(6); // Стены
+                            row.push(this.wallTile);
                         } 
                         // Рельсы для поезда по y = 3
                         else if (y === 3) {
-                            row.push(7); // Рельсы
+                            row.push(this.railTile);
                         } 
                         // Для туннеля сужаем проход сверху и снизу стенами
                         else if (this.locationConfig.theme === 'tunnel' && (y < 12 || y > 26)) {
-                            row.push(6); // Стены
+                            row.push(this.wallTile);
                         }
                         // Для бункера делаем сетку комнат
                         else if (this.locationConfig.theme === 'bunker') {
-                            // Оставляем коридоры, делаем комнаты каждые 10 тайлов
                             if ((x % 10 === 0 && y > 3 && y < N-4) || (y % 10 === 0 && x > 8)) {
-                                // Оставляем дверные проходы в центрах стен
                                 if (x % 10 === 0 && y % 10 === 5) row.push(defaultTile);
                                 else if (y % 10 === 0 && x % 10 === 5) row.push(defaultTile);
-                                else row.push(6); // Стены
+                                else row.push(this.wallTile);
                             } else {
                                 row.push(defaultTile);
                             }
@@ -3096,9 +3111,9 @@
 
                 // Создаем Phaser Tilemap
                 const map = this.make.tilemap({ data: grid, tileWidth: 32, tileHeight: 32 });
-                const tileset = map.addTilesetImage('tiles_texture', null, 32, 32, 0, 0);
+                const tileset = map.addTilesetImage('tiles_texture', 'tiles_texture', 32, 32, 0, 0);
                 this.mapLayer = map.createLayer(0, tileset, 0, 0);
-                this.mapLayer.setCollision(6); // Коллизии для стен
+                this.mapLayer.setCollision(this.wallTile);
             }
 
             // Заполнение карты объектами на основе конфига локации
@@ -3113,15 +3128,15 @@
                         let rx = Phaser.Math.Between(4, N-4) * 32;
                         let ry = Phaser.Math.Between(5, N-4) * 32;
                         
-                        // Проверка безопасной зоны и отсутствия стен
                         let distToTrain = Phaser.Math.Distance.Between(rx, ry, 150, 110);
                         let tile = this.mapLayer.getTileAtWorldXY(rx, ry);
                         
-                        if (distToTrain > safeZoneRadius && tile && tile.index !== 6) {
+                        if (distToTrain > safeZoneRadius && tile && tile.index !== this.wallTile) {
                             let tree = this.harvestables.create(rx + 16, ry + 16, 'prop_tree');
                             tree.type = 'tree';
                             tree.hp = 100;
-                            tree.body.setSize(20, 20); // Физический размер ствола
+                            tree.body.setSize(20, 20);
+                            tree.refreshBody();
                         }
                     }
                 }
@@ -3134,11 +3149,12 @@
                     let distToTrain = Phaser.Math.Distance.Between(rx, ry, 150, 110);
                     let tile = this.mapLayer.getTileAtWorldXY(rx, ry);
 
-                    if (distToTrain > safeZoneRadius && tile && tile.index !== 6) {
+                    if (distToTrain > safeZoneRadius && tile && tile.index !== this.wallTile) {
                         let scrap = this.harvestables.create(rx + 16, ry + 16, 'item_scrap');
                         scrap.type = 'scrap';
                         scrap.setScale(1.3);
                         scrap.body.setSize(20, 20);
+                        scrap.refreshBody();
                     }
                 }
 
@@ -3151,24 +3167,25 @@
                         let distToTrain = Phaser.Math.Distance.Between(rx, ry, 150, 110);
                         let tile = this.mapLayer.getTileAtWorldXY(rx, ry);
 
-                        if (distToTrain > safeZoneRadius && tile && tile.index !== 6) {
+                        if (distToTrain > safeZoneRadius && tile && tile.index !== this.wallTile) {
                             let barrel = this.barrels.create(rx + 16, ry + 16, 'prop_barrel_rad');
                             barrel.body.setSize(24, 24);
+                            barrel.refreshBody();
                         }
                     }
                 }
 
-                // 4. Водяной Насос / Колонка (в лесу или городе)
+                // 4. Водяной Насос / Колонка
                 if (this.locationConfig.type === 'forest' || this.locationConfig.type === 'city') {
-                    // Спавним одну колонку недалеко от путей
                     let pump = this.harvestables.create(380, 150, 'item_water');
                     pump.type = 'pump';
                     pump.waterLeft = 4;
                     pump.setScale(1.5);
                     pump.body.setSize(24, 24);
+                    pump.refreshBody();
                 }
 
-                // 5. Спавн Лута на полу (Еда, Вода, Патроны, Аптечки)
+                // 5. Спавн Лута на полу
                 let itemTypes = ['food', 'water', 'ammo', 'medkit', 'gasmask'];
                 for (let type of itemTypes) {
                     let qty = this.locationConfig.resources[type] || 0;
@@ -3178,7 +3195,7 @@
                         let distToTrain = Phaser.Math.Distance.Between(rx, ry, 150, 110);
                         let tile = this.mapLayer.getTileAtWorldXY(rx, ry);
 
-                        if (distToTrain > safeZoneRadius && tile && tile.index !== 6) {
+                        if (distToTrain > safeZoneRadius && tile && tile.index !== this.wallTile) {
                             let key = `item_${type}`;
                             let item = this.lootItems.create(rx + 16, ry + 16, key);
                             item.itemType = type;
@@ -3194,14 +3211,13 @@
                         let distToTrain = Phaser.Math.Distance.Between(rx, ry, 150, 110);
                         let tile = this.mapLayer.getTileAtWorldXY(rx, ry);
 
-                        // Для босса ставим фиксированную спавн-точку в центре
                         if (eType === 'boss') {
                             rx = (N - 8) * 32;
                             ry = Math.round(N / 2) * 32;
                             distToTrain = 999;
                         }
 
-                        if (distToTrain > safeZoneRadius && tile && tile.index !== 6) {
+                        if (distToTrain > safeZoneRadius && tile && tile.index !== this.wallTile) {
                             this.spawnEnemy(rx + 16, ry + 16, eType);
                         }
                     }
@@ -3222,7 +3238,6 @@
                 enemy.lastShotTime = 0;
                 enemy.leapCooldown = 0;
 
-                // Базовые параметры здоровья и скорости
                 if (type === 'zombie') {
                     enemy.hp = 100; enemy.speed = 60; enemy.dmg = 10;
                 } else if (type === 'zombie_fast') {
@@ -3236,15 +3251,12 @@
                 } else if (type === 'boss') {
                     enemy.hp = 1500; enemy.speed = 40; enemy.dmg = 20;
                     enemy.setScale(1.2);
-                    
-                    // ХП Бар босса на экране
                     addLogMessage("🧟‍♂️ Внимание! Появился Сверхмутант!", "danger");
                 }
             }
 
             // Смена оружия игрока
             switchWeapon(type) {
-                // Логическое переключение текстуры
                 addLogMessage(`Выбран ${type === 'pistol' ? 'Пистолет' : type === 'rifle' ? 'Автомат' : 'Дробовик'}`, "system");
             }
 
@@ -3256,7 +3268,6 @@
                         let dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, b.x, b.y);
                         if (dist < radius) {
                             inside = true;
-                            // Генерируем случайный спавн зеленых частиц
                             if (Math.random() < 0.1) {
                                 this.spawnGlowParticles(b.x, b.y);
                             }
@@ -3302,7 +3313,6 @@
 
                 if (vx !== 0 || vy !== 0) {
                     isMoving = true;
-                    // Проверка бега Shift
                     if (this.keys.SHIFT.isDown && gameState.stamina > 5) {
                         isSprinting = true;
                         speed *= 1.6;
@@ -3311,11 +3321,9 @@
                         gameState.stamina = Math.min(getMaxStamina(), gameState.stamina + 15 * dt);
                     }
                 } else {
-                    // Регенерация стамины при покое
                     gameState.stamina = Math.min(getMaxStamina(), gameState.stamina + 20 * dt);
                 }
 
-                // Нормализация вектора скорости для движения по диагонали
                 let vel = new Phaser.Math.Vector2(vx, vy).normalize().scale(speed);
                 this.player.setVelocity(vel.x, vel.y);
 
@@ -3372,9 +3380,7 @@
             
             // Стрельба игрока
             fireActiveWeapon(time, targetPoint) {
-                // Задержка стрельбы
                 let cooldown = (currentActiveWeapon === 'pistol') ? 350 : (currentActiveWeapon === 'rifle') ? 140 : 850;
-                // Срезаем задержку навыком ловкости
                 cooldown *= (1 - gameState.skills.agility * 0.08);
 
                 if (time < this.lastFireTime + cooldown) return;
@@ -3397,7 +3403,6 @@
                     gameState.inventory.ammo_shotgun--;
                 }
                 else {
-                    // Пистолет
                     if (gameState.inventory.ammo_pistol <= 0) {
                         addLogMessage("Закончились патроны для пистолета!", "danger");
                         return;
@@ -3409,36 +3414,31 @@
                 sound.playShoot(currentActiveWeapon);
                 updateWeaponHud();
 
-                // Спавним пулю
                 let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, targetPoint.x, targetPoint.y);
                 
                 // Эффект вспышки выстрела
                 this.spawnSparkParticles(this.player.x + Math.cos(angle)*16, this.player.y + Math.sin(angle)*16, 0xeab308);
 
                 if (currentActiveWeapon === 'shotgun') {
-                    // Дробовик стреляет 5 дробинками в разбросе
                     for (let i = 0; i < 5; i++) {
                         let spread = angle + (i - 2) * 0.08 + Phaser.Math.FloatBetween(-0.02, 0.02);
-                        let b = this.bullets.create(this.player.x + Math.cos(angle)*18, this.player.y + Math.sin(angle)*18, 'player');
+                        let b = this.bullets.create(this.player.x + Math.cos(angle)*18, this.player.y + Math.sin(angle)*18, 'white_pixel');
                         b.setDisplaySize(4, 4);
                         b.setTint(0xfacc15);
                         b.damage = getWeaponDamage('shotgun');
-                        this.physics.velocityFromAngle(spread * 180 / Math.PI, 480, b.body.velocity);
-                        // Ограничение дальности
+                        b.body.setVelocity(Math.cos(spread) * 480, Math.sin(spread) * 480);
                         this.time.delayedCall(450, () => { if (b.active) b.destroy(); });
                     }
                 } 
                 else {
-                    // Пистолет или Автомат
                     let spread = angle + (currentActiveWeapon === 'rifle' ? Phaser.Math.FloatBetween(-0.06, 0.06) : 0);
-                    let b = this.bullets.create(this.player.x + Math.cos(angle)*18, this.player.y + Math.sin(angle)*18, 'player');
+                    let b = this.bullets.create(this.player.x + Math.cos(angle)*18, this.player.y + Math.sin(angle)*18, 'white_pixel');
                     b.setDisplaySize(6, 3);
                     b.setTint(0xfacc15);
                     b.setRotation(spread);
                     b.damage = getWeaponDamage(currentActiveWeapon);
-                    this.physics.velocityFromAngle(spread * 180 / Math.PI, 620, b.body.velocity);
+                    b.body.setVelocity(Math.cos(spread) * 620, Math.sin(spread) * 620);
                     
-                    // Ограничение дальности
                     let life = (currentActiveWeapon === 'rifle') ? 900 : 600;
                     this.time.delayedCall(life, () => { if (b.active) b.destroy(); });
                 }
@@ -3461,7 +3461,6 @@
                 sound.playDeath();
                 this.spawnBloodParticles(enemy.x, enemy.y, 25);
                 
-                // Начисление XP
                 let xpGained = 15;
                 if (enemy.enemyType === 'zombie_fast') xpGained = 25;
                 else if (enemy.enemyType === 'zombie_fat') xpGained = 40;
@@ -3471,7 +3470,6 @@
 
                 gainXp(xpGained);
 
-                // Дроп лута со смертных врагов (35% шанс)
                 if (Math.random() < 0.35 || enemy.enemyType === 'boss') {
                     let items = ['food', 'water', 'ammo', 'scrap', 'gasmask'];
                     let roll = Phaser.Math.RND.pick(items);
@@ -3479,12 +3477,10 @@
                     loot.itemType = roll;
                 }
 
-                // Эффект взрыва жирного зомби
                 if (enemy.enemyType === 'zombie_fat') {
                     this.explodeFatZombie(enemy.x, enemy.y);
                 }
 
-                // Условие победы (Смерть босса в Омеге)
                 if (enemy.enemyType === 'boss') {
                     this.time.delayedCall(1500, () => {
                         this.scene.stop();
@@ -3500,7 +3496,6 @@
                 sound.playShoot('shotgun');
                 this.spawnSparkParticles(x, y, 0xf97316, 25);
                 
-                // Наносим АОЕ урон игроку и другим врагам в радиусе 80px
                 let dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, x, y);
                 if (dist < 90) {
                     let dmg = Math.round((90 - dist) * 0.4);
@@ -3519,7 +3514,6 @@
                 });
             }
 
-            // Получение урона игроком от пуль
             damagePlayerFromBullet(player, bullet) {
                 this.spawnBloodParticles(bullet.x, bullet.y, 8);
                 sound.playHit();
@@ -3531,7 +3525,6 @@
                 bullet.destroy();
             }
 
-            // Атака врагов в ближнем бою
             enemyMeleeAttack(player, enemy) {
                 let now = this.time.now;
                 if (!enemy.lastAttackTime) enemy.lastAttackTime = 0;
@@ -3640,7 +3633,7 @@
                 updateHudVisuals();
             }
 
-            // Подбор лута с пола при наступании
+            // Подбор лута
             pickupLoot(player, item) {
                 let type = item.itemType;
                 
@@ -3659,7 +3652,7 @@
                 }
                 else if (type === 'water') {
                     gameState.inventory.water++;
-                    addLogMessage("+1 Water", "system");
+                    addLogMessage("+1 Вода", "system");
                 }
                 else if (type === 'medkit') {
                     gameState.inventory.medkit++;
@@ -3694,12 +3687,12 @@
                     // Зомби
                     if (e.enemyType.startsWith('zombie')) {
                         if (dist < viewDist) {
-                            this.physics.velocityFromAngle(angle * 180 / Math.PI, e.speed, e.body.velocity);
+                            e.body.setVelocity(Math.cos(angle) * e.speed, Math.sin(angle) * e.speed);
                             checkTutorial('enemy', '🧟 Опасность близко!', 'На вас бежит зомби! Выберите оружие на клавишу 1, наведите курсор и стреляйте кликом мышки.', '🧟');
                         } else {
                             if (Math.random() < 0.01) {
                                 let randAngle = Phaser.Math.FloatBetween(0, Math.PI*2);
-                                this.physics.velocityFromAngle(randAngle * 180 / Math.PI, e.speed * 0.4, e.body.velocity);
+                                e.body.setVelocity(Math.cos(randAngle) * e.speed * 0.4, Math.sin(randAngle) * e.speed * 0.4);
                             }
                         }
                     }
@@ -3708,9 +3701,9 @@
                     else if (e.enemyType === 'raider') {
                         if (dist < viewDist + 100) {
                             if (dist > 300) {
-                                this.physics.velocityFromAngle(angle * 180 / Math.PI, e.speed, e.body.velocity);
+                                e.body.setVelocity(Math.cos(angle) * e.speed, Math.sin(angle) * e.speed);
                             } else if (dist < 180) {
-                                this.physics.velocityFromAngle((angle + Math.PI) * 180 / Math.PI, e.speed * 1.1, e.body.velocity);
+                                e.body.setVelocity(Math.cos(angle + Math.PI) * e.speed * 1.1, Math.sin(angle + Math.PI) * e.speed * 1.1);
                             } else {
                                 e.setVelocity(0, 0);
                             }
@@ -3722,7 +3715,7 @@
                         } else {
                             if (Math.random() < 0.01) {
                                 let randAngle = Phaser.Math.FloatBetween(0, Math.PI*2);
-                                this.physics.velocityFromAngle(randAngle * 180 / Math.PI, e.speed * 0.5, e.body.velocity);
+                                e.body.setVelocity(Math.cos(randAngle) * e.speed * 0.5, Math.sin(randAngle) * e.speed * 0.5);
                             }
                         }
                     }
@@ -3732,16 +3725,16 @@
                         if (dist < viewDist) {
                             if (dist < 140 && time > e.leapCooldown + 6000) {
                                 e.leapCooldown = time;
-                                this.physics.velocityFromAngle(angle * 180 / Math.PI, e.speed * 3.5, e.body.velocity);
+                                e.body.setVelocity(Math.cos(angle) * e.speed * 3.5, Math.sin(angle) * e.speed * 3.5);
                                 this.spawnSparkParticles(e.x, e.y, 0x7c3aed, 8);
                                 addLogMessage("👹 Мутант совершил прыжок!", "danger");
                             } else if (time > e.leapCooldown + 400) {
-                                this.physics.velocityFromAngle(angle * 180 / Math.PI, e.speed, e.body.velocity);
+                                e.body.setVelocity(Math.cos(angle) * e.speed, Math.sin(angle) * e.speed);
                             }
                         } else {
                             if (Math.random() < 0.015) {
                                 let randAngle = Phaser.Math.FloatBetween(0, Math.PI*2);
-                                this.physics.velocityFromAngle(randAngle * 180 / Math.PI, e.speed * 0.4, e.body.velocity);
+                                e.body.setVelocity(Math.cos(randAngle) * e.speed * 0.4, Math.sin(randAngle) * e.speed * 0.4);
                             }
                         }
                     }
@@ -3769,12 +3762,12 @@
             // Стрельба врага-рейдера
             fireEnemyBullet(x, y, angle) {
                 sound.playShoot('pistol');
-                let b = this.enemyBullets.create(x + Math.cos(angle)*16, y + Math.sin(angle)*16, 'player');
+                let b = this.enemyBullets.create(x + Math.cos(angle)*16, y + Math.sin(angle)*16, 'white_pixel');
                 b.setDisplaySize(6, 3);
                 b.setTint(0xef4444);
                 b.setRotation(angle);
                 b.damage = 8;
-                this.physics.velocityFromAngle(angle * 180 / Math.PI, 400, b.body.velocity);
+                b.body.setVelocity(Math.cos(angle) * 400, Math.sin(angle) * 400);
 
                 this.time.delayedCall(700, () => { if (b.active) b.destroy(); });
             }
@@ -3782,11 +3775,11 @@
             // Стрельба босса плазменным сгустком
             fireBossPlasma(x, y, angle) {
                 sound.playShoot('shotgun');
-                let b = this.enemyBullets.create(x + Math.cos(angle)*30, y + Math.sin(angle)*30, 'player');
+                let b = this.enemyBullets.create(x + Math.cos(angle)*30, y + Math.sin(angle)*30, 'white_pixel');
                 b.setDisplaySize(16, 16);
                 b.setTint(0x10b981);
                 b.damage = 25;
-                this.physics.velocityFromAngle(angle * 180 / Math.PI, 320, b.body.velocity);
+                b.body.setVelocity(Math.cos(angle) * 320, Math.sin(angle) * 320);
 
                 this.time.delayedCall(1200, () => {
                     if (b.active) {
@@ -3808,18 +3801,13 @@
             // Искры / Вспышки
             spawnSparkParticles(x, y, color=0xf59e0b, count=8) {
                 for (let i = 0; i < count; i++) {
-                    let p = this.add.graphics();
-                    p.fillStyle(color, 1);
-                    p.fillRect(-2, -2, 4, 4);
-                    p.x = x;
-                    p.y = y;
+                    let p = this.physics.add.sprite(x, y, 'white_pixel');
+                    p.setTint(color);
                     
                     let angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
                     let speed = Phaser.Math.Between(40, 120);
                     
-                    this.physics.add.existing(p);
                     p.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
-                    
                     this.time.delayedCall(Phaser.Math.Between(150, 300), () => { p.destroy(); });
                 }
             }
@@ -3827,33 +3815,25 @@
             // Кровь при попадании
             spawnBloodParticles(x, y, count=12) {
                 for (let i = 0; i < count; i++) {
-                    let p = this.add.graphics();
-                    p.fillStyle(0xd90429, 0.9);
-                    p.fillRect(-2, -2, 3, 3);
-                    p.x = x;
-                    p.y = y;
+                    let p = this.physics.add.sprite(x, y, 'white_pixel');
+                    p.setTint(0xd90429);
                     
                     let angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
                     let speed = Phaser.Math.Between(30, 90);
                     
-                    this.physics.add.existing(p);
                     p.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
-                    
                     this.time.delayedCall(Phaser.Math.Between(200, 400), () => { p.destroy(); });
                 }
             }
 
             // Радиационное свечение бочек
             spawnGlowParticles(x, y) {
-                let p = this.add.graphics();
-                p.fillStyle(0xa3e635, 0.7);
-                p.fillRect(-2, -2, 3, 3);
-                p.x = x + Phaser.Math.Between(-16, 16);
-                p.y = y + Phaser.Math.Between(-16, 16);
+                let px = x + Phaser.Math.Between(-16, 16);
+                let py = y + Phaser.Math.Between(-16, 16);
+                let p = this.physics.add.sprite(px, py, 'white_pixel');
+                p.setTint(0xa3e635);
                 
-                this.physics.add.existing(p);
                 p.body.setVelocity(Phaser.Math.Between(-10, 10), Phaser.Math.Between(-30, -10));
-                
                 this.time.delayedCall(800, () => { p.destroy(); });
             }
 
@@ -3903,6 +3883,410 @@
                 ctx.arc(toMapX(this.player.x), toMapY(this.player.y), 3, 0, Math.PI*2);
                 ctx.fill();
             }
+        }
+
+        // =========================================================================
+        // ТЕКСТУРНЫЙ ГЕНЕРАТОР (ВЫЗЫВАЕТСЯ НА BOOT)
+        // =========================================================================
+        function generateTextures(scene) {
+            // 1. Спрайтшит тайлов: 256 x 32 px
+            let tilesCanvas = scene.textures.createCanvas('tiles_texture', 256, 32);
+            let ctx = tilesCanvas.context;
+            
+            // Tile 1: Трава (Зеленая с пикселями)
+            ctx.fillStyle = '#2c5e2e';
+            ctx.fillRect(0, 0, 32, 32);
+            ctx.fillStyle = '#346f37';
+            ctx.fillRect(4, 4, 4, 4);
+            ctx.fillRect(16, 12, 4, 4);
+            ctx.fillRect(24, 20, 4, 4);
+            ctx.fillRect(8, 24, 4, 4);
+            
+            // Tile 2: Грязь (Коричневая)
+            ctx.fillStyle = '#5c4033';
+            ctx.fillRect(32, 0, 32, 32);
+            ctx.fillStyle = '#6e4e3e';
+            ctx.fillRect(36, 8, 4, 4);
+            ctx.fillRect(48, 20, 4, 4);
+            ctx.fillStyle = '#4a3227';
+            ctx.fillRect(40, 24, 4, 4);
+            
+            // Tile 3: Бетон (Светло-серый с трещинами)
+            ctx.fillStyle = '#555555';
+            ctx.fillRect(64, 0, 32, 32);
+            ctx.fillStyle = '#666666';
+            ctx.fillRect(65, 1, 30, 30);
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(64, 31, 32, 1);
+            ctx.fillRect(95, 0, 1, 32);
+            
+            // Tile 4: Песок (Желтый сухой)
+            ctx.fillStyle = '#c2b280';
+            ctx.fillRect(96, 0, 32, 32);
+            ctx.fillStyle = '#d8c895';
+            ctx.fillRect(100, 10, 4, 2);
+            ctx.fillRect(116, 22, 4, 2);
+            
+            // Tile 5: Асфальт (Темный асфальт с разметкой)
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(128, 0, 32, 32);
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(142, 12, 4, 8);
+            
+            // Tile 6: Туннель (Серый темный)
+            ctx.fillStyle = '#1e1e1e';
+            ctx.fillRect(160, 0, 32, 32);
+            ctx.fillStyle = '#111111';
+            ctx.fillRect(160, 31, 32, 1);
+            ctx.fillRect(191, 0, 1, 32);
+            
+            // Tile 7: Стена (Красный кирпич)
+            ctx.fillStyle = '#444444';
+            ctx.fillRect(192, 0, 32, 32);
+            ctx.fillStyle = '#772222';
+            ctx.fillRect(193, 1, 14, 8);
+            ctx.fillRect(209, 1, 14, 8);
+            ctx.fillRect(193, 11, 28, 8);
+            ctx.fillRect(193, 21, 14, 8);
+            ctx.fillRect(209, 21, 14, 8);
+            ctx.fillStyle = '#222222';
+            ctx.fillRect(192, 9, 32, 2);
+            ctx.fillRect(192, 19, 32, 2);
+            ctx.fillRect(192, 29, 32, 2);
+            
+            // Tile 8: Рельсы
+            ctx.fillStyle = '#221100';
+            ctx.fillRect(224, 0, 32, 32);
+            ctx.fillStyle = '#5c4033';
+            ctx.fillRect(226, 4, 28, 4);
+            ctx.fillRect(226, 14, 28, 4);
+            ctx.fillRect(226, 24, 28, 4);
+            ctx.fillStyle = '#888888';
+            ctx.fillRect(230, 0, 3, 32);
+            ctx.fillRect(247, 0, 3, 32);
+            
+            tilesCanvas.refresh();
+            
+            // 2. Игрок: 32x32
+            let playerCanvas = scene.textures.createCanvas('player', 32, 32);
+            let pCtx = playerCanvas.context;
+            pCtx.fillStyle = '#555555';
+            pCtx.fillRect(4, 6, 8, 4);
+            pCtx.fillRect(4, 22, 8, 4);
+            pCtx.fillStyle = '#4a3525';
+            pCtx.fillRect(2, 8, 8, 16);
+            pCtx.fillStyle = '#2b4c7e';
+            pCtx.beginPath(); pCtx.arc(16, 16, 10, 0, Math.PI * 2); pCtx.fill();
+            pCtx.fillStyle = '#ffdbac';
+            pCtx.beginPath(); pCtx.arc(18, 16, 6, 0, Math.PI * 2); pCtx.fill();
+            pCtx.fillStyle = '#4a2f13';
+            pCtx.beginPath(); pCtx.arc(16, 16, 6, Math.PI * 0.5, Math.PI * 1.5); pCtx.fill();
+            pCtx.fillStyle = '#ffdbac';
+            pCtx.fillRect(20, 10, 6, 4);
+            pCtx.fillRect(20, 18, 6, 4);
+            pCtx.fillStyle = '#222222';
+            pCtx.fillRect(24, 13, 8, 6);
+            playerCanvas.refresh();
+            
+            // 3. Зомби: 32x32
+            let zombieCanvas = scene.textures.createCanvas('zombie', 32, 32);
+            let zCtx = zombieCanvas.context;
+            zCtx.fillStyle = '#4a5d3b';
+            zCtx.beginPath(); zCtx.arc(16, 16, 10, 0, Math.PI * 2); zCtx.fill();
+            zCtx.fillStyle = '#990000';
+            zCtx.fillRect(14, 10, 4, 3);
+            zCtx.fillRect(8, 16, 3, 5);
+            zCtx.fillStyle = '#4a5d3b';
+            zCtx.fillRect(20, 8, 10, 4);
+            zCtx.fillRect(20, 20, 10, 4);
+            zCtx.fillStyle = '#ffffff';
+            zCtx.fillRect(18, 12, 2, 2);
+            zCtx.fillRect(18, 18, 2, 2);
+            zombieCanvas.refresh();
+            
+            // 4. Быстрый зомби: 32x32
+            let zfCanvas = scene.textures.createCanvas('zombie_fast', 32, 32);
+            let zfCtx = zfCanvas.context;
+            zfCtx.fillStyle = '#5d7e48';
+            zfCtx.beginPath(); zfCtx.arc(16, 16, 8, 0, Math.PI * 2); zfCtx.fill();
+            zfCtx.fillStyle = '#cc2222';
+            zfCtx.beginPath(); zfCtx.arc(14, 16, 6, 0, Math.PI * 2); zfCtx.fill();
+            zfCtx.fillStyle = '#5d7e48';
+            zfCtx.fillRect(18, 9, 12, 3);
+            zfCtx.fillRect(18, 20, 12, 3);
+            zfCanvas.refresh();
+            
+            // 5. Толстый зомби: 48x48
+            let zfatCanvas = scene.textures.createCanvas('zombie_fat', 48, 48);
+            let zfatCtx = zfatCanvas.context;
+            zfatCtx.fillStyle = '#3a4d2b';
+            zfatCtx.beginPath(); zfatCtx.arc(24, 24, 16, 0, Math.PI * 2); zfatCtx.fill();
+            zfatCtx.fillStyle = '#8a9d3b';
+            zfatCtx.fillRect(20, 14, 6, 6);
+            zfatCtx.fillRect(16, 26, 8, 6);
+            zfatCtx.fillStyle = '#3a4d2b';
+            zfatCtx.fillRect(32, 16, 12, 5);
+            zfatCtx.fillRect(32, 27, 12, 5);
+            zfatCanvas.refresh();
+            
+            // 6. Рейдер: 32x32
+            let raiderCanvas = scene.textures.createCanvas('raider', 32, 32);
+            let rCtx = raiderCanvas.context;
+            rCtx.fillStyle = '#3d4d33';
+            rCtx.beginPath(); rCtx.arc(16, 16, 10, 0, Math.PI * 2); rCtx.fill();
+            rCtx.fillStyle = '#614e33';
+            rCtx.fillRect(10, 8, 4, 4);
+            rCtx.fillRect(14, 20, 4, 4);
+            rCtx.fillStyle = '#2b302a';
+            rCtx.beginPath(); rCtx.arc(16, 16, 7, 0, Math.PI * 2); rCtx.fill();
+            rCtx.fillStyle = '#444444';
+            rCtx.fillRect(20, 10, 5, 3);
+            rCtx.fillRect(20, 19, 5, 3);
+            rCtx.fillStyle = '#111111';
+            rCtx.fillRect(24, 14, 8, 4);
+            raiderCanvas.refresh();
+            
+            // 7. Мутант: 40x40
+            let mutantCanvas = scene.textures.createCanvas('mutant', 40, 40);
+            let mCtx = mutantCanvas.context;
+            mCtx.fillStyle = '#2b1b3d';
+            mCtx.beginPath(); mCtx.arc(20, 20, 14, 0, Math.PI * 2); mCtx.fill();
+            mCtx.fillStyle = '#4b2e6d';
+            mCtx.beginPath(); mCtx.arc(17, 20, 10, 0, Math.PI * 2); mCtx.fill();
+            mCtx.fillStyle = '#ff0000';
+            mCtx.fillRect(22, 14, 3, 3);
+            mCtx.fillRect(22, 22, 3, 3);
+            mCtx.fillStyle = '#1b0b2d';
+            mCtx.fillRect(26, 10, 8, 4);
+            mCtx.fillRect(26, 26, 8, 4);
+            mutantCanvas.refresh();
+            
+            // 8. Босс: 64x64
+            let bossCanvas = scene.textures.createCanvas('boss', 64, 64);
+            let bCtx = bossCanvas.context;
+            bCtx.fillStyle = '#5c1313';
+            bCtx.beginPath(); bCtx.arc(32, 32, 24, 0, Math.PI * 2); bCtx.fill();
+            bCtx.fillStyle = '#2b0b0b';
+            bCtx.fillRect(8, 20, 6, 6);
+            bCtx.fillRect(8, 38, 6, 6);
+            bCtx.fillRect(20, 8, 6, 6);
+            bCtx.fillRect(38, 8, 6, 6);
+            bCtx.fillStyle = '#ffea00';
+            bCtx.fillRect(40, 20, 4, 4);
+            bCtx.fillRect(44, 26, 4, 4);
+            bCtx.fillRect(40, 32, 4, 4);
+            bCtx.fillRect(44, 38, 4, 4);
+            bossCanvas.refresh();
+            
+            // 9. Белый пиксель для частиц: 4x4
+            let pxCanvas = scene.textures.createCanvas('white_pixel', 4, 4);
+            let pxCtx = pxCanvas.context;
+            pxCtx.fillStyle = '#ffffff';
+            pxCtx.fillRect(0, 0, 4, 4);
+            pxCanvas.refresh();
+
+            // 10. Предметы
+            // Дрова
+            let wItem = scene.textures.createCanvas('item_wood', 24, 24);
+            let wCtx = wItem.context;
+            wCtx.fillStyle = '#8b5a2b';
+            wCtx.fillRect(4, 8, 16, 8);
+            wCtx.fillStyle = '#cdaf95';
+            wCtx.beginPath(); wCtx.arc(4, 12, 4, 0, Math.PI*2); wCtx.fill();
+            wCtx.fillStyle = '#5c3815';
+            wCtx.fillRect(8, 10, 10, 1);
+            wItem.refresh();
+            
+            // Металлолом
+            let sItem = scene.textures.createCanvas('item_scrap', 24, 24);
+            let sCtx = sItem.context;
+            sCtx.fillStyle = '#7a7a7a';
+            sCtx.beginPath(); sCtx.arc(12, 12, 8, 0, Math.PI*2); sCtx.fill();
+            sCtx.fillStyle = '#09090b';
+            sCtx.beginPath(); sCtx.arc(12, 12, 3, 0, Math.PI*2); sCtx.fill();
+            sCtx.fillStyle = '#555555';
+            sCtx.fillRect(10, 2, 4, 4);
+            sCtx.fillRect(10, 18, 4, 4);
+            sCtx.fillRect(2, 10, 4, 4);
+            sCtx.fillRect(18, 10, 4, 4);
+            sItem.refresh();
+            
+            // Консервы
+            let fItem = scene.textures.createCanvas('item_food', 24, 24);
+            let fCtx = fItem.context;
+            fCtx.fillStyle = '#aaaaaa';
+            fCtx.fillRect(6, 4, 12, 16);
+            fCtx.fillStyle = '#cc3333';
+            fCtx.fillRect(6, 8, 12, 8);
+            fCtx.fillStyle = '#ffea00';
+            fCtx.fillRect(11, 11, 2, 2);
+            fItem.refresh();
+            
+            // Вода
+            let watItem = scene.textures.createCanvas('item_water', 24, 24);
+            let watCtx = watItem.context;
+            watCtx.fillStyle = '#38bdf8';
+            watCtx.fillRect(8, 8, 8, 12);
+            watCtx.fillStyle = '#0ea5e9';
+            watCtx.fillRect(10, 4, 4, 4);
+            watCtx.fillStyle = '#ffffff';
+            watCtx.fillRect(11, 10, 2, 6);
+            watItem.refresh();
+            
+            // Патроны
+            let amItem = scene.textures.createCanvas('item_ammo', 24, 24);
+            let amCtx = amItem.context;
+            amCtx.fillStyle = '#3f6212';
+            amCtx.fillRect(4, 6, 16, 12);
+            amCtx.fillStyle = '#ca8a04';
+            amCtx.fillRect(8, 10, 8, 4);
+            amItem.refresh();
+            
+            // Аптечка
+            let medItem = scene.textures.createCanvas('item_medkit', 24, 24);
+            let medCtx = medItem.context;
+            medCtx.fillStyle = '#f8fafc';
+            medCtx.fillRect(4, 4, 16, 16);
+            medCtx.fillStyle = '#ef4444';
+            medCtx.fillRect(11, 6, 2, 12);
+            medCtx.fillRect(6, 11, 12, 2);
+            medItem.refresh();
+            
+            // Противогаз
+            let gmItem = scene.textures.createCanvas('item_gasmask', 24, 24);
+            let gmCtx = gmItem.context;
+            gmCtx.fillStyle = '#1e293b';
+            gmCtx.beginPath(); gmCtx.arc(12, 12, 8, 0, Math.PI*2); gmCtx.fill();
+            gmCtx.fillStyle = '#475569';
+            gmCtx.fillRect(6, 10, 4, 4);
+            gmCtx.fillRect(14, 10, 4, 4);
+            gmCtx.fillStyle = '#64748b';
+            gmCtx.fillRect(10, 14, 4, 4);
+            gmItem.refresh();
+            
+            // 11. Объекты окружения
+            // Дерево
+            let treeCanvas = scene.textures.createCanvas('prop_tree', 64, 64);
+            let tCtx = treeCanvas.context;
+            tCtx.fillStyle = '#5c3815';
+            tCtx.beginPath(); tCtx.arc(32, 32, 8, 0, Math.PI*2); tCtx.fill();
+            tCtx.fillStyle = '#14532d';
+            tCtx.beginPath(); tCtx.arc(32, 32, 24, 0, Math.PI*2); tCtx.fill();
+            tCtx.fillStyle = '#166534';
+            tCtx.beginPath(); tCtx.arc(30, 28, 18, 0, Math.PI*2); tCtx.fill();
+            tCtx.fillStyle = '#15803d';
+            tCtx.beginPath(); tCtx.arc(28, 26, 12, 0, Math.PI*2); tCtx.fill();
+            treeCanvas.refresh();
+            
+            // Камень
+            let rockCanvas = scene.textures.createCanvas('prop_rock', 32, 32);
+            let rkCtx = rockCanvas.context;
+            rkCtx.fillStyle = '#4b5563';
+            rkCtx.beginPath();
+            rkCtx.moveTo(16, 2); rkCtx.lineTo(30, 10); rkCtx.lineTo(26, 26); rkCtx.lineTo(8, 28); rkCtx.lineTo(2, 14);
+            rkCtx.closePath(); rkCtx.fill();
+            rkCtx.fillStyle = '#6b7280';
+            rkCtx.beginPath();
+            rkCtx.moveTo(16, 4); rkCtx.lineTo(26, 11); rkCtx.lineTo(23, 23); rkCtx.lineTo(10, 24);
+            rkCtx.closePath(); rkCtx.fill();
+            rockCanvas.refresh();
+            
+            // Радиоактивная бочка
+            let radCanvas = scene.textures.createCanvas('prop_barrel_rad', 32, 32);
+            let rbCtx = radCanvas.context;
+            rbCtx.fillStyle = '#eab308';
+            rbCtx.fillRect(6, 2, 20, 28);
+            rbCtx.fillStyle = '#ca8a04';
+            rbCtx.fillRect(6, 6, 20, 3);
+            rbCtx.fillRect(6, 15, 20, 3);
+            rbCtx.fillRect(6, 24, 20, 3);
+            rbCtx.fillStyle = '#000000';
+            rbCtx.beginPath(); rbCtx.arc(16, 15, 4, 0, Math.PI*2); rbCtx.fill();
+            rbCtx.fillStyle = '#eab308';
+            rbCtx.beginPath(); rbCtx.arc(16, 15, 2, 0, Math.PI*2); rbCtx.fill();
+            rbCtx.fillStyle = '#000000';
+            rbCtx.fillRect(15, 10, 2, 10);
+            rbCtx.fillRect(11, 14, 10, 2);
+            radCanvas.refresh();
+            
+            // Ящик
+            let crateCanvas = scene.textures.createCanvas('prop_crate', 32, 32);
+            let crCtx = crateCanvas.context;
+            crCtx.fillStyle = '#78350f';
+            crCtx.fillRect(0, 0, 32, 32);
+            crCtx.fillStyle = '#92400e';
+            crCtx.fillRect(2, 2, 28, 28);
+            crCtx.fillStyle = '#78350f';
+            crCtx.fillRect(4, 4, 2, 24);
+            crCtx.fillRect(26, 4, 2, 24);
+            crCtx.fillRect(4, 4, 24, 2);
+            crCtx.fillRect(4, 26, 24, 2);
+            crCtx.strokeStyle = '#78350f';
+            crCtx.lineWidth = 2;
+            crCtx.beginPath();
+            crCtx.moveTo(6, 6); crCtx.lineTo(26, 26);
+            crCtx.moveTo(26, 6); crCtx.lineTo(6, 26);
+            crCtx.stroke();
+            crateCanvas.refresh();
+            
+            // Паровоз
+            let trainCanvas = scene.textures.createCanvas('prop_train_locomotive', 120, 64);
+            let trCtx = trainCanvas.context;
+            trCtx.fillStyle = '#1e293b';
+            trCtx.fillRect(0, 8, 110, 48);
+            trCtx.fillStyle = '#0f172a';
+            trCtx.fillRect(10, 0, 40, 56);
+            trCtx.fillStyle = '#e2e8f0';
+            trCtx.fillRect(18, 10, 24, 16);
+            trCtx.fillStyle = '#475569';
+            trCtx.beginPath(); trCtx.arc(24, 56, 8, 0, Math.PI*2); trCtx.fill();
+            trCtx.beginPath(); trCtx.arc(52, 56, 8, 0, Math.PI*2); trCtx.fill();
+            trCtx.beginPath(); trCtx.arc(80, 56, 8, 0, Math.PI*2); trCtx.fill();
+            trCtx.fillStyle = '#94a3b8';
+            trCtx.beginPath(); trCtx.arc(24, 56, 4, 0, Math.PI*2); trCtx.fill();
+            trCtx.beginPath(); trCtx.arc(52, 56, 4, 0, Math.PI*2); trCtx.fill();
+            trCtx.beginPath(); trCtx.arc(80, 56, 4, 0, Math.PI*2); trCtx.fill();
+            trCtx.strokeStyle = '#94a3b8';
+            trCtx.lineWidth = 3;
+            trCtx.beginPath(); trCtx.moveTo(24, 56); trCtx.lineTo(80, 56); trCtx.stroke();
+            trCtx.fillStyle = '#0f172a';
+            trCtx.fillRect(90, 0, 10, 16);
+            trCtx.fillStyle = '#eab308';
+            trCtx.beginPath(); trCtx.moveTo(110, 24); trCtx.lineTo(120, 56); trCtx.lineTo(110, 56); trCtx.closePath(); trCtx.fill();
+            trCtx.fillStyle = '#fef08a';
+            trCtx.fillRect(106, 16, 6, 8);
+            trainCanvas.refresh();
+            
+            // Вагон
+            let carCanvas = scene.textures.createCanvas('prop_train_carriage', 100, 60);
+            let carCtx = carCanvas.context;
+            carCtx.fillStyle = '#334155';
+            carCtx.fillRect(0, 4, 96, 48);
+            carCtx.fillStyle = '#1e293b';
+            carCtx.fillRect(10, 12, 16, 16);
+            carCtx.fillRect(42, 12, 16, 16);
+            carCtx.fillRect(72, 12, 16, 16);
+            carCtx.fillStyle = '#475569';
+            carCtx.beginPath(); carCtx.arc(24, 52, 8, 0, Math.PI*2); carCtx.fill();
+            carCtx.beginPath(); carCtx.arc(76, 52, 8, 0, Math.PI*2); carCtx.fill();
+            carCtx.fillStyle = '#94a3b8';
+            carCtx.fillRect(96, 26, 4, 8);
+            carCanvas.refresh();
+
+            // Маска фонарика: 1200x1200
+            let lmCanvas = scene.textures.createCanvas('light_mask', 1200, 1200);
+            let lmCtx = lmCanvas.context;
+            lmCtx.fillStyle = '#000000';
+            lmCtx.fillRect(0, 0, 1200, 1200);
+            let grad = lmCtx.createRadialGradient(600, 600, 40, 600, 600, 200);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(0.5, 'rgba(0,0,0,0.3)');
+            grad.addColorStop(1, 'rgba(0,0,0,1)');
+            lmCtx.globalCompositeOperation = 'destination-out';
+            lmCtx.fillStyle = grad;
+            lmCtx.beginPath(); lmCtx.arc(600, 600, 200, 0, Math.PI*2); lmCtx.fill();
+            lmCtx.globalCompositeOperation = 'source-over';
+            lmCanvas.refresh();
         }
 
         // =========================================================================

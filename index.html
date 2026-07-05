@@ -1511,6 +1511,32 @@
 
     <!-- Звуковой синтезатор Web Audio API & Логика игры -->
     <script>
+        // Глобальный перехватчик ошибок для вывода на экран при сбоях
+        window.onerror = function(msg, url, line, col, error) {
+            let errDiv = document.getElementById('debug-error-banner');
+            if (!errDiv) {
+                errDiv = document.createElement('div');
+                errDiv.id = 'debug-error-banner';
+                errDiv.style.position = 'absolute';
+                errDiv.style.top = '10px';
+                errDiv.style.left = '10px';
+                errDiv.style.right = '10px';
+                errDiv.style.background = 'rgba(239, 68, 68, 0.95)';
+                errDiv.style.color = '#fff';
+                errDiv.style.padding = '15px';
+                errDiv.style.borderRadius = '8px';
+                errDiv.style.border = '2px solid #ef4444';
+                errDiv.style.zIndex = '999999';
+                errDiv.style.fontFamily = 'monospace';
+                errDiv.style.fontSize = '12px';
+                errDiv.style.whiteSpace = 'pre-wrap';
+                errDiv.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3)';
+                document.body.appendChild(errDiv);
+            }
+            errDiv.innerHTML = `<h3>🚨 Ошибка JavaScript в игре:</h3><p><b>Сообщение:</b> ${msg}</p><p><b>Файл:</b> ${url}</p><p><b>Строка:</b> ${line}, <b>Колонка:</b> ${col}</p><p><b>Стек вызовов:</b> ${error ? error.stack : 'N/A'}</p>`;
+            return false;
+        };
+
         // Декларируем дизайн диалы по правилам tasteskill
         // DESIGN_VARIANCE: 8
         // MOTION_INTENSITY: 7
@@ -3512,6 +3538,12 @@
             
             // Spawn items/resources/enemies
             populate3DLevel(N, loc);
+            
+            // Set initial camera position looking at the player
+            if (playerGroup) {
+                camera.position.set(playerGroup.position.x, playerGroup.position.y + 13.0, playerGroup.position.z + 9.0);
+                camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 0.5, -0.5)));
+            }
             
             // Laser sight helper line
             let laserMat = new THREE.LineBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.45 });

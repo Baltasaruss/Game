@@ -1,0 +1,3920 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Последний Поезд: Выживание в Апокалипсисе</title>
+    <!-- Phaser 3 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Стилизация интерфейса игры */
+        :root {
+            --bg-dark: #09090b;
+            --panel-bg: rgba(20, 20, 25, 0.85);
+            --border-glow: rgba(163, 230, 53, 0.3);
+            --primary-accent: #a3e635; /* Зеленый лайм */
+            --danger-accent: #f43f5e; /* Малиново-красный */
+            --cyan-accent: #38bdf8; /* Сине-голубой */
+            --orange-accent: #f97316; /* Рыжий/дрова */
+            --gold-accent: #fbbf24; /* Золотой */
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Эффект ретро-телевизора */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.15) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Общие панели */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            background: rgba(9, 9, 11, 0.8);
+            backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease;
+        }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 0, 0, 0.3);
+            padding: 2rem;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        /* Главное меню */
+        #main-menu-overlay {
+            display: flex;
+        }
+
+        .menu-content {
+            width: 520px;
+        }
+
+        .game-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 2.2rem;
+            color: var(--danger-accent);
+            text-shadow: 0 0 10px rgba(244, 63, 94, 0.8), 0 0 20px rgba(244, 63, 94, 0.3);
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+        }
+
+        .game-subtitle {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .menu-btn {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            margin: 0.8rem 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .menu-btn:hover:not(:disabled) {
+            background: var(--primary-accent);
+            color: #000;
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 15px rgba(163, 230, 53, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .menu-btn:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .menu-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .menu-btn.btn-danger:hover {
+            background: var(--danger-accent);
+            color: white;
+            border-color: var(--danger-accent);
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
+        }
+
+        /* HUD - Отображение параметров игрока во время игры */
+        #hud-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* Дает кликать сквозь HUD */
+            z-index: 50;
+            display: none;
+            padding: 1.5rem;
+        }
+
+        .hud-element {
+            pointer-events: auto; /* Дает взаимодействовать с кнопками HUD */
+        }
+
+        /* Левая верхняя панель - Показатели */
+        .hud-stats-panel {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            background: rgba(15, 15, 20, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            width: 260px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.6rem;
+        }
+
+        .stat-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+            width: 24px;
+            margin-right: 8px;
+            text-align: center;
+        }
+
+        .stat-bar-container {
+            flex-grow: 1;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stat-bar {
+            height: 100%;
+            width: 100%;
+            border-radius: 5px;
+            transition: width 0.3s ease-out;
+        }
+
+        .stat-text {
+            font-size: 0.75rem;
+            font-weight: 700;
+            position: absolute;
+            right: 5px;
+            top: -2px;
+            color: #fff;
+            text-shadow: 0 1px 2px #000;
+        }
+
+        .bar-hp { background: var(--danger-accent); }
+        .bar-hunger { background: var(--orange-accent); }
+        .bar-thirst { background: var(--cyan-accent); }
+        .bar-stamina { background: #10b981; } /* Изумрудный */
+        .bar-rad { background: var(--primary-accent); }
+
+        /* Временная панель радиации */
+        #rad-row {
+            display: none;
+        }
+
+        /* Индикатор уровня вверху по центру */
+        .hud-level-panel {
+            position: absolute;
+            top: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 15, 20, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 0.4rem 1.2rem;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .level-text {
+            font-weight: 700;
+            color: var(--primary-accent);
+            margin-right: 10px;
+            font-size: 0.9rem;
+        }
+
+        .xp-bar-container {
+            width: 120px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .xp-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--primary-accent);
+            transition: width 0.2s ease-out;
+        }
+
+        /* Правая верхняя панель - Оружие */
+        .hud-weapon-panel {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(15, 15, 20, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 0.8rem;
+            width: 150px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .weapon-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .weapon-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            margin-bottom: 0.4rem;
+        }
+
+        .weapon-ammo {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.9rem;
+            color: var(--primary-accent);
+        }
+
+        /* Нижняя панель - Инвентарь ресурсов */
+        .hud-inventory-panel {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 15, 20, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 0.6rem;
+            display: flex;
+            gap: 8px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .inv-slot {
+            width: 58px;
+            height: 58px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .inv-slot:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .inv-slot.active {
+            border-color: var(--primary-accent);
+            background: rgba(163, 230, 53, 0.1);
+            box-shadow: 0 0 8px rgba(163, 230, 53, 0.2);
+        }
+
+        .inv-slot-icon {
+            font-size: 1.3rem;
+            margin-bottom: 2px;
+        }
+
+        .inv-slot-amount {
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .inv-slot-key {
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+
+        /* Индикатор дров и металлолома отдельно */
+        .hud-mats-panel {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            background: rgba(15, 15, 20, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .mat-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .mat-icon {
+            margin-right: 6px;
+            font-size: 1.1rem;
+        }
+
+        .mat-amount {
+            color: var(--primary-accent);
+            margin-left: auto;
+            padding-left: 10px;
+        }
+
+        /* Мини-карта */
+        .hud-minimap-panel {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: rgba(15, 15, 20, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 6px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            width: 112px;
+            height: 112px;
+        }
+
+        #minimap-canvas {
+            width: 100px;
+            height: 100px;
+            background: #111;
+            border-radius: 6px;
+            display: block;
+        }
+
+        /* Лог событий в игре */
+        #game-log {
+            position: absolute;
+            bottom: 7.5rem;
+            left: 1.5rem;
+            width: 320px;
+            max-height: 120px;
+            overflow-y: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            pointer-events: none;
+        }
+
+        .log-msg {
+            background: rgba(10, 10, 12, 0.7);
+            border-left: 3px solid var(--primary-accent);
+            padding: 4px 8px;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.75rem;
+            color: #fff;
+            animation: fadeInLog 0.3s ease-out;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .log-msg.danger {
+            border-left-color: var(--danger-accent);
+        }
+
+        .log-msg.warning {
+            border-left-color: var(--orange-accent);
+        }
+
+        .log-msg.system {
+            border-left-color: var(--cyan-accent);
+        }
+
+        @keyframes fadeInLog {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Верстак / Меню станции */
+        #station-menu-overlay {
+            display: none;
+        }
+
+        .station-box {
+            width: 800px;
+            height: 520px;
+            display: flex;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        /* Левая панель с табами */
+        .station-sidebar {
+            width: 220px;
+            background: rgba(10, 10, 12, 0.9);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 1rem;
+        }
+
+        .station-sidebar h3 {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.8rem;
+            color: var(--danger-accent);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            padding: 0.8rem 1rem;
+            color: var(--text-muted);
+            text-align: left;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 0.4rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-accent);
+            background: rgba(163, 230, 53, 0.08);
+            border-left: 3px solid var(--primary-accent);
+            border-radius: 0 6px 6px 0;
+            padding-left: 13px;
+        }
+
+        .tab-btn-icon {
+            margin-right: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* Правая панель с контентом */
+        .station-content {
+            flex-grow: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-panel {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .tab-panel.active {
+            display: flex;
+        }
+
+        .tab-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Вкладка Вылазки */
+        .loc-details-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: auto;
+        }
+
+        .loc-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.8rem;
+            font-size: 0.95rem;
+        }
+
+        .loc-badge {
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .badge-low { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .badge-med { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+        .badge-high { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
+
+        /* Вкладка Крафта */
+        .craft-grid {
+            display: grid;
+            grid-template-cols: 1fr 1fr;
+            gap: 12px;
+            overflow-y: auto;
+            max-height: 300px;
+            padding-right: 5px;
+        }
+
+        .craft-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .craft-card:hover {
+            border-color: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .craft-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .craft-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .craft-mats {
+            font-size: 0.75rem;
+            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .craft-mat-pill {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .craft-mat-pill.insufficient {
+            color: var(--danger-accent);
+            background: rgba(244, 63, 94, 0.1);
+        }
+
+        .craft-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.15s ease;
+        }
+
+        .craft-btn:hover:not(:disabled) {
+            background: var(--primary-accent);
+            color: #000;
+            border-color: var(--primary-accent);
+        }
+
+        .craft-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* Вкладка Паровоза */
+        .train-boiler-box {
+            background: rgba(249, 115, 22, 0.05);
+            border: 1px solid rgba(249, 115, 22, 0.15);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .boiler-title {
+            font-weight: 700;
+            color: var(--orange-accent);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .boiler-gauge {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .boiler-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--orange-accent);
+            transition: width 0.3s ease;
+        }
+
+        .train-upgrade-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .train-upgrade-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0.8rem;
+        }
+
+        .upg-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .upg-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .upg-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Вкладка Персонажа */
+        .char-stats-container {
+            display: grid;
+            grid-template-cols: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .char-stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 0.8rem;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .skill-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+        }
+
+        .skill-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .skill-lvl {
+            font-weight: bold;
+            color: var(--primary-accent);
+        }
+
+        .skill-plus-btn {
+            background: var(--primary-accent);
+            border: none;
+            color: #000;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.15s ease;
+        }
+
+        .skill-plus-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px var(--primary-accent);
+        }
+
+        .skill-plus-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background: var(--text-muted);
+        }
+
+        /* Вкладка Карты Путей */
+        .route-map-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 0.5rem;
+        }
+
+        .route-step {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .route-step.current {
+            border-color: var(--primary-accent);
+            background: rgba(163, 230, 53, 0.05);
+        }
+
+        .route-step.passed {
+            border-color: rgba(255, 255, 255, 0.1);
+            opacity: 0.7;
+        }
+
+        .route-step-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .current .route-step-num {
+            background: var(--primary-accent);
+            color: #000;
+        }
+
+        .route-step-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .route-step-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .route-step-cost {
+            font-size: 0.75rem;
+            color: var(--orange-accent);
+        }
+
+        .route-travel-btn {
+            margin-left: auto;
+            background: var(--primary-accent);
+            border: none;
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.15s ease;
+        }
+
+        .route-travel-btn:hover:not(:disabled) {
+            box-shadow: 0 0 10px var(--primary-accent);
+            transform: scale(1.05);
+        }
+
+        .route-travel-btn:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* Торговец и Диалог */
+        .npc-box {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: auto;
+        }
+
+        .npc-avatar {
+            font-size: 3rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .npc-dialog-side {
+            flex-grow: 1;
+        }
+
+        .npc-name {
+            font-weight: 700;
+            color: var(--primary-accent);
+            margin-bottom: 4px;
+        }
+
+        .npc-text {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .npc-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Анимация переезда поезда */
+        #travel-overlay {
+            display: none;
+            background: #050507;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 150;
+        }
+
+        .travel-track-visual {
+            width: 100%;
+            height: 80px;
+            position: relative;
+            background: linear-gradient(transparent 45%, #444 48%, #444 52%, transparent 55%);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .travel-track-sleepers {
+            position: absolute;
+            top: 0; left: 0; width: 200%; height: 100%;
+            background: repeating-linear-gradient(90deg, transparent, transparent 15px, #271b10 15px, #271b10 22px);
+            animation: moveTracks 1.5s linear infinite;
+        }
+
+        @keyframes moveTracks {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .travel-train-icon {
+            position: absolute;
+            left: 40%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            animation: wobbleTrain 0.4s ease-in-out infinite alternate;
+        }
+
+        @keyframes wobbleTrain {
+            0% { transform: translate(-50%, -52%) rotate(1deg); }
+            100% { transform: translate(-50%, -48%) rotate(-1deg); }
+        }
+
+        .travel-status {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            color: var(--primary-accent);
+            text-align: center;
+        }
+
+        .travel-subtext {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .travel-progress-bar {
+            width: 400px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            max-width: 90%;
+        }
+
+        .travel-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary-accent);
+            box-shadow: 0 0 10px var(--primary-accent);
+        }
+
+        /* Интерактивное обучение (туториал) */
+        #tutorial-overlay {
+            display: none;
+            z-index: 200;
+        }
+
+        .tutorial-box {
+            width: 420px;
+        }
+
+        .tutorial-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            animation: pulseIcon 1.5s infinite;
+        }
+
+        @keyframes pulseIcon {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .tutorial-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-accent);
+            margin-bottom: 8px;
+        }
+
+        .tutorial-text {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Меню паузы */
+        #pause-overlay {
+            display: none;
+        }
+
+        /* Победа и Поражение */
+        #win-overlay, #gameover-overlay {
+            display: none;
+        }
+
+        .win-title {
+            font-family: 'Press Start 2P', monospace;
+            color: var(--gold-accent);
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.7);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .gameover-title {
+            font-family: 'Press Start 2P', monospace;
+            color: var(--danger-accent);
+            text-shadow: 0 0 15px rgba(244, 63, 94, 0.7);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div id="game-container"></div>
+
+    <!-- 1. ГЛАВНОЕ МЕНЮ -->
+    <div id="main-menu-overlay" class="overlay">
+        <div class="glass-panel menu-content">
+            <h1 class="game-title">ПОСЛЕДНИЙ<br>ПОЕЗД</h1>
+            <p class="game-subtitle">Постапокалиптическое Выживание</p>
+            <button class="menu-btn" onclick="startNewGame()">Новая Игра</button>
+            <button class="menu-btn" id="continue-btn" onclick="loadSavedGame()" disabled>Продолжить</button>
+            <button class="menu-btn" onclick="openSettings()">Настройки и Справка</button>
+        </div>
+    </div>
+
+    <!-- 2. НАСТРОЙКИ И СПРАВКА -->
+    <div id="settings-overlay" class="overlay" style="display:none;">
+        <div class="glass-panel" style="width: 500px; text-align: left;">
+            <h2 class="tab-title" style="margin-bottom: 1rem; text-align: center; color: var(--primary-accent);">СПРАВКА И НАСТРОЙКИ</h2>
+            <div style="font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 8px;">
+                <p><strong>🕹️ Управление:</strong></p>
+                <p>• <strong>W, A, S, D</strong> или <strong>Стрелочки</strong> – Передвижение.</p>
+                <p>• <strong>Мышь</strong> – Прицеливание (поворот персонажа).</p>
+                <p>• <strong>Левая кнопка мыши (ЛКМ)</strong> – Стрельба.</p>
+                <p>• <strong>Shift (зажать)</strong> – Бег (расходует Выносливость).</p>
+                <p>• <strong>Клавиши 1, 2, 3</strong> – Смена оружия (Пистолет, Автомат, Дробовик).</p>
+                <p>• <strong>Клавиши 4, 5, 6, 7</strong> – Быстрое использование предметов.</p>
+                <p>• <strong>Пробел / Зажать ЛКМ</strong> – Рубить деревья / Собирать хлам.</p>
+                <p>• <strong>E (или клик по поезду)</strong> – Войти в паровоз (на станции).</p>
+                <p>• <strong>ESC</strong> – Пауза / Меню настроек во время боя.</p>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="volume-range" style="font-weight: 600; display: block; margin-bottom: 6px;">🔊 Громкость звуков:</label>
+                <input type="range" id="volume-range" min="0" max="1" step="0.05" value="0.4" style="width:100%; cursor: pointer;" oninput="changeVolume(this.value)">
+            </div>
+
+            <button class="menu-btn btn-danger" onclick="resetSaveData()" style="padding: 0.6rem; font-size: 0.9rem; margin-bottom: 1.5rem;">Сбросить прогресс игры</button>
+            <button class="menu-btn" onclick="closeSettings()" style="padding: 0.8rem;">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- 3. ТУТОРИАЛ (ИНТЕРАКТИВНЫЕ ПОДСКАЗКИ) -->
+    <div id="tutorial-overlay" class="overlay">
+        <div class="glass-panel tutorial-box">
+            <div class="tutorial-icon" id="tutorial-icon">💡</div>
+            <h3 class="tutorial-title" id="tutorial-title">Обучение</h3>
+            <p class="tutorial-text" id="tutorial-text">Текст подсказки здесь...</p>
+            <button class="menu-btn" onclick="closeTutorialPopup()" style="padding: 0.6rem; font-size: 0.9rem; margin: 0;">Понятно</button>
+        </div>
+    </div>
+
+    <!-- 4. HUD (ИНТЕРФЕЙС ИГРЫ) -->
+    <div id="hud-container">
+        <!-- Показатели (левый верх) -->
+        <div class="hud-stats-panel hud-element">
+            <div class="stat-row">
+                <span class="stat-icon">❤️</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar bar-hp" id="hud-hp" style="width: 100%;"></div>
+                    <div class="stat-text" id="hud-hp-txt">100/100</div>
+                </div>
+            </div>
+            <div class="stat-row">
+                <span class="stat-icon">🍖</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar bar-hunger" id="hud-hunger" style="width: 100%;"></div>
+                    <div class="stat-text" id="hud-hunger-txt">100/100</div>
+                </div>
+            </div>
+            <div class="stat-row">
+                <span class="stat-icon">💧</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar bar-thirst" id="hud-thirst" style="width: 100%;"></div>
+                    <div class="stat-text" id="hud-thirst-txt">100/100</div>
+                </div>
+            </div>
+            <div class="stat-row">
+                <span class="stat-icon">⚡</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar bar-stamina" id="hud-stamina" style="width: 100%;"></div>
+                    <div class="stat-text" id="hud-stamina-txt">100/100</div>
+                </div>
+            </div>
+            <!-- Радиация (появляется только в зараженной зоне) -->
+            <div class="stat-row" id="rad-row">
+                <span class="stat-icon">☢️</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar bar-rad" id="hud-rad" style="width: 0%;"></div>
+                    <div class="stat-text" id="hud-rad-txt">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Уровень (центр верх) -->
+        <div class="hud-level-panel hud-element">
+            <span class="level-text" id="hud-lvl">УРОВЕНЬ 1</span>
+            <div class="xp-bar-container">
+                <div class="xp-bar" id="hud-xp" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- Оружие (правый верх) -->
+        <div class="hud-weapon-panel hud-element">
+            <div class="weapon-title">Оружие</div>
+            <div class="weapon-name" id="hud-wpn-name">Пистолет</div>
+            <div class="weapon-ammo" id="hud-wpn-ammo">45 / ∞</div>
+        </div>
+
+        <!-- Журнал логов (левый низ) -->
+        <div id="game-log"></div>
+
+        <!-- Дрова и Металлолом (левый низ выше лога) -->
+        <div class="hud-mats-panel hud-element" style="bottom: 1.5rem;">
+            <div class="mat-item">
+                <span class="mat-icon">🪵</span> Дрова:
+                <span class="mat-amount" id="hud-wood">5 / 30</span>
+            </div>
+            <div class="mat-item">
+                <span class="mat-icon">⚙️</span> Хлам:
+                <span class="mat-amount" id="hud-scrap">2</span>
+            </div>
+            <div class="mat-item">
+                <span class="mat-icon">🎭</span> Противогаз:
+                <span class="mat-amount" id="hud-gasmask">50%</span>
+            </div>
+        </div>
+
+        <!-- Быстрый инвентарь (центр низ) -->
+        <div class="hud-inventory-panel hud-element">
+            <div class="inv-slot active" id="slot-wpn-1" onclick="selectWeaponFromSlot(1)">
+                <span class="inv-slot-key">1</span>
+                <span class="inv-slot-icon">🔫</span>
+                <span class="inv-slot-amount" id="slot-wpn-1-txt">🔫</span>
+            </div>
+            <div class="inv-slot" id="slot-wpn-2" onclick="selectWeaponFromSlot(2)">
+                <span class="inv-slot-key">2</span>
+                <span class="inv-slot-icon">💥</span>
+                <span class="inv-slot-amount" id="slot-wpn-2-txt">блокирован</span>
+            </div>
+            <div class="inv-slot" id="slot-wpn-3" onclick="selectWeaponFromSlot(3)">
+                <span class="inv-slot-key">3</span>
+                <span class="inv-slot-icon">🔥</span>
+                <span class="inv-slot-amount" id="slot-wpn-3-txt">блокирован</span>
+            </div>
+            <!-- Еда -->
+            <div class="inv-slot" onclick="consumeItemFromSlot('food')">
+                <span class="inv-slot-key">4</span>
+                <span class="inv-slot-icon">🥫</span>
+                <span class="inv-slot-amount" id="slot-food-txt">x3</span>
+            </div>
+            <!-- Вода -->
+            <div class="inv-slot" onclick="consumeItemFromSlot('water')">
+                <span class="inv-slot-key">5</span>
+                <span class="inv-slot-icon">🥤</span>
+                <span class="inv-slot-amount" id="slot-water-txt">x3</span>
+            </div>
+            <!-- Аптечка -->
+            <div class="inv-slot" onclick="consumeItemFromSlot('medkit')">
+                <span class="inv-slot-key">6</span>
+                <span class="inv-slot-icon">➕</span>
+                <span class="inv-slot-amount" id="slot-medkit-txt">x1</span>
+            </div>
+            <!-- Фильтр -->
+            <div class="inv-slot" onclick="consumeItemFromSlot('gasmask')">
+                <span class="inv-slot-key">7</span>
+                <span class="inv-slot-icon">🎭</span>
+                <span class="inv-slot-amount" id="slot-gasmask-txt">x0</span>
+            </div>
+        </div>
+
+        <!-- Мини-карта (правый низ) -->
+        <div class="hud-minimap-panel hud-element">
+            <canvas id="minimap-canvas" width="100" height="100"></canvas>
+        </div>
+    </div>
+
+    <!-- 5. МЕНЮ СТАНЦИИ (ПАРОВОЗ, КРАФТ, УЛУЧШЕНИЯ) -->
+    <div id="station-menu-overlay" class="overlay">
+        <div class="glass-panel station-box">
+            <!-- Sidebar -->
+            <div class="station-sidebar">
+                <h3 id="sidebar-station-title">СТАНЦИЯ</h3>
+                <button class="tab-btn active" onclick="switchStationTab('location')">
+                    <span class="tab-btn-icon">🌍</span>Локация
+                </button>
+                <button class="tab-btn" onclick="switchStationTab('crafting')">
+                    <span class="tab-btn-icon">⚒️</span>Верстак
+                </button>
+                <button class="tab-btn" onclick="switchStationTab('locomotive')">
+                    <span class="tab-btn-icon">🚂</span>Паровоз
+                </button>
+                <button class="tab-btn" onclick="switchStationTab('survivor')">
+                    <span class="tab-btn-icon">👤</span>Персонаж
+                </button>
+                <button class="tab-btn" onclick="switchStationTab('route-map')">
+                    <span class="tab-btn-icon">🗺️</span>Карта путей
+                </button>
+                <!-- Динамические вкладки, если на станции есть торговец или квестодатель -->
+                <button class="tab-btn" id="tab-trader" style="display:none;" onclick="switchStationTab('trade')">
+                    <span class="tab-btn-icon">⚖️</span>Торговец
+                </button>
+                <button class="tab-btn" id="tab-dialog" style="display:none;" onclick="switchStationTab('dialog')">
+                    <span class="tab-btn-icon">💬</span>Выживший
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="station-content">
+                <!-- 5.A Вкладка Локации -->
+                <div class="tab-panel active" id="panel-location">
+                    <h2 class="tab-title" id="panel-loc-title">Стартовая станция</h2>
+                    <p class="tab-desc" id="panel-loc-desc">Безопасное место. Здесь вы нашли заброшенный паровоз. Соберите дрова и подготовьтесь к пути.</p>
+                    
+                    <div class="loc-details-box">
+                        <div class="loc-info-row">
+                            <span>Угроза:</span>
+                            <span class="loc-badge badge-low" id="panel-loc-threat">Минимальная</span>
+                        </div>
+                        <div class="loc-info-row">
+                            <span>Радиация:</span>
+                            <span class="loc-badge badge-low" id="panel-loc-rad">Отсутствует</span>
+                        </div>
+                        <div class="loc-info-row">
+                            <span>Основные ресурсы:</span>
+                            <span style="font-weight: 600;" id="panel-loc-mats">Дрова, Ягоды</span>
+                        </div>
+                    </div>
+
+                    <button class="menu-btn" style="margin-top: auto; margin-bottom: 0;" onclick="enterTacticalMap()">Выйти из поезда (Исследовать)</button>
+                </div>
+
+                <!-- 5.B Вкладка Крафта -->
+                <div class="tab-panel" id="panel-crafting">
+                    <h2 class="tab-title">Верстак Крафта</h2>
+                    <p class="tab-desc">Используйте собранный металлолом и ресурсы для создания предметов.</p>
+                    
+                    <div class="craft-grid" id="craft-items-list">
+                        <!-- Сюда вставляется крафт через JS -->
+                    </div>
+                </div>
+
+                <!-- 5.C Вкладка Паровоза -->
+                <div class="tab-panel" id="panel-locomotive">
+                    <h2 class="tab-title">Управление Паровозом</h2>
+                    <p class="tab-desc">Следите за топкой и улучшайте детали паровоза для выживания на рельсах.</p>
+                    
+                    <div class="train-boiler-box">
+                        <div class="boiler-title">
+                            <span>🔥 Топливо в топке:</span>
+                            <span id="boiler-fuel-txt">50 / 100</span>
+                        </div>
+                        <div class="boiler-gauge">
+                            <div class="boiler-bar" id="boiler-fuel-fill" style="width: 50%;"></div>
+                        </div>
+                        <button class="craft-btn" onclick="addFuelToBoiler()" id="boiler-refuel-btn" style="padding: 6px 12px; width: 100%;">Загрузить дрова (+5 топлива за 1 дрова)</button>
+                    </div>
+
+                    <div class="train-upgrade-list">
+                        <!-- Двигатель -->
+                        <div class="train-upgrade-row">
+                            <div class="upg-info">
+                                <span class="upg-name" id="upg-engine-name">Модернизация Двигателя (Ур. 0)</span>
+                                <span class="upg-desc">-15% расход топлива при переезде</span>
+                            </div>
+                            <button class="craft-btn" id="upg-engine-btn" onclick="upgradeTrain('engine')">Улучшить (⚙️5)</button>
+                        </div>
+                        <!-- Броня -->
+                        <div class="train-upgrade-row">
+                            <div class="upg-info">
+                                <span class="upg-name" id="upg-armor-name">Усиление Брони (Ур. 0)</span>
+                                <span class="upg-desc">Снижает урон и кражи при рейдах рейдеров</span>
+                            </div>
+                            <button class="craft-btn" id="upg-armor-btn" onclick="upgradeTrain('armor')">Улучшить (⚙️6)</button>
+                        </div>
+                        <!-- Склад -->
+                        <div class="train-upgrade-row">
+                            <div class="upg-info">
+                                <span class="upg-name" id="upg-storage-name">Расширение Склада (Ур. 0)</span>
+                                <span class="upg-desc">Увеличивает вместимость дров (сейчас макс: 30)</span>
+                            </div>
+                            <button class="craft-btn" id="upg-storage-btn" onclick="upgradeTrain('storage')">Улучшить (⚙️4)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5.D Вкладка Персонажа -->
+                <div class="tab-panel" id="panel-survivor">
+                    <h2 class="tab-title">Умения и Статистика</h2>
+                    <p class="tab-desc">Распределяйте очки навыков, полученные при повышении уровня.</p>
+                    
+                    <div class="char-stats-container">
+                        <div class="char-stat-card">
+                            <h3 style="color: var(--gold-accent); margin-bottom: 8px;">Статус</h3>
+                            <p style="margin-bottom: 4px;">Текущий уровень: <strong id="char-lvl">1</strong></p>
+                            <p style="margin-bottom: 4px;">Опыт (XP): <strong id="char-xp">0 / 100</strong></p>
+                            <p>Очки навыков: <strong style="color: var(--primary-accent);" id="char-points">0</strong></p>
+                        </div>
+                        <div class="char-stat-card">
+                            <h3 style="color: var(--cyan-accent); margin-bottom: 8px;">Показатели</h3>
+                            <p style="margin-bottom: 4px;">Макс Здоровье: <span id="char-max-hp">100</span> HP</p>
+                            <p style="margin-bottom: 4px;">Макс Выносливость: <span id="char-max-stamina">100</span></p>
+                            <p>Урон оружия: <span id="char-dmg-mult">+0%</span></p>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom: 8px;">Ветки Выживания</h3>
+                    <div class="skills-list">
+                        <!-- Сила -->
+                        <div class="skill-row">
+                            <div>
+                                <span class="skill-name">Сила (Качает здоровье, вместимость и дробовики)</span>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">+15 макс. здоровья, +15% урона дробовиков за очко</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="skill-lvl" id="skill-strength-lvl">0 / 5</span>
+                                <button class="skill-plus-btn" onclick="addSkillPoint('strength')">+</button>
+                            </div>
+                        </div>
+                        <!-- Ловкость -->
+                        <div class="skill-row">
+                            <div>
+                                <span class="skill-name">Ловкость (Качает скорость, перезарядку и автоматы)</span>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">+10% скорости бега, +10% скорострельности автоматов за очко</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="skill-lvl" id="skill-agility-lvl">0 / 5</span>
+                                <button class="skill-plus-btn" onclick="addSkillPoint('agility')">+</button>
+                            </div>
+                        </div>
+                        <!-- Выживание -->
+                        <div class="skill-row">
+                            <div>
+                                <span class="skill-name">Выживание (Качает медленный голод и фильтры)</span>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">-15% скорость голода/жажды, +20% прочность брони/противогаза за очко</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="skill-lvl" id="skill-survival-lvl">0 / 5</span>
+                                <button class="skill-plus-btn" onclick="addSkillPoint('survival')">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5.E Вкладка Карты Путей -->
+                <div class="tab-panel" id="panel-route-map">
+                    <h2 class="tab-title">Карта Железных Дорог</h2>
+                    <p class="tab-desc">Переезжайте на следующие станции. Конечная цель — Горный бункер.</p>
+                    
+                    <div class="route-map-container" id="route-stations-list">
+                        <!-- Загружается через JS -->
+                    </div>
+                </div>
+
+                <!-- 5.F Вкладка Торговца (Динамическая) -->
+                <div class="tab-panel" id="panel-trade">
+                    <h2 class="tab-title">Торговая Лавка</h2>
+                    <p class="tab-desc">Обменяйте излишки ресурсов на полезные припасы.</p>
+                    
+                    <div class="npc-box">
+                        <div class="npc-avatar">🧓</div>
+                        <div class="npc-dialog-side">
+                            <div class="npc-name" id="trader-name">Сидорович</div>
+                            <div class="npc-text" id="trader-dialog-txt">«Заходи, не бойся. У меня есть отличные патроны и аптечки. Принимаю дрова и хлам.»</div>
+                            <div class="npc-actions" id="trader-actions-list">
+                                <!-- Список сделок через JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5.G Вкладка Квеста (Динамическая) -->
+                <div class="tab-panel" id="panel-dialog">
+                    <h2 class="tab-title">Встреча на Станции</h2>
+                    <p class="tab-desc">Взаимодействие с выжившими.</p>
+                    
+                    <div class="npc-box">
+                        <div class="npc-avatar">🤕</div>
+                        <div class="npc-dialog-side">
+                            <div class="npc-name" id="npc-name">Раненый Выживший</div>
+                            <div class="npc-text" id="npc-dialog-txt">«Помоги мне... Меня покусали зомби, мне срочно нужна аптечка. Я отдам все свои металлы!»</div>
+                            <div class="npc-actions" id="npc-dialog-actions">
+                                <!-- Кнопки действий -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. ЭКРАН ПЕРЕЕЗДА (АНИМАЦИЯ ПОЕЗДА) -->
+    <div id="travel-overlay" class="overlay">
+        <div class="travel-track-visual">
+            <div class="travel-track-sleepers"></div>
+            <div class="travel-train-icon">🚂</div>
+        </div>
+        <div class="travel-status" id="travel-status-txt">Паровоз отправляется в путь...</div>
+        <div class="travel-subtext" id="travel-subtext-txt">На следующей станции нас ждут новые опасности и припасы.</div>
+        <div class="travel-progress-bar">
+            <div class="travel-progress-fill" id="travel-progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- 7. ЭКРАН ПОРАЖЕНИЯ (GAME OVER) -->
+    <div id="gameover-overlay" class="overlay">
+        <div class="glass-panel" style="width: 450px;">
+            <h1 class="gameover-title">ВЫ ПОГИБЛИ</h1>
+            <p style="margin-bottom: 2rem; color: var(--text-muted); line-height: 1.4;">Выжившие не смогли добраться до бункера. Ваше путешествие оборвалось в пустошах...</p>
+            <button class="menu-btn" onclick="loadSavedGame()" id="gameover-retry-btn">Загрузить сохранение</button>
+            <button class="menu-btn btn-danger" onclick="goToMainMenu()">Главное Меню</button>
+        </div>
+    </div>
+
+    <!-- 8. ЭКРАН ПОБЕДЫ (WIN) -->
+    <div id="win-overlay" class="overlay">
+        <div class="glass-panel" style="width: 500px;">
+            <h1 class="win-title">БУНКЕР ДОСТИГНУТ!</h1>
+            <p style="color: var(--primary-accent); font-weight: bold; margin-bottom: 1rem; font-size: 1.2rem;">ПОБЕДА!</p>
+            <p style="margin-bottom: 2rem; color: var(--text-muted); line-height: 1.5; text-align: left;">
+                Вы победили гигантского Сверхмутанта в Бункере «Омега» и открыли гермозатвор. 
+                Ваши выжившие и поезд в безопасности под надежной защитой горных укреплений. 
+                Человечество получило новый шанс на спасение!
+            </p>
+            <button class="menu-btn" onclick="goToMainMenu()">В Главное Меню</button>
+        </div>
+    </div>
+
+    <!-- 9. МЕНЮ ПАУЗЫ (ESC) -->
+    <div id="pause-overlay" class="overlay">
+        <div class="glass-panel menu-content">
+            <h2 class="game-title" style="color: var(--primary-accent); text-shadow: 0 0 10px rgba(163,230,53,0.5);">ИГРА ПАУЗА</h2>
+            <p class="game-subtitle" style="margin-bottom: 2rem;">Вылазка приостановлена</p>
+            <button class="menu-btn" onclick="resumeGameFromPause()">Продолжить бой</button>
+            <button class="menu-btn" onclick="retreatToTrain()">Отступить в поезд (Потеря 20% лога дров/хлама)</button>
+            <button class="menu-btn btn-danger" onclick="goToMainMenu()">Выйти в меню</button>
+        </div>
+    </div>
+
+    <!-- Звуковой синтезатор Web Audio API & Логика игры -->
+    <script>
+        // Декларируем дизайн диалы по правилам tasteskill
+        // DESIGN_VARIANCE: 8
+        // MOTION_INTENSITY: 7
+        // VISUAL_DENSITY: 6
+        console.log("Design Read: Top-down postapoc tactical survival shooter with retro pixel canvas textures, custom browser audio synthesiser, and full responsive HTML layout.");
+
+        // =========================================================================
+        // 1. ВЕБ АУДИО СИНТЕЗАТОР ЗВУКОВ (БЕЗ ВНЕШНИХ ФАЙЛОВ)
+        // =========================================================================
+        class SoundSynth {
+            constructor() {
+                this.ctx = null;
+                this.masterGain = null;
+                this.volume = 0.4;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
+                    this.masterGain.connect(this.ctx.destination);
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            setVolume(vol) {
+                this.volume = parseFloat(vol);
+                if (this.masterGain && this.ctx) {
+                    this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
+                }
+            }
+
+            // Выстрел
+            playShoot(type) {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+
+                if (type === 'pistol') {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(450, t);
+                    osc.frequency.exponentialRampToValueAtTime(60, t + 0.12);
+                    gain.gain.setValueAtTime(0.3, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+                    osc.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc.start(t);
+                    osc.stop(t + 0.12);
+                } 
+                else if (type === 'rifle') {
+                    // Шумовой выстрел автомата
+                    let bufferSize = this.ctx.sampleRate * 0.08;
+                    let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    let data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    let noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    let filter = this.ctx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(800, t);
+
+                    let gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.35, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.masterGain);
+
+                    noise.start(t);
+                    noise.stop(t + 0.08);
+                } 
+                else if (type === 'shotgun') {
+                    // Громкий басовый бум дробовика (несколько частот)
+                    for (let i = 0; i < 3; i++) {
+                        let osc = this.ctx.createOscillator();
+                        let gain = this.ctx.createGain();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(110 + i * 25, t + i * 0.005);
+                        osc.frequency.exponentialRampToValueAtTime(30, t + 0.25);
+                        gain.gain.setValueAtTime(0.4, t + i * 0.005);
+                        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+                        osc.connect(gain);
+                        gain.connect(this.masterGain);
+                        osc.start(t + i * 0.005);
+                        osc.stop(t + 0.25);
+                    }
+                }
+            }
+
+            // Попадание по плоти / врагу
+            playHit() {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, t);
+                osc.frequency.linearRampToValueAtTime(40, t + 0.06);
+                gain.gain.setValueAtTime(0.12, t);
+                gain.gain.linearRampToValueAtTime(0.01, t + 0.06);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(t);
+                osc.stop(t + 0.06);
+            }
+
+            // Сбор ресурса
+            playCollect() {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, t);
+                osc.frequency.setValueAtTime(640, t + 0.08);
+                gain.gain.setValueAtTime(0.15, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(t);
+                osc.stop(t + 0.18);
+            }
+
+            // Смерть врага
+            playDeath() {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(80, t);
+                osc.frequency.exponentialRampToValueAtTime(20, t + 0.35);
+                gain.gain.setValueAtTime(0.25, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(t);
+                osc.stop(t + 0.35);
+            }
+
+            // Звук движения поезда (чух-чух)
+            playChug() {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                let bufferSize = this.ctx.sampleRate * 0.12;
+                let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                let data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                let noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                let filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(160, t);
+
+                let gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.18, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                noise.start(t);
+                noise.stop(t + 0.12);
+            }
+
+            // Треск счетчика Гейгера (Радиация)
+            playRadWarning() {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(2800, t);
+                gain.gain.setValueAtTime(0.03, t);
+                gain.gain.linearRampToValueAtTime(0.001, t + 0.02);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(t);
+                osc.stop(t + 0.02);
+            }
+
+            // Повышение уровня
+            playLevelUp() {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                let freqs = [261.6, 329.6, 392.0, 523.3, 659.3, 784.0, 1046.5];
+                freqs.forEach((f, idx) => {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, t + idx * 0.06);
+                    gain.gain.setValueAtTime(0.12, t + idx * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.005, t + idx * 0.06 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc.start(t + idx * 0.06);
+                    osc.stop(t + idx * 0.06 + 0.2);
+                });
+            }
+        }
+
+        const sound = new SoundSynth();
+
+        function changeVolume(value) {
+            sound.setVolume(value);
+        }
+
+        // =========================================================================
+        // 2. ДАННЫЕ О ЛОКАЦИЯХ И ИГРОВОМ СОСТОЯНИИ
+        // =========================================================================
+        const LOCATIONS = [
+            {
+                name: "Станция «Рассвет»",
+                description: "Безопасная точка. Здесь вы нашли старый маневровый паровоз. Соберите базовые припасы и дрова, чтобы начать движение.",
+                type: "station",
+                theme: "grass",
+                size: 32, // размер сетки 32x32
+                radiation: 0,
+                fuelCost: 0,
+                npc: { 
+                    name: "Дед Степан", 
+                    text: "Здорово, малец! Паровоз-то на ходу, да топке дрова нужны. Пойди в лес вон на восток, наруби дровишек (подходи к деревьям и руби на Пробел). Нам надо заправить котел!",
+                    questItem: null
+                },
+                enemies: { zombie: 2, zombie_fast: 0, zombie_fat: 0, raider: 0, mutant: 0 },
+                resources: { wood: 8, food: 3, water: 3, scrap: 4, ammo: 25, medkit: 1, gasmask: 0 }
+            },
+            {
+                name: "Тихий Лес",
+                description: "Густой хвойный лес. Здесь огромное количество сухих дров и диких ягод, но в чащах прячутся восставшие мертвецы.",
+                type: "forest",
+                theme: "grass",
+                size: 40,
+                radiation: 0,
+                fuelCost: 15,
+                npc: null,
+                enemies: { zombie: 10, zombie_fast: 4, zombie_fat: 1, raider: 0, mutant: 0 },
+                resources: { wood: 24, food: 6, water: 3, scrap: 6, ammo: 30, medkit: 2, gasmask: 1 }
+            },
+            {
+                name: "Зараженный Город",
+                description: "Разрушенный радиационный пригород. Радиация смертельна без фильтров противогаза! Но в руинах полно ценных армейских медикаментов.",
+                type: "city",
+                theme: "city",
+                size: 45,
+                radiation: 1.5, // Сила радиации в секунду
+                fuelCost: 25,
+                npc: null,
+                enemies: { zombie: 14, zombie_fast: 8, zombie_fat: 4, raider: 0, mutant: 0 },
+                resources: { wood: 4, food: 5, water: 4, scrap: 15, ammo: 50, medkit: 6, gasmask: 3 }
+            },
+            {
+                name: "Ржавая Пустошь",
+                description: "Бесплодная каменистая равнина, контролируемая бандами рейдеров. Они хорошо вооружены и нападают без предупреждения.",
+                type: "wasteland",
+                theme: "sand",
+                size: 40,
+                radiation: 0,
+                fuelCost: 30,
+                npc: {
+                    name: "Раненый Торговец",
+                    text: "Кхе-кхе... Рейдеры зажали меня. Дай мне Аптечку, и я поделюсь ценным металлоломом для твоих чертежей!",
+                    questItem: "medkit",
+                    rewardScrap: 18,
+                    rewardXp: 150
+                },
+                enemies: { zombie: 4, zombie_fast: 2, zombie_fat: 0, raider: 11, mutant: 0 },
+                resources: { wood: 5, food: 4, water: 4, scrap: 20, ammo: 40, medkit: 3, gasmask: 1 }
+            },
+            {
+                name: "Железнодорожный Туннель",
+                description: "Заброшенный глухой туннель под холмами. Царит кромешная тьма, ваш фонарик освещает лишь малую зону. Остерегайтесь проворных мутантов.",
+                type: "tunnel",
+                theme: "tunnel",
+                size: 45,
+                radiation: 0.5,
+                fuelCost: 35,
+                npc: null,
+                enemies: { zombie: 3, zombie_fast: 3, zombie_fat: 0, raider: 0, mutant: 12 },
+                resources: { wood: 2, food: 3, water: 3, scrap: 14, ammo: 60, medkit: 5, gasmask: 2 }
+            },
+            {
+                name: "Военный Блокпост",
+                description: "Укрепленный аванпост бывшей регулярной армии. Сейчас захвачен бандами наемников. Тяжелый бой, но здесь лежат ящики с лучшим снаряжением.",
+                type: "military",
+                theme: "asphalt",
+                size: 50,
+                radiation: 0,
+                fuelCost: 40,
+                npc: null,
+                enemies: { zombie: 0, zombie_fast: 0, zombie_fat: 0, raider: 16, mutant: 3 },
+                resources: { wood: 2, food: 7, water: 7, scrap: 22, ammo: 80, medkit: 6, gasmask: 3 }
+            },
+            {
+                name: "Бункер «Омега»",
+                description: "Финальное укрытие человечества в горах. Ворота заблокированы системой управления лаборатории, которую охраняет гигантский Сверхмутант.",
+                type: "bunker",
+                theme: "bunker",
+                size: 45,
+                radiation: 1.2,
+                fuelCost: 45,
+                npc: null,
+                enemies: { zombie: 8, zombie_fast: 4, zombie_fat: 2, raider: 0, mutant: 4, boss: 1 },
+                resources: { wood: 0, food: 5, water: 5, scrap: 10, ammo: 90, medkit: 8, gasmask: 4 }
+            }
+        ];
+
+        // Глобальный объект состояния
+        let gameState = {
+            currentLocationIndex: 0,
+            
+            // Жизненные показатели
+            hp: 100,
+            hunger: 100,
+            thirst: 100,
+            stamina: 100,
+            radiation: 0,
+            
+            // Развитие
+            level: 1,
+            xp: 0,
+            skillPoints: 0,
+            skills: {
+                strength: 0,  // +15 HP, +15% урон дробовика, +лимит дерева
+                agility: 0,   // +10% скорость бега, +10% темп стрельбы автомата, +15 стамина
+                survival: 0   // -15% трата еды/воды, +20% прочность фильтра/брони
+            },
+            
+            // Ресурсы в инвентаре
+            inventory: {
+                wood: 5,
+                scrap: 2,
+                ammo_pistol: 60,
+                ammo_rifle: 0,
+                ammo_shotgun: 0,
+                food: 3,
+                water: 3,
+                medkit: 1,
+                gasmask: 50 // Заряд фильтра в процентах (0-100)
+            },
+            
+            // Улучшения поезда
+            trainUpgrades: {
+                engine: 0,   // Уровень 0-3
+                armor: 0,    // Уровень 0-3
+                storage: 0   // Уровень 0-3
+            },
+            trainFuel: 40,   // Топливо в котле поезда
+            
+            // Экипировка и улучшения
+            hasArmor: false,
+            weaponUpgrades: {
+                pistol: 0,
+                rifle: 0,
+                shotgun: 0
+            },
+            waterFilter: false,
+            
+            // Квестовые состояния
+            questMedkitDelivered: false
+        };
+
+        // Максимальные ограничения на основе прокачки
+        function getMaxHp() {
+            return 100 + gameState.skills.strength * 15;
+        }
+
+        function getMaxStamina() {
+            return 100 + gameState.skills.agility * 15;
+        }
+
+        function getMaxWoodCapacity() {
+            return 30 + gameState.trainUpgrades.storage * 25;
+        }
+
+        function getWeaponDamage(type) {
+            let baseDmg = (type === 'pistol') ? 22 : (type === 'rifle') ? 16 : 14; // 14 на одну дробинку (всего 5)
+            let upgMult = 1 + (gameState.weaponUpgrades[type] || 0) * 0.25;
+            let skillMult = 1;
+            if (type === 'shotgun') {
+                skillMult += gameState.skills.strength * 0.15;
+            } else if (type === 'rifle') {
+                skillMult += gameState.skills.agility * 0.10;
+            }
+            return Math.round(baseDmg * upgMult * skillMult);
+        }
+
+        // =========================================================================
+        // 3. СОХРАНЕНИЕ / ЗАГРУЗКА ЧЕРЕЗ LOCALSTORAGE
+        // =========================================================================
+        function saveGameData() {
+            localStorage.setItem('last_train_save', JSON.stringify(gameState));
+            updateMenuButtons();
+        }
+
+        function loadGameData() {
+            let raw = localStorage.getItem('last_train_save');
+            if (raw) {
+                try {
+                    gameState = JSON.parse(raw);
+                    // Валидация на целостность структуры
+                    if (!gameState.skills) gameState.skills = { strength:0, agility:0, survival:0 };
+                    if (!gameState.trainUpgrades) gameState.trainUpgrades = { engine:0, armor:0, storage:0 };
+                    if (!gameState.weaponUpgrades) gameState.weaponUpgrades = { pistol:0, rifle:0, shotgun:0 };
+                    return true;
+                } catch(e) {
+                    console.error("Ошибка чтения сохранения", e);
+                }
+            }
+            return false;
+        }
+
+        function resetSaveData() {
+            if (confirm("Вы уверены, что хотите полностью стереть текущий прогресс игры?")) {
+                localStorage.removeItem('last_train_save');
+                alert("Сохранение удалено.");
+                location.reload();
+            }
+        }
+
+        function updateMenuButtons() {
+            let hasSave = localStorage.getItem('last_train_save') !== null;
+            document.getElementById('continue-btn').disabled = !hasSave;
+        }
+
+        // =========================================================================
+        // 4. НАСТРОЙКИ И ТУТОРИАЛЫ
+        // =========================================================================
+        let tutorialFlags = {
+            movement: false,
+            tree: false,
+            scrap: false,
+            train: false,
+            enemy: false,
+            rad: false
+        };
+
+        function checkTutorial(flag, title, text, icon="💡") {
+            if (tutorialFlags[flag]) return;
+            tutorialFlags[flag] = true;
+            showTutorialPopup(title, text, icon);
+        }
+
+        function showTutorialPopup(title, text, icon="💡") {
+            document.getElementById('tutorial-icon').innerText = icon;
+            document.getElementById('tutorial-title').innerText = title;
+            document.getElementById('tutorial-text').innerText = text;
+            document.getElementById('tutorial-overlay').style.display = 'flex';
+            if (activeGameScene && activeGameScene.scene.isActive()) {
+                activeGameScene.scene.pause();
+            }
+        }
+
+        function closeTutorialPopup() {
+            document.getElementById('tutorial-overlay').style.display = 'none';
+            if (activeGameScene && activeGameScene.scene.isPaused()) {
+                activeGameScene.scene.resume();
+            }
+        }
+
+        function openSettings() {
+            document.getElementById('settings-overlay').style.display = 'flex';
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-overlay').style.display = 'none';
+        }
+
+        // =========================================================================
+        // 5. РАСХОД ЖИЗНЕННЫХ ПОКАЗАТЕЛЕЙ (ВРЕМЯ В ПОХОДЕ)
+        // =========================================================================
+        function updateLifeStats(deltaSeconds, isMoving, isSprinting) {
+            let survivalMod = 1 - gameState.skills.survival * 0.15; // Навык снижает трату
+            
+            // Расход голода и жажды
+            let hungerRate = (isSprinting ? 0.12 : isMoving ? 0.07 : 0.04) * survivalMod;
+            let thirstRate = (isSprinting ? 0.15 : isMoving ? 0.09 : 0.05) * survivalMod;
+            
+            gameState.hunger = Math.max(0, gameState.hunger - hungerRate * deltaSeconds);
+            gameState.thirst = Math.max(0, gameState.thirst - thirstRate * deltaSeconds);
+            
+            // Радиация на уровне
+            let loc = LOCATIONS[gameState.currentLocationIndex];
+            let inRadZone = false;
+            
+            // Проверка близости к радиоактивным бочкам в тактической сцене
+            if (activeGameScene && activeGameScene.scene.isActive()) {
+                inRadZone = activeGameScene.checkRadProximity(120);
+            }
+            
+            let radIntensity = loc.radiation;
+            if (inRadZone) {
+                radIntensity += 2.0; // Бочки добавляют радиацию
+            }
+
+            if (radIntensity > 0) {
+                document.getElementById('rad-row').style.display = 'flex';
+                // Если есть противогаз
+                if (gameState.inventory.gasmask > 0) {
+                    // Тратим заряд противогаза
+                    let filterDepletion = 1.2 * radIntensity * (1 - gameState.skills.survival * 0.15);
+                    gameState.inventory.gasmask = Math.max(0, gameState.inventory.gasmask - filterDepletion * deltaSeconds);
+                } else {
+                    // Копим радиацию
+                    gameState.radiation = Math.min(100, gameState.radiation + radIntensity * 1.5 * deltaSeconds);
+                    checkTutorial('rad', '☢️ Опасная Радиация!', 'Вы находитесь в радиоактивной зоне без фильтра противогаза! Здоровье начнет быстро падать, когда шкала радиации заполнится. Срочно скрафтите Фильтр на верстаке поезда.', '☢️');
+                }
+            } else {
+                // Вне зоны радиация медленно спадает
+                gameState.radiation = Math.max(0, gameState.radiation - 0.4 * deltaSeconds);
+                if (gameState.radiation === 0) {
+                    document.getElementById('rad-row').style.display = 'none';
+                }
+            }
+
+            // Нанесение урона от критических состояний
+            let damageFromStats = 0;
+            if (gameState.hunger <= 0) damageFromStats += 1.0;
+            if (gameState.thirst <= 0) damageFromStats += 1.5;
+            if (gameState.radiation >= 100) {
+                damageFromStats += 4.0;
+                if (Math.random() < 0.1) sound.playRadWarning();
+            }
+
+            if (damageFromStats > 0) {
+                damagePlayer(damageFromStats * deltaSeconds, "голода и жажды");
+            }
+            
+            updateHudVisuals();
+        }
+
+        function damagePlayer(amount, sourceText="окружающей среды") {
+            if (gameState.hasArmor && sourceText.includes("атаки")) {
+                // Бронежилет срезает 30% урона от врагов
+                amount *= 0.7;
+            }
+            
+            gameState.hp = Math.max(0, gameState.hp - amount);
+            
+            if (gameState.hp <= 0) {
+                triggerGameOver();
+            }
+        }
+
+        // =========================================================================
+        // 6. HUD ОБНОВЛЕНИЕ
+        // =========================================================================
+        function updateHudVisuals() {
+            let maxHp = getMaxHp();
+            let maxStamina = getMaxStamina();
+            
+            document.getElementById('hud-hp').style.width = `${(gameState.hp / maxHp) * 100}%`;
+            document.getElementById('hud-hp-txt').innerText = `${Math.round(gameState.hp)}/${maxHp}`;
+            
+            document.getElementById('hud-hunger').style.width = `${gameState.hunger}%`;
+            document.getElementById('hud-hunger-txt').innerText = `${Math.round(gameState.hunger)}/100`;
+            
+            document.getElementById('hud-thirst').style.width = `${gameState.thirst}%`;
+            document.getElementById('hud-thirst-txt').innerText = `${Math.round(gameState.thirst)}/100`;
+            
+            document.getElementById('hud-stamina').style.width = `${(gameState.stamina / maxStamina) * 100}%`;
+            document.getElementById('hud-stamina-txt').innerText = `${Math.round(gameState.stamina)}/${maxStamina}`;
+            
+            document.getElementById('hud-rad').style.width = `${gameState.radiation}%`;
+            document.getElementById('hud-rad-txt').innerText = `${Math.round(gameState.radiation)}%`;
+            
+            document.getElementById('hud-lvl').innerText = `УРОВЕНЬ ${gameState.level}`;
+            let nextXp = gameState.level * 100;
+            document.getElementById('hud-xp').style.width = `${(gameState.xp / nextXp) * 100}%`;
+            
+            // Дрова / Хлам / Противогаз
+            document.getElementById('hud-wood').innerText = `${gameState.inventory.wood} / ${getMaxWoodCapacity()}`;
+            document.getElementById('hud-scrap').innerText = `${gameState.inventory.scrap}`;
+            document.getElementById('hud-gasmask').innerText = `${Math.round(gameState.inventory.gasmask)}%`;
+            
+            // Расходники
+            document.getElementById('slot-food-txt').innerText = `x${gameState.inventory.food}`;
+            document.getElementById('slot-water-txt').innerText = `x${gameState.inventory.water}`;
+            document.getElementById('slot-medkit-txt').innerText = `x${gameState.inventory.medkit}`;
+            document.getElementById('slot-gasmask-txt').innerText = `x${gameState.inventory.gasmask > 0 ? 1 : 0}`; // Показываем собранные фильтры
+
+            // Оружие
+            updateWeaponHud();
+        }
+
+        let currentActiveWeapon = 'pistol'; // 'pistol', 'rifle', 'shotgun'
+        
+        function updateWeaponHud() {
+            let name = 'Пистолет';
+            let ammo = `${gameState.inventory.ammo_pistol} / ∞`;
+            if (currentActiveWeapon === 'rifle') {
+                name = 'Автомат';
+                ammo = `${gameState.inventory.ammo_rifle}`;
+            } else if (currentActiveWeapon === 'shotgun') {
+                name = 'Дробовик';
+                ammo = `${gameState.inventory.ammo_shotgun}`;
+            }
+            document.getElementById('hud-wpn-name').innerText = name + (gameState.weaponUpgrades[currentActiveWeapon] > 0 ? ` +${gameState.weaponUpgrades[currentActiveWeapon]}` : '');
+            document.getElementById('hud-wpn-ammo').innerText = ammo;
+
+            // Подсвечиваем активный слот
+            document.getElementById('slot-wpn-1').classList.toggle('active', currentActiveWeapon === 'pistol');
+            document.getElementById('slot-wpn-2').classList.toggle('active', currentActiveWeapon === 'rifle');
+            document.getElementById('slot-wpn-3').classList.toggle('active', currentActiveWeapon === 'shotgun');
+
+            document.getElementById('slot-wpn-2-txt').innerText = gameState.inventory.ammo_rifle > 0 || gameState.weaponUpgrades.rifle > 0 ? 'АК-74' : 'заблокировано';
+            document.getElementById('slot-wpn-3-txt').innerText = gameState.inventory.ammo_shotgun > 0 || gameState.weaponUpgrades.shotgun > 0 ? 'МР-133' : 'заблокировано';
+        }
+
+        function selectWeaponFromSlot(num) {
+            if (num === 1) {
+                currentActiveWeapon = 'pistol';
+            } else if (num === 2) {
+                // Проверяем, есть ли патроны или куплено ли улучшение
+                if (gameState.inventory.ammo_rifle > 0 || gameState.weaponUpgrades.rifle > 0) {
+                    currentActiveWeapon = 'rifle';
+                } else {
+                    addLogMessage("У вас нет патронов для автомата или чертежа!", "warning");
+                    return;
+                }
+            } else if (num === 3) {
+                if (gameState.inventory.ammo_shotgun > 0 || gameState.weaponUpgrades.shotgun > 0) {
+                    currentActiveWeapon = 'shotgun';
+                } else {
+                    addLogMessage("У вас нет дроби для дробовика или чертежа!", "warning");
+                    return;
+                }
+            }
+            if (activeGameScene) {
+                activeGameScene.switchWeapon(currentActiveWeapon);
+            }
+            updateWeaponHud();
+        }
+
+        // Быстрое использование еды/воды/аптечек на кнопки 4, 5, 6, 7
+        function consumeItemFromSlot(type) {
+            if (type === 'food') {
+                if (gameState.inventory.food > 0) {
+                    gameState.inventory.food--;
+                    gameState.hunger = Math.min(100, gameState.hunger + 35);
+                    gameState.hp = Math.min(getMaxHp(), gameState.hp + 12);
+                    sound.playCollect();
+                    addLogMessage("🥫 Съедена тушенка (+35 сытости, +12 здоровья)", "system");
+                } else {
+                    addLogMessage("Нет еды!", "danger");
+                }
+            } else if (type === 'water') {
+                if (gameState.inventory.water > 0) {
+                    gameState.inventory.water--;
+                    let restore = gameState.waterFilter ? 75 : 45;
+                    gameState.thirst = Math.min(100, gameState.thirst + restore);
+                    sound.playCollect();
+                    addLogMessage(`🥤 Выпита чистая вода (+${restore} жажды)`, "system");
+                } else {
+                    addLogMessage("Нет чистой воды!", "danger");
+                }
+            } else if (type === 'medkit') {
+                if (gameState.inventory.medkit > 0) {
+                    gameState.inventory.medkit--;
+                    let heal = 50 + gameState.skills.survival * 10;
+                    gameState.hp = Math.min(getMaxHp(), gameState.hp + heal);
+                    sound.playCollect();
+                    addLogMessage(`➕ Использована аптечка (+${heal} здоровья)`, "system");
+                } else {
+                    addLogMessage("Нет аптечек!", "danger");
+                }
+            } else if (type === 'gasmask') {
+                // Зарядка фильтра
+                if (gameState.inventory.gasmask < 100) {
+                    // Используем дрова и хлам, если крафтим на лету, либо просто кнопку фильтра.
+                    // У нас по логике 7 клавиша перезаряжает фильтр из ресурсов (крафтит на ходу за 2 хлама + 1 дерево)
+                    if (gameState.inventory.scrap >= 2 && gameState.inventory.wood >= 1) {
+                        gameState.inventory.scrap -= 2;
+                        gameState.inventory.wood -= 1;
+                        gameState.inventory.gasmask = 100;
+                        sound.playCollect();
+                        addLogMessage("🎭 Фильтр противогаза заменен! Заряд 100%", "system");
+                    } else {
+                        addLogMessage("Недостаточно ресурсов (нужно: 2 Хлама, 1 Дрова)", "danger");
+                    }
+                } else {
+                    addLogMessage("Противогаз полностью заряжен!", "warning");
+                }
+            }
+            updateHudVisuals();
+            // Обновляем верстак, если он открыт
+            updateCraftingTab();
+            updateTrainTab();
+        }
+
+        // Журнал событий
+        function addLogMessage(text, style="") {
+            let log = document.getElementById('game-log');
+            let msg = document.createElement('div');
+            msg.className = `log-msg ${style}`;
+            msg.innerText = text;
+            log.appendChild(msg);
+            
+            // Удаляем старые сообщения через 4 секунды
+            setTimeout(() => {
+                msg.style.opacity = 0;
+                setTimeout(() => msg.remove(), 300);
+            }, 4000);
+        }
+
+        // Начисление XP
+        function gainXp(amount) {
+            gameState.xp += amount;
+            let nextXp = gameState.level * 100;
+            addLogMessage(`+${amount} XP`, "system");
+            
+            if (gameState.xp >= nextXp) {
+                gameState.xp -= nextXp;
+                gameState.level++;
+                gameState.skillPoints += 2;
+                sound.playLevelUp();
+                showTutorialPopup("💥 Уровень Повышен!", `Вы достигли ${gameState.level} уровня! Получено 2 очка навыков. Войдите в паровоз, перейдите во вкладку «Персонаж» и распределите очки, чтобы стать сильнее.`, "🎖️");
+                addLogMessage(`🎉 УРОВЕНЬ ПОВЫШЕН до ${gameState.level}!`, "system");
+            }
+            updateHudVisuals();
+        }
+
+        // =========================================================================
+        // 7. ИНТЕРФЕЙС СТАНЦИИ: ТАБЫ, КРАФТ, УЛУЧШЕНИЯ
+        // =========================================================================
+        function openStationMenu() {
+            // Сохраняем игру при прибытии на станцию
+            saveGameData();
+            
+            let loc = LOCATIONS[gameState.currentLocationIndex];
+            document.getElementById('sidebar-station-title').innerText = loc.name;
+            
+            // Настройка панели Локации
+            document.getElementById('panel-loc-title').innerText = loc.name;
+            document.getElementById('panel-loc-desc').innerText = loc.description;
+            
+            let threatBadge = document.getElementById('panel-loc-threat');
+            let radBadge = document.getElementById('panel-loc-rad');
+            let matsText = document.getElementById('panel-loc-mats');
+            
+            if (gameState.currentLocationIndex === 0) {
+                threatBadge.className = "loc-badge badge-low"; threatBadge.innerText = "Минимальная";
+                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "Отсутствует";
+                matsText.innerText = "Дрова, Консервы, Вода";
+            } else if (loc.type === 'forest') {
+                threatBadge.className = "loc-badge badge-med"; threatBadge.innerText = "Средняя (Зомби)";
+                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "Отсутствует";
+                matsText.innerText = "Много Дров, Ягоды (Еда), Вода";
+            } else if (loc.type === 'city') {
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Высокая (Толпы Зомби)";
+                radBadge.className = "loc-badge badge-high"; radBadge.innerText = "Опасный фон (1.5 рад/с)";
+                matsText.innerText = "Хлам, Фильтры, Армейские аптечки";
+            } else if (loc.type === 'wasteland') {
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Высокая (Рейдеры)";
+                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "Отсутствует";
+                matsText.innerText = "Металлолом (Хлам), Патроны";
+            } else if (loc.type === 'tunnel') {
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Экстремальная (Мутанты в темноте)";
+                radBadge.className = "loc-badge badge-med"; radBadge.innerText = "Слабый фон (0.5 рад/с)";
+                matsText.innerText = "Патроны, Металлолом";
+            } else if (loc.type === 'military') {
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Экстремальная (Военные Рейдеры)";
+                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "Отсутствует";
+                matsText.innerText = "Много патронов, Оружие, Броня";
+            } else if (loc.type === 'bunker') {
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "СМЕРТЕЛЬНАЯ (БОСС)";
+                radBadge.className = "loc-badge badge-high"; radBadge.innerText = "Опасный фон (1.2 рад/с)";
+                matsText.innerText = "Только выживание";
+            }
+
+            // Сброс и отображение вкладок для NPC
+            document.getElementById('tab-trader').style.display = 'none';
+            document.getElementById('tab-dialog').style.display = 'none';
+            
+            // Если Сидорович (торговец) есть на этой локации (индекс 2 - Город)
+            if (gameState.currentLocationIndex === 2) {
+                document.getElementById('tab-trader').style.display = 'block';
+                setupTraderTab();
+            }
+
+            // Если раненый выживший (квест) есть на этой локации (индекс 3 - Пустошь)
+            if (gameState.currentLocationIndex === 3 && !gameState.questMedkitDelivered) {
+                document.getElementById('tab-dialog').style.display = 'block';
+                setupQuestTab();
+            }
+
+            // Обновляем данные во всех вкладках
+            updateCraftingTab();
+            updateTrainTab();
+            updateSurvivorTab();
+            updateRouteMapTab();
+
+            // Переключаем на вкладку Локация по умолчанию
+            switchStationTab('location');
+            
+            document.getElementById('hud-container').style.display = 'none';
+            document.getElementById('station-menu-overlay').style.display = 'flex';
+        }
+
+        function switchStationTab(tabId) {
+            // Снятие активных классов с кнопок табов
+            let buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // Снятие активных классов с панелей
+            let panels = document.querySelectorAll('.tab-panel');
+            panels.forEach(panel => panel.classList.remove('active'));
+            
+            // Активация выбранной
+            let targetBtn = Array.from(buttons).find(btn => btn.onclick.toString().includes(tabId));
+            if (targetBtn) targetBtn.classList.add('active');
+            
+            let targetPanel = document.getElementById(`panel-${tabId}`);
+            if (targetPanel) targetPanel.classList.add('active');
+        }
+
+        // Вкладка Крафта
+        const CRAFT_RECIPES = [
+            { id: 'armor', name: 'Бронежилет', desc: 'Срезает 30% получаемого от атак врагов урона.', cost: { scrap: 5 }, type: 'gear' },
+            { id: 'water_filter', name: 'Фильтр для воды', desc: 'Вода восстанавливает 75 жажды вместо 45.', cost: { scrap: 3 }, type: 'gear' },
+            { id: 'ammo_pistol', name: 'Патроны для пистолета (x30)', desc: 'Патроны калибра 9х18мм.', cost: { scrap: 2 }, type: 'ammo' },
+            { id: 'ammo_rifle', name: 'Патроны для автомата (x50)', desc: 'Патроны калибра 5.45мм.', cost: { scrap: 3 }, type: 'ammo' },
+            { id: 'ammo_shotgun', name: 'Патроны для дробовика (x12)', desc: 'Дробь 12 калибра.', cost: { scrap: 3 }, type: 'ammo' },
+            { id: 'medkit', name: 'Армейская аптечка', desc: 'Восстанавливает здоровье.', cost: { scrap: 2, water: 1 }, type: 'item' },
+            { id: 'gasmask_filter', name: 'Фильтр противогаза', desc: 'Полностью заряжает противогаз до 100%.', cost: { scrap: 2, wood: 1 }, type: 'item' },
+            { id: 'wpn_upgrade', name: 'Апгрейд оружия', desc: 'Увеличивает урон всех пушек на +25%.', cost: { scrap: 8 }, type: 'wpn_upg' }
+        ];
+
+        function updateCraftingTab() {
+            let container = document.getElementById('craft-items-list');
+            container.innerHTML = '';
+            
+            CRAFT_RECIPES.forEach(rec => {
+                // Проверяем, созданы ли уже уникальные предметы
+                if (rec.id === 'armor' && gameState.hasArmor) return;
+                if (rec.id === 'water_filter' && gameState.waterFilter) return;
+                
+                let card = document.createElement('div');
+                card.className = 'craft-card';
+                
+                let matsPills = '';
+                let canCraft = true;
+                
+                for (let [res, reqAmount] of Object.entries(rec.cost)) {
+                    let playerAmount = gameState.inventory[res] || 0;
+                    let isShort = playerAmount < reqAmount;
+                    if (isShort) canCraft = false;
+                    
+                    let resLabel = (res === 'scrap') ? '⚙️ Хлам' : (res === 'wood') ? '🪵 Дрова' : (res === 'water') ? '🥤 Вода' : res;
+                    matsPills += `<span class="craft-mat-pill ${isShort ? 'insufficient' : ''}">${resLabel}: ${playerAmount}/${reqAmount}</span>`;
+                }
+
+                // Дополнительное ограничение на апгрейд оружия (макс 3 уровня)
+                let nameLabel = rec.name;
+                if (rec.id === 'wpn_upgrade') {
+                    let lvl = Math.min(gameState.weaponUpgrades.pistol, gameState.weaponUpgrades.rifle, gameState.weaponUpgrades.shotgun);
+                    nameLabel = `${rec.name} (Текущий уровень: +${lvl * 25}%)`;
+                    if (lvl >= 3) {
+                        canCraft = false;
+                        nameLabel = `${rec.name} (МАКС. АПГРЕЙД)`;
+                    }
+                }
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="craft-name">${nameLabel}</div>
+                        <div class="craft-desc">${rec.desc}</div>
+                        <div class="craft-mats">${matsPills}</div>
+                    </div>
+                    <button class="craft-btn" ${canCraft ? '' : 'disabled'} onclick="craftItem('${rec.id}')">Создать</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function craftItem(recipeId) {
+            let rec = CRAFT_RECIPES.find(r => r.id === recipeId);
+            if (!rec) return;
+
+            // Списываем ресурсы
+            for (let [res, reqAmount] of Object.entries(rec.cost)) {
+                gameState.inventory[res] -= reqAmount;
+            }
+
+            // Выдаем награду
+            if (recipeId === 'armor') {
+                gameState.hasArmor = true;
+                addLogMessage("🛡️ Создан кевларовый бронежилет! Защита повышена.", "system");
+            } else if (recipeId === 'water_filter') {
+                gameState.waterFilter = true;
+                addLogMessage("🥤 Скрафчен фильтр для очистки воды.", "system");
+            } else if (recipeId === 'ammo_pistol') {
+                gameState.inventory.ammo_pistol += 30;
+                addLogMessage("🔫 Созданы патроны для пистолета (30шт)", "system");
+            } else if (recipeId === 'ammo_rifle') {
+                gameState.inventory.ammo_rifle += 50;
+                addLogMessage("💥 Созданы патроны для автомата (50шт)", "system");
+            } else if (recipeId === 'ammo_shotgun') {
+                gameState.inventory.ammo_shotgun += 12;
+                addLogMessage("🔥 Создана дробь для дробовика (12шт)", "system");
+            } else if (recipeId === 'medkit') {
+                gameState.inventory.medkit++;
+                addLogMessage("➕ Создана армейская аптечка", "system");
+            } else if (recipeId === 'gasmask_filter') {
+                gameState.inventory.gasmask = 100;
+                addLogMessage("🎭 Фильтр заменен! Заряд 100%", "system");
+            } else if (recipeId === 'wpn_upgrade') {
+                gameState.weaponUpgrades.pistol++;
+                gameState.weaponUpgrades.rifle++;
+                gameState.weaponUpgrades.shotgun++;
+                addLogMessage("🔫 Оружие модернизировано! Урон повышен на 25%.", "system");
+            }
+
+            sound.playCollect();
+            saveGameData();
+            updateCraftingTab();
+            updateHudVisuals();
+        }
+
+        // Вкладка Паровоза
+        function updateTrainTab() {
+            let maxWood = getMaxWoodCapacity();
+            document.getElementById('boiler-fuel-txt').innerText = `${Math.round(gameState.trainFuel)} / 100`;
+            document.getElementById('boiler-fuel-fill').style.width = `${gameState.trainFuel}%`;
+            
+            // Отключение кнопки заправки, если нет дров
+            document.getElementById('boiler-refuel-btn').disabled = (gameState.inventory.wood <= 0 || gameState.trainFuel >= 100);
+
+            // Апгрейды поезда
+            // Двигатель
+            let engLvl = gameState.trainUpgrades.engine;
+            let engCost = (engLvl === 0) ? 5 : (engLvl === 1) ? 10 : (engLvl === 2) ? 20 : 999;
+            document.getElementById('upg-engine-name').innerText = `Модернизация Двигателя (Ур. ${engLvl}/3)`;
+            let engBtn = document.getElementById('upg-engine-btn');
+            if (engLvl >= 3) {
+                engBtn.innerText = "Максимум";
+                engBtn.disabled = true;
+            } else {
+                engBtn.innerText = `Улучшить (⚙️${engCost})`;
+                engBtn.disabled = gameState.inventory.scrap < engCost;
+            }
+
+            // Броня
+            let armLvl = gameState.trainUpgrades.armor;
+            let armCost = (armLvl === 0) ? 6 : (armLvl === 1) ? 12 : (armLvl === 2) ? 22 : 999;
+            document.getElementById('upg-armor-name').innerText = `Усиление Брони поезда (Ур. ${armLvl}/3)`;
+            let armBtn = document.getElementById('upg-armor-btn');
+            if (armLvl >= 3) {
+                armBtn.innerText = "Максимум";
+                armBtn.disabled = true;
+            } else {
+                armBtn.innerText = `Улучшить (⚙️${armCost})`;
+                armBtn.disabled = gameState.inventory.scrap < armCost;
+            }
+
+            // Склад
+            let stLvl = gameState.trainUpgrades.storage;
+            let stCost = (stLvl === 0) ? 4 : (stLvl === 1) ? 8 : (stLvl === 2) ? 15 : 999;
+            document.getElementById('upg-storage-name').innerText = `Расширение Склада (Ур. ${stLvl}/3)`;
+            let stBtn = document.getElementById('upg-storage-btn');
+            if (stLvl >= 3) {
+                stBtn.innerText = "Максимум";
+                stBtn.disabled = true;
+            } else {
+                stBtn.innerText = `Улучшить (⚙️${stCost})`;
+                stBtn.disabled = gameState.inventory.scrap < stCost;
+            }
+        }
+
+        function addFuelToBoiler() {
+            if (gameState.inventory.wood > 0 && gameState.trainFuel < 100) {
+                gameState.inventory.wood--;
+                gameState.trainFuel = Math.min(100, gameState.trainFuel + 12);
+                sound.playCollect();
+                updateTrainTab();
+                updateHudVisuals();
+                saveGameData();
+            }
+        }
+
+        function upgradeTrain(type) {
+            let lvl = gameState.trainUpgrades[type];
+            let cost = 999;
+            if (type === 'engine') {
+                cost = (lvl === 0) ? 5 : (lvl === 1) ? 10 : (lvl === 2) ? 20 : 999;
+            } else if (type === 'armor') {
+                cost = (lvl === 0) ? 6 : (lvl === 1) ? 12 : (lvl === 2) ? 22 : 999;
+            } else if (type === 'storage') {
+                cost = (lvl === 0) ? 4 : (lvl === 1) ? 8 : (lvl === 2) ? 15 : 999;
+            }
+
+            if (gameState.inventory.scrap >= cost) {
+                gameState.inventory.scrap -= cost;
+                gameState.trainUpgrades[type]++;
+                sound.playCollect();
+                addLogMessage(`🚂 Поезд: Модернизирован ${type === 'engine' ? 'двигатель' : type === 'armor' ? 'корпус брони' : 'грузовой отсек'}!`, "system");
+                saveGameData();
+                updateTrainTab();
+                updateHudVisuals();
+            }
+        }
+
+        // Вкладка Персонажа (Навыки)
+        function updateSurvivorTab() {
+            document.getElementById('char-lvl').innerText = gameState.level;
+            document.getElementById('char-xp').innerText = `${gameState.xp} / ${gameState.level * 100}`;
+            document.getElementById('char-points').innerText = gameState.skillPoints;
+            
+            document.getElementById('char-max-hp').innerText = getMaxHp();
+            document.getElementById('char-max-stamina').innerText = getMaxStamina();
+            document.getElementById('char-dmg-mult').innerText = `+${Math.round((getWeaponDamage('pistol') / 22 - 1) * 100)}%`;
+
+            document.getElementById('skill-strength-lvl').innerText = `${gameState.skills.strength} / 5`;
+            document.getElementById('skill-agility-lvl').innerText = `${gameState.skills.agility} / 5`;
+            document.getElementById('skill-survival-lvl').innerText = `${gameState.skills.survival} / 5`;
+
+            // Управление кнопками плюсов
+            let plusBtns = document.querySelectorAll('.skill-plus-btn');
+            plusBtns.forEach((btn, idx) => {
+                let skill = (idx === 0) ? 'strength' : (idx === 1) ? 'agility' : 'survival';
+                let lvl = gameState.skills[skill];
+                btn.disabled = (gameState.skillPoints <= 0 || lvl >= 5);
+            });
+        }
+
+        function addSkillPoint(skill) {
+            if (gameState.skillPoints > 0 && gameState.skills[skill] < 5) {
+                gameState.skillPoints--;
+                gameState.skills[skill]++;
+                
+                if (skill === 'strength') {
+                    // Корректируем HP игрока вверх на 15 при прокачке
+                    gameState.hp += 15;
+                }
+                
+                sound.playCollect();
+                saveGameData();
+                updateSurvivorTab();
+                updateHudVisuals();
+            }
+        }
+
+        // Вкладка Карты Железных Дорог
+        function updateRouteMapTab() {
+            let container = document.getElementById('route-stations-list');
+            container.innerHTML = '';
+
+            LOCATIONS.forEach((loc, idx) => {
+                let step = document.createElement('div');
+                step.className = `route-step ${idx === gameState.currentLocationIndex ? 'current' : idx < gameState.currentLocationIndex ? 'passed' : ''}`;
+                
+                let isNext = (idx === gameState.currentLocationIndex + 1);
+                let fuelMultiplier = 1 - gameState.trainUpgrades.engine * 0.15;
+                let actualFuelCost = Math.round(loc.fuelCost * fuelMultiplier);
+                
+                let btnHtml = '';
+                if (isNext) {
+                    let canTravel = gameState.trainFuel >= actualFuelCost;
+                    btnHtml = `<button class="route-travel-btn" ${canTravel ? '' : 'disabled'} onclick="travelToStation(${idx}, ${actualFuelCost})">Переехать (🔥${actualFuelCost})</button>`;
+                } else if (idx === gameState.currentLocationIndex) {
+                    btnHtml = `<span style="font-weight:bold; color:var(--primary-accent); margin-left:auto; font-size:0.8rem; text-transform:uppercase;">Стоянка</span>`;
+                } else if (idx < gameState.currentLocationIndex) {
+                    btnHtml = `<span style="font-weight:bold; color:var(--text-muted); margin-left:auto; font-size:0.8rem;">Пройдено</span>`;
+                } else {
+                    btnHtml = `<span style="font-weight:bold; color:rgba(255,255,255,0.15); margin-left:auto; font-size:0.8rem;">Заперто</span>`;
+                }
+
+                step.innerHTML = `
+                    <div class="route-step-num">${idx + 1}</div>
+                    <div class="route-step-details">
+                        <span class="route-step-name">${loc.name}</span>
+                        <span class="route-step-cost">${idx > 0 ? `Расход котла: ${actualFuelCost} топлива` : 'Старт'}</span>
+                    </div>
+                    ${btnHtml}
+                `;
+                container.appendChild(step);
+            });
+        }
+
+        // Механика Переезда
+        function travelToStation(targetIdx, fuelCost) {
+            gameState.trainFuel -= fuelCost;
+            document.getElementById('station-menu-overlay').style.display = 'none';
+            
+            let travelOverlay = document.getElementById('travel-overlay');
+            travelOverlay.style.display = 'flex';
+            
+            let targetLocName = LOCATIONS[targetIdx].name;
+            document.getElementById('travel-status-txt').innerText = `Переезд на станцию: ${targetLocName}...`;
+            
+            let fill = document.getElementById('travel-progress-fill');
+            fill.style.width = '0%';
+            
+            // Начинаем звук поезда
+            let chugInterval = setInterval(() => {
+                sound.playChug();
+            }, 300);
+
+            // Анимация
+            let pct = 0;
+            let travelDuration = 5000; // 5 секунд переезд
+            let steps = 50;
+            let stepTime = travelDuration / steps;
+
+            let randEventTriggered = false;
+
+            let progressInterval = setInterval(() => {
+                pct += (100 / steps);
+                fill.style.width = `${pct}%`;
+                
+                // Случайные события посреди дороги (на 50% пути)
+                if (pct >= 50 && !randEventTriggered) {
+                    randEventTriggered = true;
+                    triggerTravelRandomEvent();
+                }
+
+                if (pct >= 100) {
+                    clearInterval(progressInterval);
+                    clearInterval(chugInterval);
+                    travelOverlay.style.display = 'none';
+                    
+                    gameState.currentLocationIndex = targetIdx;
+                    saveGameData();
+                    openStationMenu();
+                    addLogMessage(`🚂 Прибыли на станцию: ${targetLocName}!`, "system");
+                }
+            }, stepTime);
+        }
+
+        // Случайные события во время переезда
+        function triggerTravelRandomEvent() {
+            let roll = Math.random();
+            let armorLevel = gameState.trainUpgrades.armor;
+            let subtext = document.getElementById('travel-subtext-txt');
+
+            if (roll < 0.25 && gameState.currentLocationIndex > 0) {
+                // Рейд бандитов
+                let scrapLoss = Math.max(0, 5 - armorLevel * 2);
+                let foodLoss = Math.max(0, 2 - armorLevel * 1);
+                gameState.inventory.scrap = Math.max(0, gameState.inventory.scrap - scrapLoss);
+                gameState.inventory.food = Math.max(0, gameState.inventory.food - foodLoss);
+                
+                subtext.innerText = `⚠️ Событие: На поезд напали рейдеры! Броня заблокировала часть потерь. Потеряно: ⚙️${scrapLoss} хлама, 🥫${foodLoss} еды.`;
+                subtext.style.color = 'var(--danger-accent)';
+            } else if (roll < 0.50) {
+                // Нашли припасы на путях
+                gameState.inventory.scrap += 4;
+                gameState.inventory.ammo_pistol += 20;
+                subtext.innerText = `⚙️ Событие: Вы нашли заброшенную дрезину! Получено: ⚙️4 хлама, 🔫20 пистолетных пуль.`;
+                subtext.style.color = 'var(--primary-accent)';
+            } else if (roll < 0.70) {
+                // Раненый попутчик
+                gameState.inventory.food = Math.max(0, gameState.inventory.food - 1);
+                gameState.inventory.medkit += 1;
+                subtext.innerText = `🩹 Событие: Встретили выжившего у путей. Поделились едой (-1 тушенка), он дал вам Аптечку (+1)`;
+                subtext.style.color = 'var(--cyan-accent)';
+            } else {
+                subtext.innerText = `🛤️ Путь свободен. Поезд спокойно катится по рельсам сквозь постапокалиптические туманы.`;
+                subtext.style.color = 'var(--text-muted)';
+            }
+            updateHudVisuals();
+        }
+
+        // Вкладка Торговца (Локальный Сидорович на 3 локации)
+        function setupTraderTab() {
+            let actions = document.getElementById('trader-actions-list');
+            actions.innerHTML = `
+                <button class="craft-btn" id="trade-btn-1" onclick="tradeWithNpc(1)">1 Дрова -> 8 Пист. Патронов</button>
+                <button class="craft-btn" id="trade-btn-2" onclick="tradeWithNpc(2)">3 Хлама -> 1 Аптечка</button>
+                <button class="craft-btn" id="trade-btn-3" onclick="tradeWithNpc(3)">2 Хлама -> 1 Противогаз</button>
+            `;
+            updateTraderButtons();
+        }
+
+        function updateTraderButtons() {
+            if (gameState.currentLocationIndex !== 2) return;
+            document.getElementById('trade-btn-1').disabled = gameState.inventory.wood < 1;
+            document.getElementById('trade-btn-2').disabled = gameState.inventory.scrap < 3;
+            document.getElementById('trade-btn-3').disabled = gameState.inventory.scrap < 2;
+        }
+
+        function tradeWithNpc(dealId) {
+            if (dealId === 1 && gameState.inventory.wood >= 1) {
+                gameState.inventory.wood--;
+                gameState.inventory.ammo_pistol += 8;
+                sound.playCollect();
+                addLogMessage("⚖️ Сделка: Дрова обменены на патроны.", "system");
+            } else if (dealId === 2 && gameState.inventory.scrap >= 3) {
+                gameState.inventory.scrap -= 3;
+                gameState.inventory.medkit++;
+                sound.playCollect();
+                addLogMessage("⚖️ Сделка: Хлам обменен на Аптечку.", "system");
+            } else if (dealId === 3 && gameState.inventory.scrap >= 2) {
+                gameState.inventory.scrap -= 2;
+                gameState.inventory.gasmask = 100;
+                sound.playCollect();
+                addLogMessage("⚖️ Сделка: Заряжен Противогаз.", "system");
+            }
+            updateTraderButtons();
+            updateHudVisuals();
+            saveGameData();
+        }
+
+        // Вкладка Квеста (Раненый выживший на 4 локации)
+        function setupQuestTab() {
+            let actBox = document.getElementById('npc-dialog-actions');
+            let hasMedkit = gameState.inventory.medkit > 0;
+            actBox.innerHTML = `
+                <button class="craft-btn" ${hasMedkit ? '' : 'disabled'} onclick="completeNpcQuest()">Отдать Аптечку</button>
+                <button class="craft-btn" onclick="switchStationTab('location')">Отказать и уйти</button>
+            `;
+        }
+
+        function completeNpcQuest() {
+            if (gameState.inventory.medkit > 0) {
+                gameState.inventory.medkit--;
+                gameState.inventory.scrap += 18;
+                gameState.questMedkitDelivered = true;
+                
+                document.getElementById('tab-dialog').style.display = 'none';
+                switchStationTab('location');
+                
+                sound.playCollect();
+                gainXp(150);
+                addLogMessage("👤 Квест: Вы помогли торговцу и получили ⚙️18 Хлама!", "system");
+                saveGameData();
+                updateHudVisuals();
+            }
+        }
+
+        // =========================================================================
+        // 8. ЗАПУСК ИГРЫ И СЦЕНЫ PHASER
+        // =========================================================================
+        let activeGameScene = null;
+
+        function startNewGame() {
+            // Инициализация стартовых параметров для Новой игры
+            gameState = {
+                currentLocationIndex: 0,
+                hp: 100,
+                hunger: 100,
+                thirst: 100,
+                stamina: 100,
+                radiation: 0,
+                level: 1,
+                xp: 0,
+                skillPoints: 0,
+                skills: { strength: 0, agility: 0, survival: 0 },
+                inventory: {
+                    wood: 5,
+                    scrap: 2,
+                    ammo_pistol: 45,
+                    ammo_rifle: 0,
+                    ammo_shotgun: 0,
+                    food: 3,
+                    water: 3,
+                    medkit: 1,
+                    gasmask: 50
+                },
+                trainUpgrades: { engine: 0, armor: 0, storage: 0 },
+                trainFuel: 40,
+                hasArmor: false,
+                weaponUpgrades: { pistol: 0, rifle: 0, shotgun: 0 },
+                waterFilter: false,
+                questMedkitDelivered: false
+            };
+            
+            tutorialFlags = { movement: false, tree: false, scrap: false, train: false, enemy: false, rad: false };
+            
+            saveGameData();
+            document.getElementById('main-menu-overlay').style.display = 'none';
+            openStationMenu();
+        }
+
+        function loadSavedGame() {
+            if (loadGameData()) {
+                document.getElementById('main-menu-overlay').style.display = 'none';
+                openStationMenu();
+            } else {
+                alert("Нет сохраненных игр!");
+            }
+        }
+
+        function enterTacticalMap() {
+            document.getElementById('station-menu-overlay').style.display = 'none';
+            document.getElementById('hud-container').style.display = 'block';
+            
+            // Если Phaser еще не создан - инициализируем
+            if (!phaserGame) {
+                initPhaserEngine();
+            } else {
+                // Перезапускаем игровую сцену с новыми параметрами локации
+                phaserGame.scene.start('GameScene');
+            }
+            updateHudVisuals();
+        }
+
+        function triggerGameOver() {
+            if (activeGameScene) {
+                activeGameScene.scene.pause();
+            }
+            document.getElementById('hud-container').style.display = 'none';
+            document.getElementById('gameover-overlay').style.display = 'flex';
+        }
+
+        function goToMainMenu() {
+            // Прячем все оверлеи
+            document.querySelectorAll('.overlay').forEach(o => o.style.display = 'none');
+            document.getElementById('hud-container').style.display = 'none';
+            
+            if (phaserGame) {
+                phaserGame.scene.stop('GameScene');
+            }
+            
+            updateMenuButtons();
+            document.getElementById('main-menu-overlay').style.display = 'flex';
+        }
+
+        // Выход во время паузы (ESC)
+        function resumeGameFromPause() {
+            document.getElementById('pause-overlay').style.display = 'none';
+            if (activeGameScene) {
+                activeGameScene.scene.resume();
+            }
+        }
+
+        function retreatToTrain() {
+            document.getElementById('pause-overlay').style.display = 'none';
+            if (activeGameScene) {
+                activeGameScene.scene.stop();
+            }
+            
+            // За отступление штраф - теряем 20% дров и хлама
+            let lostWood = Math.round(gameState.inventory.wood * 0.2);
+            let lostScrap = Math.round(gameState.inventory.scrap * 0.2);
+            gameState.inventory.wood -= lostWood;
+            gameState.inventory.scrap -= lostScrap;
+            
+            addLogMessage(`⚠️ Отступили в поезд. Потери: 🪵${lostWood} дров, ⚙️${lostScrap} хлама.`, "danger");
+            
+            openStationMenu();
+        }
+
+        // =========================================================================
+        // PHASER 3 CONFIGURATION & SCENES
+        // =========================================================================
+        let phaserGame = null;
+
+        function initPhaserEngine() {
+            const config = {
+                type: Phaser.AUTO,
+                width: window.innerWidth,
+                height: window.innerHeight,
+                parent: 'game-container',
+                physics: {
+                    default: 'arcade',
+                    arcade: {
+                        gravity: { y: 0 },
+                        debug: false
+                    }
+                },
+                scene: [BootScene, GameScene]
+            };
+            phaserGame = new Phaser.Game(config);
+            
+            window.addEventListener('resize', () => {
+                if (phaserGame) {
+                    phaserGame.scale.resize(window.innerWidth, window.innerHeight);
+                }
+            });
+        }
+
+        // SCENE: BOOT
+        class BootScene extends Phaser.Scene {
+            constructor() {
+                super('BootScene');
+            }
+            create() {
+                // Создаем холсты текстур программно
+                generateTextures(this);
+                this.scene.start('GameScene');
+            }
+        }
+
+        // SCENE: MAIN GAMEPLAY
+        class GameScene extends Phaser.Scene {
+            constructor() {
+                super('GameScene');
+            }
+
+            init() {
+                activeGameScene = this;
+                this.levelIndex = gameState.currentLocationIndex;
+                this.locationConfig = LOCATIONS[this.levelIndex];
+                
+                // Тайминги и клавиши
+                this.lastFireTime = 0;
+                this.lastStatTick = 0;
+                this.harvestProgress = 0;
+                this.harvestTarget = null;
+                this.isChopping = false;
+                
+                // Прогресс бары над головой
+                this.progBarBg = null;
+                this.progBarFill = null;
+
+                // Фонарик
+                this.flashlight = null;
+            }
+
+            create() {
+                // Восстанавливаем HP игрока до макс при входе на безопасный первый вокзал
+                if (this.levelIndex === 0) {
+                    gameState.hp = getMaxHp();
+                    gameState.hunger = 100;
+                    gameState.thirst = 100;
+                }
+
+                // 1. Создание тайловой карты
+                this.generateProceduralMapGrid();
+                
+                // 2. Группы объектов
+                this.bullets = this.physics.add.group();
+                this.enemyBullets = this.physics.add.group();
+                this.enemies = this.physics.add.group();
+                this.harvestables = this.physics.add.staticGroup(); // Деревья, кусты, хлам
+                this.barrels = this.physics.add.staticGroup(); // Бочки
+                this.lootItems = this.physics.add.group(); // Предметы на полу
+
+                // 3. Добавление статичного паровоза на рельсы
+                // Наш паровоз стоит на координатах x: 300, y: 110 (рельсы по y=3, т.е. 96px)
+                this.train = this.physics.add.staticSprite(220, 110, 'prop_train_locomotive');
+                this.physics.add.staticSprite(90, 110, 'prop_train_carriage'); // Вагон
+                
+                // Свечение фар поезда
+                this.trainLight = this.add.graphics();
+                this.trainLight.fillStyle(0xfef08a, 0.2);
+                this.trainLight.beginPath();
+                this.trainLight.moveTo(275, 110);
+                this.trainLight.lineTo(450, 60);
+                this.trainLight.lineTo(450, 160);
+                this.trainLight.closePath();
+                this.trainLight.fill();
+
+                // 4. Добавление Игрока
+                // Спавним игрока чуть правее паровоза
+                this.player = this.physics.add.sprite(220, 180, 'player');
+                this.player.setCollideWorldBounds(true);
+                this.player.body.setCircle(10, 6, 6);
+
+                // Коллизии игрока с паровозом и границами карты
+                this.physics.add.collider(this.player, this.mapLayer);
+                this.physics.add.collider(this.player, this.train);
+
+                // 5. Заполнение локации объектами и врагами
+                this.populateLevel();
+
+                // 6. Настройка коллизий
+                this.physics.add.overlap(this.player, this.lootItems, this.pickupLoot, null, this);
+                this.physics.add.collider(this.enemies, this.mapLayer);
+                this.physics.add.collider(this.enemies, this.enemies); // Враги толкают друг друга
+                this.physics.add.collider(this.player, this.enemies, this.enemyMeleeAttack, null, this);
+                
+                // Пули игрока
+                this.physics.add.collider(this.bullets, this.mapLayer, (b) => { this.spawnSparkParticles(b.x, b.y); b.destroy(); });
+                this.physics.add.collider(this.bullets, this.enemies, this.damageEnemy, null, this);
+
+                // Пули врагов
+                this.physics.add.collider(this.enemyBullets, this.mapLayer, (b) => { this.spawnSparkParticles(b.x, b.y); b.destroy(); });
+                this.physics.add.collider(this.enemyBullets, this.player, this.damagePlayerFromBullet, null, this);
+
+                // 7. Камера слежения
+                this.cameras.main.setBounds(0, 0, this.mapWidth, this.mapHeight);
+                this.physics.world.setBounds(0, 0, this.mapWidth, this.mapHeight);
+                this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+
+                // 8. Управление
+                this.keys = this.input.keyboard.addKeys({
+                    W: Phaser.Input.Keyboard.KeyCodes.W,
+                    A: Phaser.Input.Keyboard.KeyCodes.A,
+                    S: Phaser.Input.Keyboard.KeyCodes.S,
+                    D: Phaser.Input.Keyboard.KeyCodes.D,
+                    UP: Phaser.Input.Keyboard.KeyCodes.UP,
+                    LEFT: Phaser.Input.Keyboard.KeyCodes.LEFT,
+                    DOWN: Phaser.Input.Keyboard.KeyCodes.DOWN,
+                    RIGHT: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+                    SHIFT: Phaser.Input.Keyboard.KeyCodes.SHIFT,
+                    SPACE: Phaser.Input.Keyboard.KeyCodes.SPACE,
+                    E: Phaser.Input.Keyboard.KeyCodes.E,
+                    ESC: Phaser.Input.Keyboard.KeyCodes.ESC,
+                    ONE: Phaser.Input.Keyboard.KeyCodes.ONE,
+                    TWO: Phaser.Input.Keyboard.KeyCodes.TWO,
+                    THREE: Phaser.Input.Keyboard.KeyCodes.THREE,
+                    FOUR: Phaser.Input.Keyboard.KeyCodes.FOUR,
+                    FIVE: Phaser.Input.Keyboard.KeyCodes.FIVE,
+                    SIX: Phaser.Input.Keyboard.KeyCodes.SIX,
+                    SEVEN: Phaser.Input.Keyboard.KeyCodes.SEVEN
+                });
+
+                // Фонарик для темного туннеля
+                if (this.locationConfig.theme === 'tunnel') {
+                    this.flashlight = this.add.sprite(this.player.x, this.player.y, 'light_mask');
+                    this.flashlight.setDepth(90);
+                } else {
+                    this.cameras.main.setBackgroundColor('#09090b');
+                }
+
+                // Шкала крафта/сбора над головой
+                this.progBarBg = this.add.graphics().setDepth(80);
+                this.progBarFill = this.add.graphics().setDepth(81);
+
+                // Запуск начального туториала при спавне
+                checkTutorial('movement', '🚀 Добро пожаловать!', 'Используйте клавиши W, A, S, D или стрелки для ходьбы. Поворачивайте мышь для прицеливания. Вы стоите возле своего паровоза.', '🚂');
+
+                // Логирование прибытия
+                addLogMessage(`📍 Вылазка: ${this.locationConfig.name}`, "system");
+                if (this.locationConfig.radiation > 0) {
+                    addLogMessage("☢️ ВНИМАНИЕ: Зона радиоактивного заражения!", "danger");
+                }
+            }
+
+            // Процедурная генерация сетки карты на основе темы уровня
+            generateProceduralMapGrid() {
+                let N = this.locationConfig.size;
+                this.mapWidth = N * 32;
+                this.mapHeight = N * 32;
+
+                let defaultTile = 0; // трава по умолчанию
+                if (this.locationConfig.theme === 'sand') defaultTile = 3;
+                else if (this.locationConfig.theme === 'city') defaultTile = 2;
+                else if (this.locationConfig.theme === 'asphalt') defaultTile = 4;
+                else if (this.locationConfig.theme === 'tunnel') defaultTile = 5;
+                else if (this.locationConfig.theme === 'bunker') defaultTile = 2;
+
+                // Создаем двумерную матрицу
+                let grid = [];
+                for (let y = 0; y < N; y++) {
+                    let row = [];
+                    for (let x = 0; x < N; x++) {
+                        // Границы карты - стены
+                        if (x === 0 || x === N-1 || y === 0 || y === N-1) {
+                            row.push(6); // Стены
+                        } 
+                        // Рельсы для поезда по y = 3
+                        else if (y === 3) {
+                            row.push(7); // Рельсы
+                        } 
+                        // Для туннеля сужаем проход сверху и снизу стенами
+                        else if (this.locationConfig.theme === 'tunnel' && (y < 12 || y > 26)) {
+                            row.push(6); // Стены
+                        }
+                        // Для бункера делаем сетку комнат
+                        else if (this.locationConfig.theme === 'bunker') {
+                            // Оставляем коридоры, делаем комнаты каждые 10 тайлов
+                            if ((x % 10 === 0 && y > 3 && y < N-4) || (y % 10 === 0 && x > 8)) {
+                                // Оставляем дверные проходы в центрах стен
+                                if (x % 10 === 0 && y % 10 === 5) row.push(defaultTile);
+                                else if (y % 10 === 0 && x % 10 === 5) row.push(defaultTile);
+                                else row.push(6); // Стены
+                            } else {
+                                row.push(defaultTile);
+                            }
+                        }
+                        else {
+                            row.push(defaultTile);
+                        }
+                    }
+                    grid.push(row);
+                }
+
+                // Создаем Phaser Tilemap
+                const map = this.make.tilemap({ data: grid, tileWidth: 32, tileHeight: 32 });
+                const tileset = map.addTilesetImage('tiles_texture', null, 32, 32, 0, 0);
+                this.mapLayer = map.createLayer(0, tileset, 0, 0);
+                this.mapLayer.setCollision(6); // Коллизии для стен
+            }
+
+            // Заполнение карты объектами на основе конфига локации
+            populateLevel() {
+                let N = this.locationConfig.size;
+                let safeZoneRadius = 240; // Безопасная зона около поезда на спавне
+
+                // 1. Спавн Деревьев (только на Grass и Forest)
+                if (this.locationConfig.theme === 'grass') {
+                    let treeCount = this.locationConfig.resources.wood;
+                    for (let i = 0; i < treeCount * 1.5; i++) {
+                        let rx = Phaser.Math.Between(4, N-4) * 32;
+                        let ry = Phaser.Math.Between(5, N-4) * 32;
+                        
+                        // Проверка безопасной зоны и отсутствия стен
+                        let distToTrain = Phaser.Math.Distance.Between(rx, ry, 150, 110);
+                        let tile = this.mapLayer.getTileAtWorldXY(rx, ry);
+                        
+                        if (distToTrain > safeZoneRadius && tile && tile.index !== 6) {
+                            let tree = this.harvestables.create(rx + 16, ry + 16, 'prop_tree');
+                            tree.type = 'tree';
+                            tree.hp = 100;
+                            tree.body.setSize(20, 20); // Физический размер ствола
+                        }
+                    }
+                }
+
+                // 2. Спавн Хлама (металлолома)
+                let scrapCount = this.locationConfig.resources.scrap;
+                for (let i = 0; i < scrapCount; i++) {
+                    let rx = Phaser.Math.Between(4, N-4) * 32;
+                    let ry = Phaser.Math.Between(5, N-4) * 32;
+                    let distToTrain = Phaser.Math.Distance.Between(rx, ry, 150, 110);
+                    let tile = this.mapLayer.getTileAtWorldXY(rx, ry);
+
+                    if (distToTrain > safeZoneRadius && tile && tile.index !== 6) {
+                        let scrap = this.harvestables.create(rx + 16, ry + 16, 'item_scrap');
+                        scrap.type = 'scrap';
+                        scrap.setScale(1.3);
+                        scrap.body.setSize(20, 20);
+                    }
+                }
+
+                // 3. Спавн Радиоактивных Бочек
+                if (this.locationConfig.radiation > 0) {
+                    let barrelCount = Math.round(this.locationConfig.radiation * 6);
+                    for (let i = 0; i < barrelCount; i++) {
+                        let rx = Phaser.Math.Between(4, N-4) * 32;
+                        let ry = Phaser.Math.Between(6, N-4) * 32;
+                        let distToTrain = Phaser.Math.Distance.Between(rx, ry, 150, 110);
+                        let tile = this.mapLayer.getTileAtWorldXY(rx, ry);
+
+                        if (distToTrain > safeZoneRadius && tile && tile.index !== 6) {
+                            let barrel = this.barrels.create(rx + 16, ry + 16, 'prop_barrel_rad');
+                            barrel.body.setSize(24, 24);
+                        }
+                    }
+                }
+
+                // 4. Водяной Насос / Колонка (в лесу или городе)
+                if (this.locationConfig.type === 'forest' || this.locationConfig.type === 'city') {
+                    // Спавним одну колонку недалеко от путей
+                    let pump = this.harvestables.create(380, 150, 'item_water');
+                    pump.type = 'pump';
+                    pump.waterLeft = 4;
+                    pump.setScale(1.5);
+                    pump.body.setSize(24, 24);
+                }
+
+                // 5. Спавн Лута на полу (Еда, Вода, Патроны, Аптечки)
+                let itemTypes = ['food', 'water', 'ammo', 'medkit', 'gasmask'];
+                for (let type of itemTypes) {
+                    let qty = this.locationConfig.resources[type] || 0;
+                    for (let i = 0; i < qty; i++) {
+                        let rx = Phaser.Math.Between(4, N-4) * 32;
+                        let ry = Phaser.Math.Between(5, N-4) * 32;
+                        let distToTrain = Phaser.Math.Distance.Between(rx, ry, 150, 110);
+                        let tile = this.mapLayer.getTileAtWorldXY(rx, ry);
+
+                        if (distToTrain > safeZoneRadius && tile && tile.index !== 6) {
+                            let key = `item_${type}`;
+                            let item = this.lootItems.create(rx + 16, ry + 16, key);
+                            item.itemType = type;
+                        }
+                    }
+                }
+
+                // 6. Спавн Врагов
+                for (let [eType, qty] of Object.entries(this.locationConfig.enemies)) {
+                    for (let i = 0; i < qty; i++) {
+                        let rx = Phaser.Math.Between(6, N-4) * 32;
+                        let ry = Phaser.Math.Between(6, N-4) * 32;
+                        let distToTrain = Phaser.Math.Distance.Between(rx, ry, 150, 110);
+                        let tile = this.mapLayer.getTileAtWorldXY(rx, ry);
+
+                        // Для босса ставим фиксированную спавн-точку в центре
+                        if (eType === 'boss') {
+                            rx = (N - 8) * 32;
+                            ry = Math.round(N / 2) * 32;
+                            distToTrain = 999;
+                        }
+
+                        if (distToTrain > safeZoneRadius && tile && tile.index !== 6) {
+                            this.spawnEnemy(rx + 16, ry + 16, eType);
+                        }
+                    }
+                }
+            }
+
+            // Функция спавна конкретного врага
+            spawnEnemy(x, y, type) {
+                let key = 'zombie';
+                if (type === 'zombie_fast') key = 'zombie_fast';
+                else if (type === 'zombie_fat') key = 'zombie_fat';
+                else if (type === 'raider') key = 'raider';
+                else if (type === 'mutant') key = 'mutant';
+                else if (type === 'boss') key = 'boss';
+
+                let enemy = this.enemies.create(x, y, key);
+                enemy.enemyType = type;
+                enemy.lastShotTime = 0;
+                enemy.leapCooldown = 0;
+
+                // Базовые параметры здоровья и скорости
+                if (type === 'zombie') {
+                    enemy.hp = 100; enemy.speed = 60; enemy.dmg = 10;
+                } else if (type === 'zombie_fast') {
+                    enemy.hp = 70; enemy.speed = 120; enemy.dmg = 7;
+                } else if (type === 'zombie_fat') {
+                    enemy.hp = 240; enemy.speed = 40; enemy.dmg = 15;
+                } else if (type === 'raider') {
+                    enemy.hp = 110; enemy.speed = 70; enemy.dmg = 8;
+                } else if (type === 'mutant') {
+                    enemy.hp = 160; enemy.speed = 100; enemy.dmg = 12;
+                } else if (type === 'boss') {
+                    enemy.hp = 1500; enemy.speed = 40; enemy.dmg = 20;
+                    enemy.setScale(1.2);
+                    
+                    // ХП Бар босса на экране
+                    addLogMessage("🧟‍♂️ Внимание! Появился Сверхмутант!", "danger");
+                }
+            }
+
+            // Смена оружия игрока
+            switchWeapon(type) {
+                // Логическое переключение текстуры
+                addLogMessage(`Выбран ${type === 'pistol' ? 'Пистолет' : type === 'rifle' ? 'Автомат' : 'Дробовик'}`, "system");
+            }
+
+            // Метод проверки близости радиационных бочек
+            checkRadProximity(radius) {
+                let inside = false;
+                this.barrels.children.iterate((b) => {
+                    if (b) {
+                        let dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, b.x, b.y);
+                        if (dist < radius) {
+                            inside = true;
+                            // Генерируем случайный спавн зеленых частиц
+                            if (Math.random() < 0.1) {
+                                this.spawnGlowParticles(b.x, b.y);
+                            }
+                        }
+                    }
+                });
+                return inside;
+            }
+
+            // =========================================================================
+            // UPDATE LOOP (ОБНОВЛЕНИЕ КАДРА ИГРЫ)
+            // =========================================================================
+            update(time, delta) {
+                if (gameState.hp <= 0) return;
+
+                let dt = delta / 1000;
+
+                // 1. Поворот игрока в сторону мыши
+                let mouse = this.input.activePointer;
+                let worldMouse = this.cameras.main.getWorldPoint(mouse.x, mouse.y);
+                let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, worldMouse.x, worldMouse.y);
+                this.player.setRotation(angle);
+
+                // Фонарик
+                if (this.flashlight) {
+                    this.flashlight.x = this.player.x;
+                    this.flashlight.y = this.player.y;
+                }
+
+                // 2. Движение Игрока
+                let speed = 150 * (1 + gameState.skills.agility * 0.08);
+                let isMoving = false;
+                let isSprinting = false;
+
+                let vx = 0;
+                let vy = 0;
+
+                if (this.keys.W.isDown || this.keys.UP.isDown) vy = -1;
+                else if (this.keys.S.isDown || this.keys.DOWN.isDown) vy = 1;
+
+                if (this.keys.A.isDown || this.keys.LEFT.isDown) vx = -1;
+                else if (this.keys.D.isDown || this.keys.RIGHT.isDown) vx = 1;
+
+                if (vx !== 0 || vy !== 0) {
+                    isMoving = true;
+                    // Проверка бега Shift
+                    if (this.keys.SHIFT.isDown && gameState.stamina > 5) {
+                        isSprinting = true;
+                        speed *= 1.6;
+                        gameState.stamina = Math.max(0, gameState.stamina - 28 * dt);
+                    } else {
+                        gameState.stamina = Math.min(getMaxStamina(), gameState.stamina + 15 * dt);
+                    }
+                } else {
+                    // Регенерация стамины при покое
+                    gameState.stamina = Math.min(getMaxStamina(), gameState.stamina + 20 * dt);
+                }
+
+                // Нормализация вектора скорости для движения по диагонали
+                let vel = new Phaser.Math.Vector2(vx, vy).normalize().scale(speed);
+                this.player.setVelocity(vel.x, vel.y);
+
+                // 3. Расход жизненных показателей
+                updateLifeStats(dt, isMoving, isSprinting);
+
+                // 4. Горячие клавиши смены оружия (1-3) и использования (4-7)
+                if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) selectWeaponFromSlot(1);
+                if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) selectWeaponFromSlot(2);
+                if (Phaser.Input.Keyboard.JustDown(this.keys.THREE)) selectWeaponFromSlot(3);
+                if (Phaser.Input.Keyboard.JustDown(this.keys.FOUR)) consumeItemFromSlot('food');
+                if (Phaser.Input.Keyboard.JustDown(this.keys.FIVE)) consumeItemFromSlot('water');
+                if (Phaser.Input.Keyboard.JustDown(this.keys.SIX)) consumeItemFromSlot('medkit');
+                if (Phaser.Input.Keyboard.JustDown(this.keys.SEVEN)) consumeItemFromSlot('gasmask');
+
+                // Пауза игры на ESC
+                if (Phaser.Input.Keyboard.JustDown(this.keys.ESC)) {
+                    this.scene.pause();
+                    document.getElementById('pause-overlay').style.display = 'flex';
+                }
+
+                // 5. Стрельба
+                let isShooting = mouse.isDown;
+                if (isShooting) {
+                    this.fireActiveWeapon(time, worldMouse);
+                }
+
+                // 6. Сбор ресурсов (Дрова / Хлам / Колонка) на ПРОБЕЛ или долгое нажатие ЛКМ
+                this.handleHarvesting(dt);
+
+                // 7. Поведение ИИ Врагов
+                this.updateEnemyAI(time, dt);
+
+                // 8. Взаимодействие с Паровозом (Вход)
+                let distToTrain = Phaser.Math.Distance.Between(this.player.x, this.player.y, 220, 110);
+                if (distToTrain < 60) {
+                    checkTutorial('train', '🚂 Твой Паровоз', 'Подойдите к кабине машиниста и нажмите Е, чтобы войти в поезд. Внутри поезда вы в безопасности, там можно крафтить вещи, улучшать поезд и ехать дальше.', '🚂');
+                    if (Phaser.Input.Keyboard.JustDown(this.keys.E)) {
+                        this.player.setVelocity(0, 0);
+                        this.scene.pause();
+                        openStationMenu();
+                    }
+                }
+
+                // 9. Отрисовка мини-карты раз в 10 кадров
+                if (time % 10 < 1) {
+                    this.drawMinimap();
+                }
+            }
+
+            // =========================================================================
+            // ДОПОЛНИТЕЛЬНЫЕ МЕХАНИКИ: СТРЕЛЬБА, СБОР, ИИ
+            // =========================================================================
+            
+            // Стрельба игрока
+            fireActiveWeapon(time, targetPoint) {
+                // Задержка стрельбы
+                let cooldown = (currentActiveWeapon === 'pistol') ? 350 : (currentActiveWeapon === 'rifle') ? 140 : 850;
+                // Срезаем задержку навыком ловкости
+                cooldown *= (1 - gameState.skills.agility * 0.08);
+
+                if (time < this.lastFireTime + cooldown) return;
+
+                // Проверка боезапаса
+                if (currentActiveWeapon === 'rifle') {
+                    if (gameState.inventory.ammo_rifle <= 0) {
+                        addLogMessage("Закончились патроны для автомата!", "danger");
+                        selectWeaponFromSlot(1);
+                        return;
+                    }
+                    gameState.inventory.ammo_rifle--;
+                } 
+                else if (currentActiveWeapon === 'shotgun') {
+                    if (gameState.inventory.ammo_shotgun <= 0) {
+                        addLogMessage("Закончилась дробь для дробовика!", "danger");
+                        selectWeaponFromSlot(1);
+                        return;
+                    }
+                    gameState.inventory.ammo_shotgun--;
+                }
+                else {
+                    // Пистолет
+                    if (gameState.inventory.ammo_pistol <= 0) {
+                        addLogMessage("Закончились патроны для пистолета!", "danger");
+                        return;
+                    }
+                    gameState.inventory.ammo_pistol--;
+                }
+
+                this.lastFireTime = time;
+                sound.playShoot(currentActiveWeapon);
+                updateWeaponHud();
+
+                // Спавним пулю
+                let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, targetPoint.x, targetPoint.y);
+                
+                // Эффект вспышки выстрела
+                this.spawnSparkParticles(this.player.x + Math.cos(angle)*16, this.player.y + Math.sin(angle)*16, 0xeab308);
+
+                if (currentActiveWeapon === 'shotgun') {
+                    // Дробовик стреляет 5 дробинками в разбросе
+                    for (let i = 0; i < 5; i++) {
+                        let spread = angle + (i - 2) * 0.08 + Phaser.Math.FloatBetween(-0.02, 0.02);
+                        let b = this.bullets.create(this.player.x + Math.cos(angle)*18, this.player.y + Math.sin(angle)*18, 'player');
+                        b.setDisplaySize(4, 4);
+                        b.setTint(0xfacc15);
+                        b.damage = getWeaponDamage('shotgun');
+                        this.physics.velocityFromAngle(spread * 180 / Math.PI, 480, b.body.velocity);
+                        // Ограничение дальности
+                        this.time.delayedCall(450, () => { if (b.active) b.destroy(); });
+                    }
+                } 
+                else {
+                    // Пистолет или Автомат
+                    let spread = angle + (currentActiveWeapon === 'rifle' ? Phaser.Math.FloatBetween(-0.06, 0.06) : 0);
+                    let b = this.bullets.create(this.player.x + Math.cos(angle)*18, this.player.y + Math.sin(angle)*18, 'player');
+                    b.setDisplaySize(6, 3);
+                    b.setTint(0xfacc15);
+                    b.setRotation(spread);
+                    b.damage = getWeaponDamage(currentActiveWeapon);
+                    this.physics.velocityFromAngle(spread * 180 / Math.PI, 620, b.body.velocity);
+                    
+                    // Ограничение дальности
+                    let life = (currentActiveWeapon === 'rifle') ? 900 : 600;
+                    this.time.delayedCall(life, () => { if (b.active) b.destroy(); });
+                }
+            }
+
+            // Нанесение урона врагу пулей
+            damageEnemy(bullet, enemy) {
+                this.spawnBloodParticles(bullet.x, bullet.y);
+                sound.playHit();
+                
+                enemy.hp -= bullet.damage;
+                bullet.destroy();
+
+                if (enemy.hp <= 0) {
+                    this.killEnemy(enemy);
+                }
+            }
+
+            killEnemy(enemy) {
+                sound.playDeath();
+                this.spawnBloodParticles(enemy.x, enemy.y, 25);
+                
+                // Начисление XP
+                let xpGained = 15;
+                if (enemy.enemyType === 'zombie_fast') xpGained = 25;
+                else if (enemy.enemyType === 'zombie_fat') xpGained = 40;
+                else if (enemy.enemyType === 'raider') xpGained = 35;
+                else if (enemy.enemyType === 'mutant') xpGained = 50;
+                else if (enemy.enemyType === 'boss') xpGained = 500;
+
+                gainXp(xpGained);
+
+                // Дроп лута со смертных врагов (35% шанс)
+                if (Math.random() < 0.35 || enemy.enemyType === 'boss') {
+                    let items = ['food', 'water', 'ammo', 'scrap', 'gasmask'];
+                    let roll = Phaser.Math.RND.pick(items);
+                    let loot = this.lootItems.create(enemy.x, enemy.y, `item_${roll}`);
+                    loot.itemType = roll;
+                }
+
+                // Эффект взрыва жирного зомби
+                if (enemy.enemyType === 'zombie_fat') {
+                    this.explodeFatZombie(enemy.x, enemy.y);
+                }
+
+                // Условие победы (Смерть босса в Омеге)
+                if (enemy.enemyType === 'boss') {
+                    this.time.delayedCall(1500, () => {
+                        this.scene.stop();
+                        document.getElementById('hud-container').style.display = 'none';
+                        document.getElementById('win-overlay').style.display = 'flex';
+                    });
+                }
+
+                enemy.destroy();
+            }
+
+            explodeFatZombie(x, y) {
+                sound.playShoot('shotgun');
+                this.spawnSparkParticles(x, y, 0xf97316, 25);
+                
+                // Наносим АОЕ урон игроку и другим врагам в радиусе 80px
+                let dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, x, y);
+                if (dist < 90) {
+                    let dmg = Math.round((90 - dist) * 0.4);
+                    damagePlayer(dmg, "взрыва зомби");
+                    addLogMessage(`💥 Вас задел взрыв толстого зомби! Урон: ${dmg} HP`, "danger");
+                }
+
+                this.enemies.children.iterate((e) => {
+                    if (e && e.active) {
+                        let edist = Phaser.Math.Distance.Between(e.x, e.y, x, y);
+                        if (edist < 90 && edist > 5) {
+                            e.hp -= 40;
+                            if (e.hp <= 0) this.time.delayedCall(10, () => { if (e.active) this.killEnemy(e); });
+                        }
+                    }
+                });
+            }
+
+            // Получение урона игроком от пуль
+            damagePlayerFromBullet(player, bullet) {
+                this.spawnBloodParticles(bullet.x, bullet.y, 8);
+                sound.playHit();
+                
+                let dmg = bullet.damage || 8;
+                damagePlayer(dmg, "атаки рейдеров");
+                addLogMessage(`⚠️ В вас попал рейдер! Урон: ${dmg} HP`, "danger");
+                
+                bullet.destroy();
+            }
+
+            // Атака врагов в ближнем бою
+            enemyMeleeAttack(player, enemy) {
+                let now = this.time.now;
+                if (!enemy.lastAttackTime) enemy.lastAttackTime = 0;
+                
+                if (now > enemy.lastAttackTime + 1200) {
+                    enemy.lastAttackTime = now;
+                    this.spawnBloodParticles(player.x, player.y, 10);
+                    sound.playHit();
+
+                    let dmg = enemy.dmg || 10;
+                    damagePlayer(dmg, `атаки ${enemy.enemyType === 'mutant' ? 'мутанта' : 'зомби'}`);
+                    addLogMessage(`💥 Вас укусил ${enemy.enemyType === 'mutant' ? 'мутант' : 'зомби'}! Урон: ${dmg} HP`, "danger");
+                }
+            }
+
+            // Сбор ресурсов
+            handleHarvesting(dt) {
+                let nearest = null;
+                let minDist = 45;
+
+                this.harvestables.children.iterate((h) => {
+                    if (h) {
+                        let dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, h.x, h.y);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            nearest = h;
+                        }
+                    }
+                });
+
+                if (nearest) {
+                    if (nearest.type === 'tree') checkTutorial('tree', '🪵 Добыча дров', 'Подойдите к дереву и зажмите ПРОБЕЛ (или зажмите левую кнопку мыши на нем), чтобы срубить его. Из дерева выпадут Дрова. Дрова нужны для заправки топки поезда.', '🪵');
+                    if (nearest.type === 'scrap') checkTutorial('scrap', '⚙️ Сбор металлолома', 'Подойдите к куче хлама и зажмите ПРОБЕЛ, чтобы собрать металлолом. Он нужен для крафта снаряжения и апгрейда паровоза.', '⚙️');
+                    
+                    let keyActive = this.keys.SPACE.isDown || this.input.activePointer.isDown;
+                    
+                    if (keyActive) {
+                        this.isChopping = true;
+                        this.harvestTarget = nearest;
+                        this.harvestProgress += dt;
+
+                        if (Math.random() < 0.05) sound.playHit();
+
+                        this.drawProgressBar(this.player.x - 16, this.player.y - 24, this.harvestProgress / 1.5);
+
+                        if (this.harvestProgress >= 1.5) {
+                            this.completeHarvest(nearest);
+                            this.clearProgressBar();
+                        }
+                    } else {
+                        this.clearProgressBar();
+                    }
+                } else {
+                    this.clearProgressBar();
+                }
+            }
+
+            drawProgressBar(x, y, pct) {
+                pct = Math.min(1, Math.max(0, pct));
+                this.progBarBg.clear();
+                this.progBarBg.fillStyle(0x000000, 0.6);
+                this.progBarBg.fillRect(x, y, 32, 6);
+                
+                this.progBarFill.clear();
+                this.progBarFill.fillStyle(0xa3e635, 1);
+                this.progBarFill.fillRect(x + 1, y + 1, 30 * pct, 4);
+            }
+
+            clearProgressBar() {
+                if (this.isChopping) {
+                    this.isChopping = false;
+                    this.harvestProgress = 0;
+                    this.progBarBg.clear();
+                    this.progBarFill.clear();
+                }
+            }
+
+            completeHarvest(obj) {
+                if (obj.type === 'tree') {
+                    let drops = Phaser.Math.Between(2, 3);
+                    for (let i = 0; i < drops; i++) {
+                        let item = this.lootItems.create(obj.x + Phaser.Math.Between(-15, 15), obj.y + Phaser.Math.Between(-15, 15), 'item_wood');
+                        item.itemType = 'wood';
+                    }
+                    gainXp(12);
+                    addLogMessage("🪵 Дерево срублено! Подберите выпавшие дрова.", "system");
+                    obj.destroy();
+                } 
+                else if (obj.type === 'scrap') {
+                    gameState.inventory.scrap += 2;
+                    gainXp(15);
+                    addLogMessage("⚙️ Металлолом собран (+2 хлама)", "system");
+                    sound.playCollect();
+                    obj.destroy();
+                }
+                else if (obj.type === 'pump') {
+                    obj.waterLeft--;
+                    gameState.inventory.water++;
+                    sound.playCollect();
+                    addLogMessage("🥤 Бутылка наполнена чистой водой из насоса (+1 вода)", "system");
+                    if (obj.waterLeft <= 0) {
+                        addLogMessage("В насосе закончилась вода.", "warning");
+                        obj.destroy();
+                    }
+                }
+                updateHudVisuals();
+            }
+
+            // Подбор лута с пола при наступании
+            pickupLoot(player, item) {
+                let type = item.itemType;
+                
+                if (type === 'wood') {
+                    let cap = getMaxWoodCapacity();
+                    if (gameState.inventory.wood >= cap) {
+                        addLogMessage(`Склад дров забит! (Максимум: ${cap})`, "warning");
+                        return;
+                    }
+                    gameState.inventory.wood++;
+                    addLogMessage("+1 Дрова", "system");
+                } 
+                else if (type === 'food') {
+                    gameState.inventory.food++;
+                    addLogMessage("+1 Консервы", "system");
+                }
+                else if (type === 'water') {
+                    gameState.inventory.water++;
+                    addLogMessage("+1 Water", "system");
+                }
+                else if (type === 'medkit') {
+                    gameState.inventory.medkit++;
+                    addLogMessage("+1 Аптечка", "system");
+                }
+                else if (type === 'gasmask') {
+                    gameState.inventory.gasmask = Math.min(100, gameState.inventory.gasmask + 40);
+                    addLogMessage("+40% Фильтр противогаза", "system");
+                }
+                else if (type === 'scrap') {
+                    gameState.inventory.scrap++;
+                    addLogMessage("+1 Хлам", "system");
+                }
+
+                sound.playCollect();
+                item.destroy();
+                updateHudVisuals();
+                saveGameData();
+            }
+
+            // Поведение ИИ Врагов
+            updateEnemyAI(time, dt) {
+                let viewDist = 300;
+                
+                this.enemies.children.iterate((e) => {
+                    if (!e || !e.active) return;
+
+                    let dist = Phaser.Math.Distance.Between(e.x, e.y, this.player.x, this.player.y);
+                    let angle = Phaser.Math.Angle.Between(e.x, e.y, this.player.x, this.player.y);
+                    e.setRotation(angle);
+
+                    // Зомби
+                    if (e.enemyType.startsWith('zombie')) {
+                        if (dist < viewDist) {
+                            this.physics.velocityFromAngle(angle * 180 / Math.PI, e.speed, e.body.velocity);
+                            checkTutorial('enemy', '🧟 Опасность близко!', 'На вас бежит зомби! Выберите оружие на клавишу 1, наведите курсор и стреляйте кликом мышки.', '🧟');
+                        } else {
+                            if (Math.random() < 0.01) {
+                                let randAngle = Phaser.Math.FloatBetween(0, Math.PI*2);
+                                this.physics.velocityFromAngle(randAngle * 180 / Math.PI, e.speed * 0.4, e.body.velocity);
+                            }
+                        }
+                    }
+
+                    // Рейдеры
+                    else if (e.enemyType === 'raider') {
+                        if (dist < viewDist + 100) {
+                            if (dist > 300) {
+                                this.physics.velocityFromAngle(angle * 180 / Math.PI, e.speed, e.body.velocity);
+                            } else if (dist < 180) {
+                                this.physics.velocityFromAngle((angle + Math.PI) * 180 / Math.PI, e.speed * 1.1, e.body.velocity);
+                            } else {
+                                e.setVelocity(0, 0);
+                            }
+
+                            if (time > e.lastShotTime + 1400 && dist < 320) {
+                                e.lastShotTime = time;
+                                this.fireEnemyBullet(e.x, e.y, angle);
+                            }
+                        } else {
+                            if (Math.random() < 0.01) {
+                                let randAngle = Phaser.Math.FloatBetween(0, Math.PI*2);
+                                this.physics.velocityFromAngle(randAngle * 180 / Math.PI, e.speed * 0.5, e.body.velocity);
+                            }
+                        }
+                    }
+
+                    // Подземный мутант
+                    else if (e.enemyType === 'mutant') {
+                        if (dist < viewDist) {
+                            if (dist < 140 && time > e.leapCooldown + 6000) {
+                                e.leapCooldown = time;
+                                this.physics.velocityFromAngle(angle * 180 / Math.PI, e.speed * 3.5, e.body.velocity);
+                                this.spawnSparkParticles(e.x, e.y, 0x7c3aed, 8);
+                                addLogMessage("👹 Мутант совершил прыжок!", "danger");
+                            } else if (time > e.leapCooldown + 400) {
+                                this.physics.velocityFromAngle(angle * 180 / Math.PI, e.speed, e.body.velocity);
+                            }
+                        } else {
+                            if (Math.random() < 0.015) {
+                                let randAngle = Phaser.Math.FloatBetween(0, Math.PI*2);
+                                this.physics.velocityFromAngle(randAngle * 180 / Math.PI, e.speed * 0.4, e.body.velocity);
+                            }
+                        }
+                    }
+
+                    // Финальный Босс
+                    else if (e.enemyType === 'boss') {
+                        e.setVelocity(0, 0);
+
+                        if (time > e.lastShotTime + 1800 && dist < 500) {
+                            e.lastShotTime = time;
+                            this.fireBossPlasma(e.x, e.y, angle);
+                        }
+
+                        if (!e.lastSummonTime) e.lastSummonTime = time;
+                        if (time > e.lastSummonTime + 9000 && dist < 600) {
+                            e.lastSummonTime = time;
+                            this.spawnEnemy(e.x + Phaser.Math.Between(-80, 80), e.y + 100, 'zombie_fast');
+                            this.spawnEnemy(e.x + Phaser.Math.Between(-80, 80), e.y - 100, 'zombie');
+                            addLogMessage("🧟‍♂️ Босс призвал орду прислужников!", "danger");
+                        }
+                    }
+                });
+            }
+
+            // Стрельба врага-рейдера
+            fireEnemyBullet(x, y, angle) {
+                sound.playShoot('pistol');
+                let b = this.enemyBullets.create(x + Math.cos(angle)*16, y + Math.sin(angle)*16, 'player');
+                b.setDisplaySize(6, 3);
+                b.setTint(0xef4444);
+                b.setRotation(angle);
+                b.damage = 8;
+                this.physics.velocityFromAngle(angle * 180 / Math.PI, 400, b.body.velocity);
+
+                this.time.delayedCall(700, () => { if (b.active) b.destroy(); });
+            }
+
+            // Стрельба босса плазменным сгустком
+            fireBossPlasma(x, y, angle) {
+                sound.playShoot('shotgun');
+                let b = this.enemyBullets.create(x + Math.cos(angle)*30, y + Math.sin(angle)*30, 'player');
+                b.setDisplaySize(16, 16);
+                b.setTint(0x10b981);
+                b.damage = 25;
+                this.physics.velocityFromAngle(angle * 180 / Math.PI, 320, b.body.velocity);
+
+                this.time.delayedCall(1200, () => {
+                    if (b.active) {
+                        this.spawnSparkParticles(b.x, b.y, 0x10b981, 15);
+                        let dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, b.x, b.y);
+                        if (dist < 60) {
+                            damagePlayer(15, "взрыва плазмы");
+                            addLogMessage("💥 Вас задело взрывом плазмы босса!", "danger");
+                        }
+                        b.destroy();
+                    }
+                });
+            }
+
+            // =========================================================================
+            // ВИЗУАЛЬНЫЕ ЭФФЕКТЫ ЧАСТИЦ
+            // =========================================================================
+            
+            // Искры / Вспышки
+            spawnSparkParticles(x, y, color=0xf59e0b, count=8) {
+                for (let i = 0; i < count; i++) {
+                    let p = this.add.graphics();
+                    p.fillStyle(color, 1);
+                    p.fillRect(-2, -2, 4, 4);
+                    p.x = x;
+                    p.y = y;
+                    
+                    let angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+                    let speed = Phaser.Math.Between(40, 120);
+                    
+                    this.physics.add.existing(p);
+                    p.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+                    
+                    this.time.delayedCall(Phaser.Math.Between(150, 300), () => { p.destroy(); });
+                }
+            }
+
+            // Кровь при попадании
+            spawnBloodParticles(x, y, count=12) {
+                for (let i = 0; i < count; i++) {
+                    let p = this.add.graphics();
+                    p.fillStyle(0xd90429, 0.9);
+                    p.fillRect(-2, -2, 3, 3);
+                    p.x = x;
+                    p.y = y;
+                    
+                    let angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+                    let speed = Phaser.Math.Between(30, 90);
+                    
+                    this.physics.add.existing(p);
+                    p.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+                    
+                    this.time.delayedCall(Phaser.Math.Between(200, 400), () => { p.destroy(); });
+                }
+            }
+
+            // Радиационное свечение бочек
+            spawnGlowParticles(x, y) {
+                let p = this.add.graphics();
+                p.fillStyle(0xa3e635, 0.7);
+                p.fillRect(-2, -2, 3, 3);
+                p.x = x + Phaser.Math.Between(-16, 16);
+                p.y = y + Phaser.Math.Between(-16, 16);
+                
+                this.physics.add.existing(p);
+                p.body.setVelocity(Phaser.Math.Between(-10, 10), Phaser.Math.Between(-30, -10));
+                
+                this.time.delayedCall(800, () => { p.destroy(); });
+            }
+
+            // =========================================================================
+            // МИНИ-КАРТА
+            // =========================================================================
+            drawMinimap() {
+                let canvas = document.getElementById('minimap-canvas');
+                if (!canvas) return;
+                let ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 100, 100);
+
+                let mapSize = this.locationConfig.size * 32;
+
+                let toMapX = (wx) => Math.round((wx / mapSize) * 100);
+                let toMapY = (wy) => Math.round((wy / mapSize) * 100);
+
+                ctx.fillStyle = '#3f3f46';
+                ctx.fillRect(0, toMapY(96), 100, 3);
+
+                ctx.fillStyle = '#ca8a04';
+                ctx.fillRect(toMapX(80), toMapY(80), 8, 8);
+
+                this.harvestables.children.iterate((h) => {
+                    if (h && h.active) {
+                        ctx.fillStyle = h.type === 'tree' ? '#16a34a' : '#854d0e';
+                        ctx.fillRect(toMapX(h.x) - 1, toMapY(h.y) - 1, 3, 3);
+                    }
+                });
+
+                ctx.fillStyle = '#ffffff';
+                this.lootItems.children.iterate((l) => {
+                    if (l && l.active) {
+                        ctx.fillRect(toMapX(l.x) - 1, toMapY(l.y) - 1, 2, 2);
+                    }
+                });
+
+                ctx.fillStyle = '#ef4444';
+                this.enemies.children.iterate((e) => {
+                    if (e && e.active) {
+                        ctx.fillRect(toMapX(e.x) - 1, toMapY(e.y) - 1, 3, 3);
+                    }
+                });
+
+                ctx.fillStyle = '#0284c7';
+                ctx.beginPath();
+                ctx.arc(toMapX(this.player.x), toMapY(this.player.y), 3, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+
+        // =========================================================================
+        // ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+        // =========================================================================
+        window.onload = () => {
+            updateMenuButtons();
+            
+            document.body.addEventListener('click', () => {
+                sound.init();
+            }, { once: true });
+        };
+    </script>
+</body>
+</html>

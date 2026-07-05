@@ -630,13 +630,13 @@
             gap: 6px;
         }
 
-        .craft-mat-pill {
+        .craft-mats-pill {
             background: rgba(255, 255, 255, 0.05);
             padding: 2px 6px;
             border-radius: 4px;
         }
 
-        .craft-mat-pill.insufficient {
+        .craft-mats-pill.insufficient {
             color: var(--danger-accent);
             background: rgba(244, 63, 94, 0.1);
         }
@@ -1742,7 +1742,7 @@
         const LOCATIONS = [
             {
                 name: "Станция «Рассвет»",
-                description: "Безопасная точка. Здесь вы нашли старый маневровый паровоз. Соберите базовые припасы и дрова, чтобы начать движение.",
+                description: "Безопасная точка. Здесь вы нашли заброшенный паровоз. Соберите базовые припасы и дрова, чтобы начать движение.",
                 type: "station",
                 theme: "grass",
                 size: 32, // размер сетки 32x32
@@ -2378,7 +2378,7 @@
                     if (isShort) canCraft = false;
                     
                     let resLabel = (res === 'scrap') ? '⚙️ Хлам' : (res === 'wood') ? '🪵 Дрова' : (res === 'water') ? '🥤 Вода' : res;
-                    matsPills += `<span class="craft-mat-pill ${isShort ? 'insufficient' : ''}">${resLabel}: ${playerAmount}/${reqAmount}</span>`;
+                    matsPills += `<span class="craft-mats-pill ${isShort ? 'insufficient' : ''}">${resLabel}: ${playerAmount}/${reqAmount}</span>`;
                 }
 
                 // Дополнительное ограничение на апгрейд оружия (макс 3 уровня)
@@ -3885,6 +3885,16 @@
             }
         }
 
+        // Вспомогательная функция для прорисовки тени
+        function drawShadow(ctx, x, y, radiusX, radiusY) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.beginPath();
+            ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
         // =========================================================================
         // ТЕКСТУРНЫЙ ГЕНЕРАТОР (ВЫЗЫВАЕТСЯ НА BOOT)
         // =========================================================================
@@ -3893,189 +3903,274 @@
             let tilesCanvas = scene.textures.createCanvas('tiles_texture', 256, 32);
             let ctx = tilesCanvas.context;
             
-            // Tile 1: Трава (Зеленая с пикселями)
-            ctx.fillStyle = '#2c5e2e';
+            // Tile 1: Grass (Густая трава с прорисовкой травинок)
+            ctx.fillStyle = '#1e3f20'; 
             ctx.fillRect(0, 0, 32, 32);
-            ctx.fillStyle = '#346f37';
-            ctx.fillRect(4, 4, 4, 4);
-            ctx.fillRect(16, 12, 4, 4);
-            ctx.fillRect(24, 20, 4, 4);
-            ctx.fillRect(8, 24, 4, 4);
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 4; i++) {
+                let gx = 4 + i * 7 + Math.random()*2;
+                let gy = 6 + i * 5 + Math.random()*2;
+                ctx.beginPath();
+                ctx.moveTo(gx, gy);
+                ctx.lineTo(gx - 2, gy - 6);
+                ctx.moveTo(gx, gy);
+                ctx.lineTo(gx + 2, gy - 5);
+                ctx.stroke();
+            }
+            // Цветы
+            ctx.fillStyle = '#facc15'; ctx.fillRect(5, 20, 2, 2);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(24, 10, 2, 2);
             
-            // Tile 2: Грязь (Коричневая)
-            ctx.fillStyle = '#5c4033';
+            // Tile 2: Dirt (Грязь с текстурой камней и трещин)
+            ctx.fillStyle = '#452c1e';
             ctx.fillRect(32, 0, 32, 32);
-            ctx.fillStyle = '#6e4e3e';
-            ctx.fillRect(36, 8, 4, 4);
-            ctx.fillRect(48, 20, 4, 4);
-            ctx.fillStyle = '#4a3227';
-            ctx.fillRect(40, 24, 4, 4);
+            ctx.strokeStyle = '#27170c';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(35, 10); ctx.lineTo(45, 18); ctx.lineTo(55, 15);
+            ctx.stroke();
+            // Галька
+            ctx.fillStyle = '#71717a';
+            ctx.fillRect(40, 24, 3, 2);
+            ctx.fillRect(56, 8, 2, 2);
             
-            // Tile 3: Бетон (Светло-серый с трещинами)
-            ctx.fillStyle = '#555555';
+            // Tile 3: Concrete (Бетонные плиты с трещинами и швами)
+            ctx.fillStyle = '#52525b';
             ctx.fillRect(64, 0, 32, 32);
-            ctx.fillStyle = '#666666';
-            ctx.fillRect(65, 1, 30, 30);
-            ctx.fillStyle = '#333333';
-            ctx.fillRect(64, 31, 32, 1);
-            ctx.fillRect(95, 0, 1, 32);
+            ctx.strokeStyle = '#27272a';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(65, 1, 30, 30);
+            ctx.strokeStyle = '#1e1b1b';
+            ctx.beginPath();
+            ctx.moveTo(68, 6); ctx.lineTo(76, 12); ctx.lineTo(72, 24);
+            ctx.stroke();
+            // Пятна грязи
+            ctx.fillStyle = '#3f3f46';
+            ctx.fillRect(80, 20, 3, 3);
             
-            // Tile 4: Песок (Желтый сухой)
-            ctx.fillStyle = '#c2b280';
+            // Tile 4: Sand (Песчаные дюны и рябь ветра)
+            ctx.fillStyle = '#d97706';
             ctx.fillRect(96, 0, 32, 32);
-            ctx.fillStyle = '#d8c895';
-            ctx.fillRect(100, 10, 4, 2);
-            ctx.fillRect(116, 22, 4, 2);
+            ctx.strokeStyle = '#b45309';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(98, 8); ctx.quadraticCurveTo(106, 14, 114, 8);
+            ctx.moveTo(108, 24); ctx.quadraticCurveTo(116, 28, 124, 22);
+            ctx.stroke();
             
-            // Tile 5: Асфальт (Темный асфальт с разметкой)
-            ctx.fillStyle = '#2a2a2a';
+            // Tile 5: Asphalt (Шероховатый асфальт с желтой полосой разметки)
+            ctx.fillStyle = '#18181b';
             ctx.fillRect(128, 0, 32, 32);
-            ctx.fillStyle = '#ffcc00';
-            ctx.fillRect(142, 12, 4, 8);
+            ctx.fillStyle = '#3f3f46';
+            ctx.fillRect(130, 2, 2, 2);
+            ctx.fillRect(150, 26, 2, 2);
+            ctx.fillStyle = '#eab308'; // Разметка
+            ctx.fillRect(142, 6, 4, 20);
             
-            // Tile 6: Туннель (Серый темный)
-            ctx.fillStyle = '#1e1e1e';
+            // Tile 6: Tunnel (Железная плита с заклепками)
+            ctx.fillStyle = '#27272a';
             ctx.fillRect(160, 0, 32, 32);
-            ctx.fillStyle = '#111111';
-            ctx.fillRect(160, 31, 32, 1);
-            ctx.fillRect(191, 0, 1, 32);
+            ctx.strokeStyle = '#3f3f46';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(160, 0); ctx.lineTo(192, 32);
+            ctx.moveTo(160, 32); ctx.lineTo(192, 0);
+            ctx.stroke();
+            // Заклепки по углам
+            ctx.fillStyle = '#71717a';
+            ctx.fillRect(162, 2, 2, 2);
+            ctx.fillRect(188, 2, 2, 2);
+            ctx.fillRect(162, 28, 2, 2);
+            ctx.fillRect(188, 28, 2, 2);
             
-            // Tile 7: Стена (Красный кирпич)
-            ctx.fillStyle = '#444444';
+            // Tile 7: Стена (Рельефный кирпич с тенью)
+            ctx.fillStyle = '#18181b'; // Фон швов
             ctx.fillRect(192, 0, 32, 32);
-            ctx.fillStyle = '#772222';
-            ctx.fillRect(193, 1, 14, 8);
-            ctx.fillRect(209, 1, 14, 8);
+            ctx.fillStyle = '#7f1d1d'; // Кирпичи
+            ctx.fillRect(193, 1, 13, 8);
+            ctx.fillRect(208, 1, 13, 8);
             ctx.fillRect(193, 11, 28, 8);
-            ctx.fillRect(193, 21, 14, 8);
-            ctx.fillRect(209, 21, 14, 8);
-            ctx.fillStyle = '#222222';
-            ctx.fillRect(192, 9, 32, 2);
-            ctx.fillRect(192, 19, 32, 2);
-            ctx.fillRect(192, 29, 32, 2);
+            ctx.fillRect(193, 21, 13, 8);
+            ctx.fillRect(208, 21, 13, 8);
+            ctx.fillStyle = '#991b1b'; // Светлые грани кирпичей
+            ctx.fillRect(193, 1, 13, 2);
+            ctx.fillRect(208, 1, 13, 2);
+            ctx.fillRect(193, 11, 28, 2);
+            ctx.fillRect(193, 21, 13, 2);
+            ctx.fillRect(208, 21, 13, 2);
             
-            // Tile 8: Рельсы
-            ctx.fillStyle = '#221100';
+            // Tile 8: Рельсы на деревянных шпалах
+            ctx.fillStyle = '#27170c'; // Темное дерево
             ctx.fillRect(224, 0, 32, 32);
-            ctx.fillStyle = '#5c4033';
-            ctx.fillRect(226, 4, 28, 4);
-            ctx.fillRect(226, 14, 28, 4);
-            ctx.fillRect(226, 24, 28, 4);
-            ctx.fillStyle = '#888888';
-            ctx.fillRect(230, 0, 3, 32);
-            ctx.fillRect(247, 0, 3, 32);
+            ctx.fillStyle = '#452c1e'; // Шпалы
+            ctx.fillRect(226, 4, 20, 5);
+            ctx.fillRect(226, 14, 20, 5);
+            ctx.fillRect(226, 24, 20, 5);
+            ctx.fillStyle = '#71717a'; // Металлические рельсы с блеском
+            ctx.fillRect(229, 0, 3, 32);
+            ctx.fillRect(242, 0, 3, 32);
+            ctx.fillStyle = '#a1a1aa'; // Блики на рельсах
+            ctx.fillRect(230, 0, 1, 32);
+            ctx.fillRect(243, 0, 1, 32);
             
             tilesCanvas.refresh();
             
-            // 2. Игрок: 32x32
+            // 2. Игрок: Солдат с рюкзаком и автоматом в руках
             let playerCanvas = scene.textures.createCanvas('player', 32, 32);
             let pCtx = playerCanvas.context;
-            pCtx.fillStyle = '#555555';
-            pCtx.fillRect(4, 6, 8, 4);
-            pCtx.fillRect(4, 22, 8, 4);
-            pCtx.fillStyle = '#4a3525';
-            pCtx.fillRect(2, 8, 8, 16);
-            pCtx.fillStyle = '#2b4c7e';
-            pCtx.beginPath(); pCtx.arc(16, 16, 10, 0, Math.PI * 2); pCtx.fill();
-            pCtx.fillStyle = '#ffdbac';
-            pCtx.beginPath(); pCtx.arc(18, 16, 6, 0, Math.PI * 2); pCtx.fill();
-            pCtx.fillStyle = '#4a2f13';
-            pCtx.beginPath(); pCtx.arc(16, 16, 6, Math.PI * 0.5, Math.PI * 1.5); pCtx.fill();
-            pCtx.fillStyle = '#ffdbac';
-            pCtx.fillRect(20, 10, 6, 4);
-            pCtx.fillRect(20, 18, 6, 4);
-            pCtx.fillStyle = '#222222';
-            pCtx.fillRect(24, 13, 8, 6);
+            drawShadow(pCtx, 14, 16, 11, 8);
+            pCtx.fillStyle = '#453225'; // Рюкзак
+            pCtx.fillRect(3, 8, 8, 16);
+            pCtx.fillStyle = '#2d3a22'; // Плечи/куртка
+            pCtx.beginPath(); pCtx.arc(13, 8, 5, 0, Math.PI*2); pCtx.fill();
+            pCtx.beginPath(); pCtx.arc(17, 24, 4, 0, Math.PI*2); pCtx.fill();
+            pCtx.fillStyle = '#1b2413'; // Тактический разгрузочный жилет
+            pCtx.beginPath(); pCtx.arc(13, 16, 9, 0, Math.PI*2); pCtx.fill();
+            pCtx.fillStyle = '#0f140b'; // Подсумки на жилете
+            pCtx.fillRect(10, 11, 4, 10);
+            pCtx.fillStyle = '#5c6f48'; // Оливковый шлем
+            pCtx.beginPath(); pCtx.arc(14, 16, 6, 0, Math.PI*2); pCtx.fill();
+            pCtx.fillStyle = '#111827'; // Черные тактические очки
+            pCtx.fillRect(17, 13, 2, 6);
+            pCtx.fillStyle = '#ffdbac'; // Кожа рук
+            pCtx.beginPath(); pCtx.arc(22, 23, 3, 0, Math.PI*2); pCtx.fill();
+            pCtx.beginPath(); pCtx.arc(17, 9, 3, 0, Math.PI*2); pCtx.fill();
+            pCtx.fillStyle = '#1e293b'; // Автомат Калашникова
+            pCtx.fillRect(18, 21, 14, 4); // Ствол
+            pCtx.fillStyle = '#0f172a';
+            pCtx.fillRect(16, 22, 6, 3); // Приклад/коробка
             playerCanvas.refresh();
             
-            // 3. Зомби: 32x32
+            // 3. Обычный Зомби: Зеленая гнилая кожа, оборванная одежда, руки вперед
             let zombieCanvas = scene.textures.createCanvas('zombie', 32, 32);
             let zCtx = zombieCanvas.context;
-            zCtx.fillStyle = '#4a5d3b';
-            zCtx.beginPath(); zCtx.arc(16, 16, 10, 0, Math.PI * 2); zCtx.fill();
-            zCtx.fillStyle = '#990000';
-            zCtx.fillRect(14, 10, 4, 3);
-            zCtx.fillRect(8, 16, 3, 5);
-            zCtx.fillStyle = '#4a5d3b';
-            zCtx.fillRect(20, 8, 10, 4);
-            zCtx.fillRect(20, 20, 10, 4);
-            zCtx.fillStyle = '#ffffff';
-            zCtx.fillRect(18, 12, 2, 2);
-            zCtx.fillRect(18, 18, 2, 2);
+            drawShadow(zCtx, 15, 16, 10, 7);
+            zCtx.fillStyle = '#4b5563'; // Разорванная серая кофта
+            zCtx.beginPath(); zCtx.arc(12, 16, 8, 0, Math.PI*2); zCtx.fill();
+            zCtx.fillStyle = '#991b1b'; // Кровь на груди
+            zCtx.fillRect(10, 13, 4, 5);
+            zCtx.fillStyle = '#5f7954'; // Гнилые вытянутые руки
+            zCtx.fillRect(14, 9, 14, 4); 
+            zCtx.fillRect(14, 19, 14, 4); 
+            zCtx.fillStyle = '#4d6142'; // Голова
+            zCtx.beginPath(); zCtx.arc(13, 16, 6, 0, Math.PI*2); zCtx.fill();
+            zCtx.fillStyle = '#ef4444'; // Кроваво-красные глаза
+            zCtx.fillRect(16, 12, 2, 2);
+            zCtx.fillRect(16, 18, 2, 2);
             zombieCanvas.refresh();
             
-            // 4. Быстрый зомби: 32x32
+            // 4. Быстрый зомби: Худой, в беге, оранжевые глаза
             let zfCanvas = scene.textures.createCanvas('zombie_fast', 32, 32);
             let zfCtx = zfCanvas.context;
-            zfCtx.fillStyle = '#5d7e48';
-            zfCtx.beginPath(); zfCtx.arc(16, 16, 8, 0, Math.PI * 2); zfCtx.fill();
-            zfCtx.fillStyle = '#cc2222';
-            zfCtx.beginPath(); zfCtx.arc(14, 16, 6, 0, Math.PI * 2); zfCtx.fill();
-            zfCtx.fillStyle = '#5d7e48';
-            zfCtx.fillRect(18, 9, 12, 3);
-            zfCtx.fillRect(18, 20, 12, 3);
+            drawShadow(zfCtx, 15, 16, 8, 5);
+            zfCtx.fillStyle = '#7f9c6f'; // Зеленая кожа
+            zfCtx.beginPath(); zfCtx.arc(12, 16, 7, 0, Math.PI*2); zfCtx.fill();
+            zfCtx.fillStyle = '#658055'; // Руки (одна вперед, другая назад в беге)
+            zfCtx.fillRect(14, 8, 12, 3);
+            zfCtx.fillRect(6, 21, 10, 3);
+            zfCtx.fillStyle = '#7f9c6f'; // Голова
+            zfCtx.beginPath(); zfCtx.arc(13, 16, 5, 0, Math.PI*2); zfCtx.fill();
+            zfCtx.fillStyle = '#f97316'; // Светящиеся оранжевые глаза
+            zfCtx.fillRect(15, 13, 2, 2);
+            zfCtx.fillRect(15, 17, 2, 2);
+            zfCtx.fillStyle = '#b91c1c'; // Следы укусов
+            zfCtx.fillRect(10, 15, 2, 2);
             zfCanvas.refresh();
             
-            // 5. Толстый зомби: 48x48
+            // 5. Толстый зомби: Раздутый пузырь с гноем и шрамами
             let zfatCanvas = scene.textures.createCanvas('zombie_fat', 48, 48);
             let zfatCtx = zfatCanvas.context;
-            zfatCtx.fillStyle = '#3a4d2b';
-            zfatCtx.beginPath(); zfatCtx.arc(24, 24, 16, 0, Math.PI * 2); zfatCtx.fill();
-            zfatCtx.fillStyle = '#8a9d3b';
-            zfatCtx.fillRect(20, 14, 6, 6);
-            zfatCtx.fillRect(16, 26, 8, 6);
-            zfatCtx.fillStyle = '#3a4d2b';
-            zfatCtx.fillRect(32, 16, 12, 5);
-            zfatCtx.fillRect(32, 27, 12, 5);
+            drawShadow(zfatCtx, 22, 24, 18, 12);
+            zfatCtx.fillStyle = '#5c633a'; // Болотный раздутый торс
+            zfatCtx.beginPath(); zfatCtx.arc(22, 24, 15, 0, Math.PI*2); zfatCtx.fill();
+            zfatCtx.strokeStyle = '#272d18'; // Шрамы сшивания брюха
+            zfatCtx.lineWidth = 2.5;
+            zfatCtx.beginPath(); zfatCtx.moveTo(22, 13); zfatCtx.lineTo(22, 35); zfatCtx.stroke();
+            zfatCtx.fillStyle = '#a3e635'; // Кислотно-салатовые волдыри
+            zfatCtx.beginPath(); zfatCtx.arc(17, 18, 4, 0, Math.PI*2); zfatCtx.fill();
+            zfatCtx.beginPath(); zfatCtx.arc(26, 30, 3, 0, Math.PI*2); zfatCtx.fill();
+            zfatCtx.fillStyle = '#4f5431'; // Толстые лапы
+            zfatCtx.fillRect(24, 12, 14, 6);
+            zfatCtx.fillRect(24, 30, 14, 6);
+            zfatCtx.fillStyle = '#3a3e23'; // Голова
+            zfatCtx.beginPath(); zfatCtx.arc(20, 24, 7, 0, Math.PI*2); zfatCtx.fill();
+            zfatCtx.fillStyle = '#eab308'; // Желтые глаза
+            zfatCtx.fillRect(23, 20, 2, 2);
+            zfatCtx.fillRect(23, 26, 2, 2);
             zfatCanvas.refresh();
             
-            // 6. Рейдер: 32x32
+            // 6. Рейдер: Наемник в камуфляже, бандане и с автоматом
             let raiderCanvas = scene.textures.createCanvas('raider', 32, 32);
             let rCtx = raiderCanvas.context;
-            rCtx.fillStyle = '#3d4d33';
-            rCtx.beginPath(); rCtx.arc(16, 16, 10, 0, Math.PI * 2); rCtx.fill();
-            rCtx.fillStyle = '#614e33';
-            rCtx.fillRect(10, 8, 4, 4);
-            rCtx.fillRect(14, 20, 4, 4);
-            rCtx.fillStyle = '#2b302a';
-            rCtx.beginPath(); rCtx.arc(16, 16, 7, 0, Math.PI * 2); rCtx.fill();
-            rCtx.fillStyle = '#444444';
-            rCtx.fillRect(20, 10, 5, 3);
-            rCtx.fillRect(20, 19, 5, 3);
-            rCtx.fillStyle = '#111111';
-            rCtx.fillRect(24, 14, 8, 4);
+            drawShadow(rCtx, 14, 16, 11, 8);
+            rCtx.fillStyle = '#3b432a'; // Куртка хаки
+            rCtx.beginPath(); rCtx.arc(13, 16, 9, 0, Math.PI*2); rCtx.fill();
+            rCtx.fillStyle = '#614e33'; // Пятна камуфляжа
+            rCtx.fillRect(8, 12, 4, 4);
+            rCtx.fillRect(12, 20, 4, 4);
+            rCtx.fillStyle = '#ca8a04'; // Патронташ на груди
+            rCtx.fillRect(10, 11, 2, 10);
+            rCtx.fillStyle = '#1f2937'; // Черная каска
+            rCtx.beginPath(); rCtx.arc(14, 16, 6, 0, Math.PI*2); rCtx.fill();
+            rCtx.fillStyle = '#0369a1'; // Зеркальные синие очки
+            rCtx.fillRect(17, 13, 2, 6);
+            rCtx.fillStyle = '#1e293b'; // Оружие
+            rCtx.fillRect(18, 22, 14, 3);
             raiderCanvas.refresh();
             
-            // 7. Мутант: 40x40
+            // 7. Мутант: Фиолетовое членистоногое с 6 изогнутыми лапами
             let mutantCanvas = scene.textures.createCanvas('mutant', 40, 40);
             let mCtx = mutantCanvas.context;
-            mCtx.fillStyle = '#2b1b3d';
-            mCtx.beginPath(); mCtx.arc(20, 20, 14, 0, Math.PI * 2); mCtx.fill();
-            mCtx.fillStyle = '#4b2e6d';
-            mCtx.beginPath(); mCtx.arc(17, 20, 10, 0, Math.PI * 2); mCtx.fill();
-            mCtx.fillStyle = '#ff0000';
-            mCtx.fillRect(22, 14, 3, 3);
-            mCtx.fillRect(22, 22, 3, 3);
-            mCtx.fillStyle = '#1b0b2d';
-            mCtx.fillRect(26, 10, 8, 4);
-            mCtx.fillRect(26, 26, 8, 4);
+            drawShadow(mCtx, 18, 20, 14, 9);
+            mCtx.fillStyle = '#3b0764'; // Плотный фиолетовый панцирь
+            mCtx.beginPath(); mCtx.arc(17, 20, 12, 0, Math.PI*2); mCtx.fill();
+            mCtx.strokeStyle = '#c084fc'; // Люминесцентный узор
+            mCtx.lineWidth = 1.5;
+            mCtx.beginPath();
+            mCtx.moveTo(10, 20); mCtx.lineTo(24, 20);
+            mCtx.moveTo(17, 10); mCtx.lineTo(17, 30);
+            mCtx.stroke();
+            mCtx.strokeStyle = '#2e1065'; // Прорисовка 6 лап дугами
+            mCtx.lineWidth = 2.5;
+            for (let i = 0; i < 3; i++) {
+                mCtx.beginPath(); mCtx.moveTo(17, 20); mCtx.quadraticCurveTo(8, 6 + i*14, 2, 4 + i*16); mCtx.stroke();
+                mCtx.beginPath(); mCtx.moveTo(17, 20); mCtx.quadraticCurveTo(26, 6 + i*14, 32, 4 + i*16); mCtx.stroke();
+            }
+            mCtx.fillStyle = '#1e1b4b'; // Усиленная голова
+            mCtx.beginPath(); mCtx.arc(20, 20, 6, 0, Math.PI*2); mCtx.fill();
+            mCtx.fillStyle = '#d946ef'; // Сияющие розовые глаза
+            mCtx.fillRect(22, 17, 2, 2);
+            mCtx.fillRect(22, 21, 2, 2);
             mutantCanvas.refresh();
             
-            // 8. Босс: 64x64
+            // 8. Босс: Огромный киборг, железный щит, реакторы на плечах, клешни
             let bossCanvas = scene.textures.createCanvas('boss', 64, 64);
             let bCtx = bossCanvas.context;
-            bCtx.fillStyle = '#5c1313';
-            bCtx.beginPath(); bCtx.arc(32, 32, 24, 0, Math.PI * 2); bCtx.fill();
-            bCtx.fillStyle = '#2b0b0b';
-            bCtx.fillRect(8, 20, 6, 6);
-            bCtx.fillRect(8, 38, 6, 6);
-            bCtx.fillRect(20, 8, 6, 6);
-            bCtx.fillRect(38, 8, 6, 6);
-            bCtx.fillStyle = '#ffea00';
-            bCtx.fillRect(40, 20, 4, 4);
-            bCtx.fillRect(44, 26, 4, 4);
-            bCtx.fillRect(40, 32, 4, 4);
-            bCtx.fillRect(44, 38, 4, 4);
+            drawShadow(bCtx, 28, 32, 24, 15);
+            bCtx.fillStyle = '#374151'; // Стальная броня
+            bCtx.beginPath(); bCtx.arc(28, 32, 20, 0, Math.PI*2); bCtx.fill();
+            bCtx.fillStyle = '#78350f'; // Ржавчина и ожоги
+            bCtx.fillRect(20, 20, 8, 8);
+            bCtx.fillRect(24, 36, 6, 8);
+            bCtx.fillStyle = '#22c55e'; // Реакторы на плечах (зеленые колбы)
+            bCtx.beginPath(); bCtx.arc(18, 18, 6, 0, Math.PI*2); bCtx.fill();
+            bCtx.beginPath(); bCtx.arc(18, 46, 6, 0, Math.PI*2); bCtx.fill();
+            bCtx.fillStyle = '#a3e635';
+            bCtx.beginPath(); bCtx.arc(18, 18, 3, 0, Math.PI*2); bCtx.fill();
+            bCtx.beginPath(); bCtx.arc(18, 46, 3, 0, Math.PI*2); bCtx.fill();
+            bCtx.strokeStyle = '#1f2937'; // Две стальные клешни по бокам
+            bCtx.lineWidth = 4;
+            bCtx.beginPath(); bCtx.arc(38, 16, 12, Math.PI*1.5, Math.PI*0.5); bCtx.stroke();
+            bCtx.beginPath(); bCtx.arc(38, 48, 12, Math.PI*1.5, Math.PI*0.5); bCtx.stroke();
+            bCtx.fillStyle = '#f1f5f9'; // Металлическая защитная маска-череп
+            bCtx.beginPath(); bCtx.arc(34, 32, 8, 0, Math.PI*2); bCtx.fill();
+            bCtx.fillStyle = '#000000'; // Глазницы
+            bCtx.fillRect(36, 28, 3, 3);
+            bCtx.fillRect(36, 33, 3, 3);
+            bCtx.fillStyle = '#ef4444'; // Светящиеся злые глаза
+            bCtx.fillRect(37, 29, 1, 1);
+            bCtx.fillRect(37, 34, 1, 1);
             bossCanvas.refresh();
             
             // 9. Белый пиксель для частиц: 4x4
@@ -4085,7 +4180,7 @@
             pxCtx.fillRect(0, 0, 4, 4);
             pxCanvas.refresh();
 
-            // 10. Предметы
+            // 10. Предметы (Лут на полу)
             // Дрова
             let wItem = scene.textures.createCanvas('item_wood', 24, 24);
             let wCtx = wItem.context;
@@ -4097,7 +4192,7 @@
             wCtx.fillRect(8, 10, 10, 1);
             wItem.refresh();
             
-            // Металлолом
+            // Металлолом (Шестеренка с отверстием)
             let sItem = scene.textures.createCanvas('item_scrap', 24, 24);
             let sCtx = sItem.context;
             sCtx.fillStyle = '#7a7a7a';
@@ -4122,7 +4217,7 @@
             fCtx.fillRect(11, 11, 2, 2);
             fItem.refresh();
             
-            // Вода
+            // Вода (Голубая бутылка с этикеткой)
             let watItem = scene.textures.createCanvas('item_water', 24, 24);
             let watCtx = watItem.context;
             watCtx.fillStyle = '#38bdf8';
@@ -4133,7 +4228,7 @@
             watCtx.fillRect(11, 10, 2, 6);
             watItem.refresh();
             
-            // Патроны
+            // Патроны (Ящик защитного цвета с патронной лентой)
             let amItem = scene.textures.createCanvas('item_ammo', 24, 24);
             let amCtx = amItem.context;
             amCtx.fillStyle = '#3f6212';
@@ -4142,7 +4237,7 @@
             amCtx.fillRect(8, 10, 8, 4);
             amItem.refresh();
             
-            // Аптечка
+            // Аптечка (Красный крест на белом чемоданчике)
             let medItem = scene.textures.createCanvas('item_medkit', 24, 24);
             let medCtx = medItem.context;
             medCtx.fillStyle = '#f8fafc';
@@ -4152,7 +4247,7 @@
             medCtx.fillRect(6, 11, 12, 2);
             medItem.refresh();
             
-            // Противогаз
+            // Фильтр противогаза (Круглая металлическая коробка с сеткой)
             let gmItem = scene.textures.createCanvas('item_gasmask', 24, 24);
             let gmCtx = gmItem.context;
             gmCtx.fillStyle = '#1e293b';
@@ -4164,52 +4259,65 @@
             gmCtx.fillRect(10, 14, 4, 4);
             gmItem.refresh();
             
-            // 11. Объекты окружения
-            // Дерево
+            // 11. Объекты окружения (Преграды)
+            // Дерево: Объемная сосна, три перекрывающих друг друга градиентных круга листвы
             let treeCanvas = scene.textures.createCanvas('prop_tree', 64, 64);
             let tCtx = treeCanvas.context;
-            tCtx.fillStyle = '#5c3815';
+            drawShadow(tCtx, 32, 32, 28, 20);
+            tCtx.fillStyle = '#452207'; // Ствол
             tCtx.beginPath(); tCtx.arc(32, 32, 8, 0, Math.PI*2); tCtx.fill();
-            tCtx.fillStyle = '#14532d';
+            
+            let grad1 = tCtx.createRadialGradient(32, 32, 10, 32, 32, 24);
+            grad1.addColorStop(0, '#15803d'); grad1.addColorStop(1, '#14532d');
+            tCtx.fillStyle = grad1;
             tCtx.beginPath(); tCtx.arc(32, 32, 24, 0, Math.PI*2); tCtx.fill();
-            tCtx.fillStyle = '#166534';
-            tCtx.beginPath(); tCtx.arc(30, 28, 18, 0, Math.PI*2); tCtx.fill();
-            tCtx.fillStyle = '#15803d';
-            tCtx.beginPath(); tCtx.arc(28, 26, 12, 0, Math.PI*2); tCtx.fill();
+            
+            let grad2 = tCtx.createRadialGradient(30, 30, 5, 30, 30, 18);
+            grad2.addColorStop(0, '#22c55e'); grad2.addColorStop(1, '#166534');
+            tCtx.fillStyle = grad2;
+            tCtx.beginPath(); tCtx.arc(30, 30, 18, 0, Math.PI*2); tCtx.fill();
+            
+            let grad3 = tCtx.createRadialGradient(28, 28, 2, 28, 28, 12);
+            grad3.addColorStop(0, '#86efac'); grad3.addColorStop(1, '#15803d');
+            tCtx.fillStyle = grad3;
+            tCtx.beginPath(); tCtx.arc(28, 28, 12, 0, Math.PI*2); tCtx.fill();
             treeCanvas.refresh();
             
-            // Камень
+            // Камень: Многоугольная глыба с гранями
             let rockCanvas = scene.textures.createCanvas('prop_rock', 32, 32);
             let rkCtx = rockCanvas.context;
-            rkCtx.fillStyle = '#4b5563';
+            drawShadow(rkCtx, 16, 18, 14, 10);
+            rkCtx.fillStyle = '#4b5563'; // Темная сторона
             rkCtx.beginPath();
             rkCtx.moveTo(16, 2); rkCtx.lineTo(30, 10); rkCtx.lineTo(26, 26); rkCtx.lineTo(8, 28); rkCtx.lineTo(2, 14);
             rkCtx.closePath(); rkCtx.fill();
-            rkCtx.fillStyle = '#6b7280';
+            rkCtx.fillStyle = '#6b7280'; // Светлая сторона
             rkCtx.beginPath();
             rkCtx.moveTo(16, 4); rkCtx.lineTo(26, 11); rkCtx.lineTo(23, 23); rkCtx.lineTo(10, 24);
             rkCtx.closePath(); rkCtx.fill();
             rockCanvas.refresh();
             
-            // Радиоактивная бочка
+            // Радиоактивная бочка: Бочка с символом биологической опасности и подтеками
             let radCanvas = scene.textures.createCanvas('prop_barrel_rad', 32, 32);
             let rbCtx = radCanvas.context;
-            rbCtx.fillStyle = '#eab308';
+            rbCtx.fillStyle = '#eab308'; // Желтая бочка
             rbCtx.fillRect(6, 2, 20, 28);
-            rbCtx.fillStyle = '#ca8a04';
-            rbCtx.fillRect(6, 6, 20, 3);
-            rbCtx.fillRect(6, 15, 20, 3);
-            rbCtx.fillRect(6, 24, 20, 3);
-            rbCtx.fillStyle = '#000000';
+            rbCtx.fillStyle = '#854d0e'; // Ржавые кольца
+            rbCtx.fillRect(6, 5, 20, 2);
+            rbCtx.fillRect(6, 15, 20, 2);
+            rbCtx.fillRect(6, 25, 20, 2);
+            rbCtx.fillStyle = '#000000'; // Значок радиации
             rbCtx.beginPath(); rbCtx.arc(16, 15, 4, 0, Math.PI*2); rbCtx.fill();
             rbCtx.fillStyle = '#eab308';
             rbCtx.beginPath(); rbCtx.arc(16, 15, 2, 0, Math.PI*2); rbCtx.fill();
-            rbCtx.fillStyle = '#000000';
-            rbCtx.fillRect(15, 10, 2, 10);
-            rbCtx.fillRect(11, 14, 10, 2);
+            rbCtx.fillStyle = '#22c55e'; // Вытекшая зеленая жижа
+            rbCtx.fillRect(8, 2, 3, 10);
+            rbCtx.fillRect(19, 2, 4, 16);
+            rbCtx.fillStyle = '#a3e635';
+            rbCtx.fillRect(9, 4, 1, 6);
             radCanvas.refresh();
             
-            // Ящик
+            // Деревянный ящик с диагональным крестом
             let crateCanvas = scene.textures.createCanvas('prop_crate', 32, 32);
             let crCtx = crateCanvas.context;
             crCtx.fillStyle = '#78350f';
@@ -4229,47 +4337,68 @@
             crCtx.stroke();
             crateCanvas.refresh();
             
-            // Паровоз
+            // Паровоз: Детализированный котел, кабина с окнами, колеса и красный отбойник
             let trainCanvas = scene.textures.createCanvas('prop_train_locomotive', 120, 64);
             let trCtx = trainCanvas.context;
-            trCtx.fillStyle = '#1e293b';
-            trCtx.fillRect(0, 8, 110, 48);
-            trCtx.fillStyle = '#0f172a';
-            trCtx.fillRect(10, 0, 40, 56);
-            trCtx.fillStyle = '#e2e8f0';
-            trCtx.fillRect(18, 10, 24, 16);
-            trCtx.fillStyle = '#475569';
-            trCtx.beginPath(); trCtx.arc(24, 56, 8, 0, Math.PI*2); trCtx.fill();
-            trCtx.beginPath(); trCtx.arc(52, 56, 8, 0, Math.PI*2); trCtx.fill();
-            trCtx.beginPath(); trCtx.arc(80, 56, 8, 0, Math.PI*2); trCtx.fill();
-            trCtx.fillStyle = '#94a3b8';
-            trCtx.beginPath(); trCtx.arc(24, 56, 4, 0, Math.PI*2); trCtx.fill();
-            trCtx.beginPath(); trCtx.arc(52, 56, 4, 0, Math.PI*2); trCtx.fill();
-            trCtx.beginPath(); trCtx.arc(80, 56, 4, 0, Math.PI*2); trCtx.fill();
-            trCtx.strokeStyle = '#94a3b8';
+            trCtx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            trCtx.fillRect(0, 4, 120, 56);
+            let bodyGrad = trCtx.createLinearGradient(0, 8, 0, 56);
+            bodyGrad.addColorStop(0, '#475569'); bodyGrad.addColorStop(0.5, '#1e293b'); bodyGrad.addColorStop(1, '#0f172a');
+            trCtx.fillStyle = bodyGrad;
+            trCtx.fillRect(0, 8, 105, 48);
+            trCtx.fillStyle = '#0f172a'; // Кабина
+            trCtx.fillRect(10, 0, 45, 56);
+            trCtx.fillStyle = '#f59e0b'; // Светящиеся окна
+            trCtx.fillRect(20, 10, 12, 14);
+            trCtx.fillRect(38, 10, 12, 14);
+            trCtx.fillStyle = '#0f172a'; // Решетки на окнах
+            trCtx.fillRect(25, 10, 2, 14);
+            trCtx.fillRect(43, 10, 2, 14);
+            trCtx.fillStyle = '#334155'; // Колеса с осями
+            for (let i = 0; i < 3; i++) {
+                trCtx.beginPath(); trCtx.arc(28 + i*26, 56, 8, 0, Math.PI*2); trCtx.fill();
+                trCtx.fillStyle = '#94a3b8';
+                trCtx.beginPath(); trCtx.arc(28 + i*26, 56, 3, 0, Math.PI*2); trCtx.fill();
+                trCtx.fillStyle = '#334155';
+            }
+            trCtx.strokeStyle = '#94a3b8'; // Шатуны
             trCtx.lineWidth = 3;
-            trCtx.beginPath(); trCtx.moveTo(24, 56); trCtx.lineTo(80, 56); trCtx.stroke();
-            trCtx.fillStyle = '#0f172a';
-            trCtx.fillRect(90, 0, 10, 16);
-            trCtx.fillStyle = '#eab308';
-            trCtx.beginPath(); trCtx.moveTo(110, 24); trCtx.lineTo(120, 56); trCtx.lineTo(110, 56); trCtx.closePath(); trCtx.fill();
-            trCtx.fillStyle = '#fef08a';
-            trCtx.fillRect(106, 16, 6, 8);
+            trCtx.beginPath(); trCtx.moveTo(28, 56); trCtx.lineTo(80, 56); trCtx.stroke();
+            trCtx.fillStyle = '#0f172a'; // Труба
+            trCtx.fillRect(92, 0, 8, 14);
+            trCtx.fillStyle = '#991b1b'; // Красный плуг (метельник)
+            trCtx.beginPath();
+            trCtx.moveTo(105, 12); trCtx.lineTo(120, 32); trCtx.lineTo(105, 52);
+            trCtx.closePath(); trCtx.fill();
+            trCtx.fillStyle = '#fef08a'; // Прожектор
+            trCtx.beginPath(); trCtx.arc(103, 32, 6, 0, Math.PI*2); trCtx.fill();
+            trCtx.fillStyle = '#ffffff';
+            trCtx.beginPath(); trCtx.arc(103, 32, 3, 0, Math.PI*2); trCtx.fill();
             trainCanvas.refresh();
             
-            // Вагон
+            // Вагон: Пассажирский/товарный вагон с окнами и силуэтами людей
             let carCanvas = scene.textures.createCanvas('prop_train_carriage', 100, 60);
             let carCtx = carCanvas.context;
-            carCtx.fillStyle = '#334155';
+            carCtx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            carCtx.fillRect(0, 4, 100, 52);
+            let carGrad = carCtx.createLinearGradient(0, 4, 0, 52);
+            carGrad.addColorStop(0, '#334155'); carGrad.addColorStop(0.5, '#1e293b'); carGrad.addColorStop(1, '#0f172a');
+            carCtx.fillStyle = carGrad;
             carCtx.fillRect(0, 4, 96, 48);
-            carCtx.fillStyle = '#1e293b';
-            carCtx.fillRect(10, 12, 16, 16);
-            carCtx.fillRect(42, 12, 16, 16);
-            carCtx.fillRect(72, 12, 16, 16);
-            carCtx.fillStyle = '#475569';
+            carCtx.fillStyle = '#f59e0b'; // Окна
+            carCtx.fillRect(14, 14, 14, 14);
+            carCtx.fillRect(44, 14, 14, 14);
+            carCtx.fillRect(70, 14, 14, 14);
+            carCtx.fillStyle = '#0f172a'; // Силуэты выживших
+            carCtx.beginPath(); carCtx.arc(21, 23, 4, 0, Math.PI*2); carCtx.fill();
+            carCtx.beginPath(); carCtx.arc(77, 23, 4, 0, Math.PI*2); carCtx.fill();
+            carCtx.fillStyle = '#334155'; // Колеса
             carCtx.beginPath(); carCtx.arc(24, 52, 8, 0, Math.PI*2); carCtx.fill();
-            carCtx.beginPath(); carCtx.arc(76, 52, 8, 0, Math.PI*2); carCtx.fill();
+            carCtx.beginPath(); carCtx.arc(72, 52, 8, 0, Math.PI*2); carCtx.fill();
             carCtx.fillStyle = '#94a3b8';
+            carCtx.beginPath(); carCtx.arc(24, 52, 3, 0, Math.PI*2); carCtx.fill();
+            carCtx.beginPath(); carCtx.arc(72, 52, 3, 0, Math.PI*2); carCtx.fill();
+            carCtx.fillStyle = '#475569'; // Сцепка
             carCtx.fillRect(96, 26, 4, 8);
             carCanvas.refresh();
 

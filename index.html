@@ -2936,6 +2936,7 @@
             activeGameScene = {
                 scene: {
                     isActive: () => gameActive,
+                    isPaused: () => !gameActive,
                     pause: () => { gameActive = false; },
                     resume: () => { gameActive = true; }
                 },

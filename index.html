@@ -3306,21 +3306,23 @@
                 let gunMat = new THREE.MeshLambertMaterial({ color: 0x1f2937 });
                 let gun = new THREE.Mesh(gunGeo, gunMat);
                 // Position gun at the hand level (bottom of arm, extending forward)
-                gun.position.set(0, -0.45 * scale, 0.35 * scale);
+                gun.position.set(0, -0.45 * scale, 0.3 * scale);
+                gun.rotation.x = Math.PI / 2.0; // Align gun to point forward along the arm
                 armR.add(gun); // Gun is child of Right Arm!
                 group.userData.gun = gun;
                 
                 // Set initial pointing forward
-                armR.rotation.x = Math.PI / 2.0;
+                armR.rotation.x = -Math.PI / 2.0;
             } else if (isEnemy && skinColor === 0x475569) {
                 // Raider Gun (child of Right Arm as well)
                 let gunGeo = new THREE.BoxGeometry(0.12, 0.12, 0.85);
                 let gunMat = new THREE.MeshLambertMaterial({ color: 0x1f2937 });
                 let gun = new THREE.Mesh(gunGeo, gunMat);
-                gun.position.set(0, -0.45 * scale, 0.35 * scale);
+                gun.position.set(0, -0.45 * scale, 0.3 * scale);
+                gun.rotation.x = Math.PI / 2.0;
                 armR.add(gun);
                 
-                armR.rotation.x = Math.PI / 2.0;
+                armR.rotation.x = -Math.PI / 2.0;
             }
             
             return group;
@@ -4410,7 +4412,7 @@
                     playerGroup.userData.legR.rotation.x = -Math.sin(animTime) * 0.65;
                     playerGroup.userData.armL.rotation.x = -Math.sin(animTime) * 0.6;
                     // Рука с оружием направлена вперед при ходьбе
-                    playerGroup.userData.armR.rotation.x = Math.PI / 2.0;
+                    playerGroup.userData.armR.rotation.x = -Math.PI / 2.0;
                     
                     // Spawn dust particles
                     if (Math.random() < 0.25) {
@@ -4422,7 +4424,7 @@
                     playerGroup.userData.legR.rotation.x = 0;
                     playerGroup.userData.armL.rotation.x = 0;
                     // Рука с оружием всегда смотрит вперед (готовность стрелять)
-                    playerGroup.userData.armR.rotation.x = Math.PI / 2.0;
+                    playerGroup.userData.armR.rotation.x = -Math.PI / 2.0;
                 }
                 
                 // Update Spotlight Target pos
@@ -4583,8 +4585,8 @@
                         let t = Date.now() * 0.012;
                         e.userData.legL.rotation.x = Math.sin(t) * 0.65;
                         e.userData.legR.rotation.x = -Math.sin(t) * 0.65;
-                        e.userData.armL.rotation.x = Math.PI / 2.2;
-                        e.userData.armR.rotation.x = Math.PI / 2.2;
+                        e.userData.armL.rotation.x = -Math.PI / 2.2;
+                        e.userData.armR.rotation.x = -Math.PI / 2.2;
                     }
                     
                     // Attack player
@@ -4615,7 +4617,7 @@
                             let t = Date.now() * 0.01;
                             e.userData.legL.rotation.x = Math.sin(t) * 0.5;
                             e.userData.legR.rotation.x = -Math.sin(t) * 0.5;
-                            e.userData.armR.rotation.x = Math.PI / 2.0; // Raider gun arm
+                            e.userData.armR.rotation.x = -Math.PI / 2.0; // Raider gun arm
                         } else {
                             e.userData.legL.rotation.x = 0;
                             e.userData.legR.rotation.x = 0;

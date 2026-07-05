@@ -2886,11 +2886,51 @@
         // Materials cache
         let materials = {};
         
+        // Helper to generate pixelated textures on the fly
+        function createPixelTexture(width, height, baseColorHex, noiseVal = 12, patternFunc = null) {
+            let canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            let ctx = canvas.getContext('2d');
+            
+            // Base fill
+            ctx.fillStyle = baseColorHex;
+            ctx.fillRect(0, 0, width, height);
+            
+            // Add pixelated noise
+            let col = new THREE.Color(baseColorHex);
+            let r = Math.floor(col.r * 255);
+            let g = Math.floor(col.g * 255);
+            let b = Math.floor(col.b * 255);
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    let n = (Math.random() - 0.5) * noiseVal;
+                    let nr = Math.min(255, Math.max(0, r + n));
+                    let ng = Math.min(255, Math.max(0, g + n));
+                    let nb = Math.min(255, Math.max(0, b + n));
+                    ctx.fillStyle = `rgb(${Math.floor(nr)},${Math.floor(ng)},${Math.floor(nb)})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+            
+            if (patternFunc) {
+                patternFunc(ctx, width, height);
+            }
+            
+            let texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            return texture;
+        }
+        
         function initThreeEngine() {
             // Setup Three.js scene
             scene = new THREE.Scene();
             scene.background = new THREE.Color('#020205');
-            scene.fog = new THREE.FogExp2('#020205', 0.015);
+            scene.fog = new THREE.FogExp2('#020205', 0.012);
             
             // Camera
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -2906,24 +2946,144 @@
             container.innerHTML = '';
             container.appendChild(renderer.domElement);
             
-            // Define standard materials
-            materials.playerSkin = new THREE.MeshLambertMaterial({ color: 0xffdbac }); // Roblox yellow/skin
-            materials.playerTorso = new THREE.MeshLambertMaterial({ color: 0x0284c7 }); // Blue
-            materials.playerLegs = new THREE.MeshLambertMaterial({ color: 0x1e293b }); // Dark jeans
-            materials.zombieSkin = new THREE.MeshLambertMaterial({ color: 0x15803d }); // Dark green
-            materials.zombieFastSkin = new THREE.MeshLambertMaterial({ color: 0xea580c }); // Neon orange
-            materials.zombieFatSkin = new THREE.MeshLambertMaterial({ color: 0x4d7c0f }); // Bloated olive green
-            materials.raiderArmor = new THREE.MeshLambertMaterial({ color: 0x475569 }); // Slate grey
-            materials.mutantBody = new THREE.MeshLambertMaterial({ color: 0x6b21a8 }); // Purple
-            materials.bossMetal = new THREE.MeshLambertMaterial({ color: 0x111827 }); // Cyber-black
-            materials.redGlow = new THREE.MeshBasicMaterial({ color: 0xef4444 }); // Neon red eyes
-            materials.trainMetal = new THREE.MeshLambertMaterial({ color: 0x090d16 }); // Engine black
-            materials.goldGlow = new THREE.MeshBasicMaterial({ color: 0xfbbf24 }); // Windows / gold
-            materials.wood = new THREE.MeshLambertMaterial({ color: 0x78350f }); // Brown wood
-            materials.leaf = new THREE.MeshLambertMaterial({ color: 0x16a34a }); // Green leaf
-            materials.scrap = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.4 }); // Metallic scrap
-            materials.radBarrel = new THREE.MeshLambertMaterial({ color: 0xeab308 }); // Yellow rad barrel
-            materials.wall = new THREE.MeshLambertMaterial({ color: 0x27272a }); // Tech concrete wall
+            // Generate procedural pixel textures
+            // 1. Player face
+            let playerFaceTex = createPixelTexture(32, 32, '#ffdbac', 4, (ctx, w, h) => {
+                ctx.fillStyle = '#0f172a'; // Eyes
+                ctx.fillRect(7, 9, 4, 6);
+                ctx.fillRect(21, 9, 4, 6);
+                ctx.fillStyle = '#ffffff'; // Glint
+                ctx.fillRect(8, 10, 1, 2);
+                ctx.fillRect(22, 10, 1, 2);
+                ctx.fillStyle = '#ef4444'; // Smile mouth
+                ctx.fillRect(12, 20, 8, 3);
+                ctx.fillRect(11, 19, 1, 1);
+                ctx.fillRect(20, 19, 1, 1);
+            });
+            
+            // 2. Player torso (blue hoodie with cargo vest straps)
+            let playerTorsoTex = createPixelTexture(32, 32, '#0284c7', 10, (ctx, w, h) => {
+                ctx.strokeStyle = '#eab308'; // Straps
+                ctx.lineWidth = 2;
+                ctx.strokeRect(5.5, -1, 2, 34);
+                ctx.strokeRect(24.5, -1, 2, 34);
+                ctx.fillStyle = '#1e293b'; // Belt
+                ctx.fillRect(0, 24, 32, 4);
+                ctx.fillStyle = '#eab308'; // Buckle
+                ctx.fillRect(14, 23, 4, 6);
+            });
+            
+            // 3. Zombie face
+            let zombieFaceTex = createPixelTexture(32, 32, '#15803d', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#ef4444'; // Glowing red eyes
+                ctx.fillRect(6, 10, 5, 5);
+                ctx.fillRect(21, 10, 5, 5);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(8, 12, 2, 2);
+                ctx.fillRect(23, 12, 2, 2);
+                ctx.fillStyle = '#050505'; // Scary open mouth
+                ctx.fillRect(10, 21, 12, 6);
+            });
+            
+            // 4. Zombie torso (ripped shirt)
+            let zombieTorsoTex = createPixelTexture(32, 32, '#451a03', 10, (ctx, w, h) => {
+                ctx.fillStyle = '#15803d'; // Exposed rotten skin
+                ctx.fillRect(4, 18, 8, 14);
+                ctx.fillRect(20, 4, 6, 12);
+                ctx.fillStyle = '#f43f5e'; // Flesh/blood spots
+                ctx.fillRect(6, 22, 2, 2);
+                ctx.fillRect(22, 8, 2, 2);
+            });
+            
+            // 5. Raider torso (military green camo vest)
+            let raiderTorsoTex = createPixelTexture(32, 32, '#3f491c', 12, (ctx, w, h) => {
+                ctx.fillStyle = '#78350f'; // brown camo blobs
+                ctx.fillRect(2, 4, 8, 6);
+                ctx.fillRect(18, 14, 10, 8);
+                ctx.fillStyle = '#14532d'; // dark green blobs
+                ctx.fillRect(12, 2, 6, 8);
+                ctx.fillRect(4, 20, 8, 6);
+                ctx.fillStyle = '#0f172a'; // black straps
+                ctx.fillRect(6, 0, 3, 32);
+                ctx.fillRect(23, 0, 3, 32);
+            });
+            
+            // 6. Cyber wall texture (caution stripes)
+            let wallTex = createPixelTexture(32, 32, '#27272a', 6, (ctx, w, h) => {
+                ctx.fillStyle = '#fbbf24'; // Caution yellow
+                ctx.beginPath();
+                for (let i = -16; i < 48; i += 8) {
+                    ctx.moveTo(i, 0); ctx.lineTo(i + 4, 0); ctx.lineTo(i - 4, 32); ctx.lineTo(i - 8, 32);
+                    ctx.closePath(); ctx.fill();
+                }
+                ctx.strokeStyle = '#09090b'; // dark metal plates line
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0.5, 0.5, 31, 31);
+            });
+            
+            // 7. Ground baseplates
+            materials.grassTex = createPixelTexture(64, 64, '#14532d', 6, (ctx, w, h) => {
+                ctx.fillStyle = '#16a34a'; // Grass blades
+                for (let i = 0; i < 60; i++) {
+                    let rx = Math.floor(Math.random() * w);
+                    let ry = Math.floor(Math.random() * h);
+                    ctx.fillRect(rx, ry, 2, 4);
+                }
+            });
+            
+            materials.sandTex = createPixelTexture(64, 64, '#6b5220', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#ca8a04'; // finer sand grain
+                for (let i = 0; i < 80; i++) {
+                    let rx = Math.floor(Math.random() * w);
+                    let ry = Math.floor(Math.random() * h);
+                    ctx.fillRect(rx, ry, 1, 1);
+                }
+            });
+            
+            materials.asphaltTex = createPixelTexture(64, 64, '#1c1917', 5, (ctx, w, h) => {
+                ctx.fillStyle = '#eab308'; // Center double yellow line segment
+                ctx.fillRect(30, 0, 2, 64);
+                ctx.fillRect(34, 0, 2, 64);
+            });
+            
+            // 8. Train metal (bolted sheet plate)
+            let trainMetalTex = createPixelTexture(32, 32, '#090d16', 6, (ctx, w, h) => {
+                ctx.strokeStyle = '#06b6d4'; // neon cyan borders
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0.5, 0.5, 31, 31);
+                // Rivets/bolts
+                ctx.fillStyle = '#0891b2';
+                ctx.fillRect(2, 2, 2, 2);
+                ctx.fillRect(28, 2, 2, 2);
+                ctx.fillRect(2, 28, 2, 2);
+                ctx.fillRect(28, 28, 2, 2);
+            });
+            
+            // Define standard texturized materials
+            materials.playerSkin = new THREE.MeshLambertMaterial({ color: 0xffdbac });
+            materials.playerSkinTextured = new THREE.MeshLambertMaterial({ map: createPixelTexture(32, 32, '#ffdbac', 4) });
+            materials.playerSkinFace = new THREE.MeshLambertMaterial({ map: playerFaceTex });
+            materials.playerTorso = new THREE.MeshLambertMaterial({ map: playerTorsoTex });
+            materials.playerLegs = new THREE.MeshLambertMaterial({ map: createPixelTexture(32, 32, '#1e293b', 8) });
+            
+            materials.zombieSkin = new THREE.MeshLambertMaterial({ map: createPixelTexture(32, 32, '#15803d', 6) });
+            materials.zombieSkinFace = new THREE.MeshLambertMaterial({ map: zombieFaceTex });
+            materials.zombieTorso = new THREE.MeshLambertMaterial({ map: zombieTorsoTex });
+            
+            materials.zombieFastSkin = new THREE.MeshLambertMaterial({ map: createPixelTexture(32, 32, '#ea580c', 8) });
+            materials.zombieFatTorso = new THREE.MeshLambertMaterial({ map: createPixelTexture(32, 32, '#4d7c0f', 12) });
+            
+            materials.raiderArmor = new THREE.MeshLambertMaterial({ map: raiderTorsoTex });
+            materials.mutantBody = new THREE.MeshLambertMaterial({ color: 0x6b21a8 });
+            materials.bossMetal = new THREE.MeshLambertMaterial({ color: 0x111827 });
+            materials.redGlow = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+            materials.trainMetal = new THREE.MeshLambertMaterial({ map: trainMetalTex });
+            materials.goldGlow = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+            materials.wood = new THREE.MeshLambertMaterial({ color: 0x78350f });
+            materials.leaf = new THREE.MeshLambertMaterial({ color: 0x16a34a });
+            materials.scrap = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.4 });
+            materials.radBarrel = new THREE.MeshLambertMaterial({ color: 0xeab308 });
+            materials.wall = new THREE.MeshLambertMaterial({ map: wallTex });
             
             // Listeners
             window.addEventListener('resize', onWindowResize);
@@ -2963,7 +3123,6 @@
                     return false;
                 },
                 flashSprite: (mesh, color, duration) => {
-                    // Flash red
                     if (!mesh) return;
                     mesh.traverse(child => {
                         if (child.isMesh && child.material) {
@@ -3069,9 +3228,16 @@
             if (isFast) scale = 0.8;
             if (isFat) scale = 1.6;
             
+            // Materials definition based on type
+            let torsoMat = isEnemy ? (isFat ? materials.zombieSkin : materials.zombieTorso) : materials.playerTorso;
+            if (isEnemy && skinColor === 0x475569) torsoMat = materials.raiderArmor; // Raider
+            
+            let skinMat = isEnemy ? (isFast ? materials.zombieFastSkin : materials.zombieSkin) : materials.playerSkinTextured;
+            
+            let legsMat = materials.playerLegs;
+            
             // Torso (Box)
             let torsoGeo = new THREE.BoxGeometry(0.8 * scale, 1.1 * scale, 0.4 * scale);
-            let torsoMat = new THREE.MeshLambertMaterial({ color: torsoColor });
             let torso = new THREE.Mesh(torsoGeo, torsoMat);
             torso.position.y = 0.95 * scale;
             torso.castShadow = true;
@@ -3079,35 +3245,36 @@
             group.add(torso);
             group.userData.torso = torso;
             
-            // Head (Box)
+            // Head (Box) with Face on Front Face only (Array of 6 materials)
             let headGeo = new THREE.BoxGeometry(0.55 * scale, 0.55 * scale, 0.55 * scale);
-            let skinMat = new THREE.MeshLambertMaterial({ color: skinColor });
-            let head = new THREE.Mesh(headGeo, skinMat);
+            let faceMaterial = isEnemy ? materials.zombieSkinFace : materials.playerSkinFace;
+            let headSkinMaterial = skinMat;
+            
+            let headMaterials = [
+                headSkinMaterial, // Right
+                headSkinMaterial, // Left
+                headSkinMaterial, // Top
+                headSkinMaterial, // Bottom
+                faceMaterial,     // Front Face (aiming direction)
+                headSkinMaterial  // Back
+            ];
+            
+            let head = new THREE.Mesh(headGeo, headMaterials);
             head.position.y = 1.7 * scale;
             head.castShadow = true;
             group.add(head);
             group.userData.head = head;
             
-            // Eyes
-            let eyeMat = new THREE.MeshBasicMaterial({ color: isEnemy ? 0xef4444 : 0x111827 });
-            let eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), eyeMat);
-            eyeL.position.set(0.15 * scale, 1.75 * scale, 0.28 * scale);
-            let eyeR = eyeL.clone();
-            eyeR.position.x = -0.15 * scale;
-            group.add(eyeL);
-            group.add(eyeR);
-            
             // Legs (Roblox simple blocks)
             let legGeo = new THREE.BoxGeometry(0.35 * scale, 0.9 * scale, 0.35 * scale);
-            let legMat = new THREE.MeshLambertMaterial({ color: legsColor });
             
-            let legL = new THREE.Mesh(legGeo, legMat);
+            let legL = new THREE.Mesh(legGeo, legsMat);
             legL.position.set(0.22 * scale, 0.45 * scale, 0);
             legL.castShadow = true;
             group.add(legL);
             group.userData.legL = legL;
             
-            let legR = new THREE.Mesh(legGeo, legMat);
+            let legR = new THREE.Mesh(legGeo, legsMat);
             legR.position.set(-0.22 * scale, 0.45 * scale, 0);
             legR.castShadow = true;
             group.add(legR);
@@ -3115,35 +3282,45 @@
             
             // Arms (Roblox blocks)
             let armGeo = new THREE.BoxGeometry(0.3 * scale, 0.9 * scale, 0.3 * scale);
-            let armMat = new THREE.MeshLambertMaterial({ color: skinColor });
             
-            let armL = new THREE.Mesh(armGeo, armMat);
+            let armL = new THREE.Mesh(armGeo, skinMat);
             armL.position.set(0.55 * scale, 1.1 * scale, 0);
+            // set anchor to shoulder for arm swinging
+            armL.geometry.translate(0, -0.35 * scale, 0);
+            armL.position.y += 0.35 * scale;
             armL.castShadow = true;
             group.add(armL);
             group.userData.armL = armL;
             
-            let armR = new THREE.Mesh(armGeo, armMat);
+            let armR = new THREE.Mesh(armGeo, skinMat);
             armR.position.set(-0.55 * scale, 1.1 * scale, 0);
+            armR.geometry.translate(0, -0.35 * scale, 0);
+            armR.position.y += 0.35 * scale;
             armR.castShadow = true;
             group.add(armR);
             group.userData.armR = armR;
             
-            // Gun for Player/Raider
+            // Attach Gun to Right Hand for Player, or Left Hand for Raider
             if (!isEnemy) {
                 let gunGeo = new THREE.BoxGeometry(0.12, 0.12, 0.85);
                 let gunMat = new THREE.MeshLambertMaterial({ color: 0x1f2937 });
                 let gun = new THREE.Mesh(gunGeo, gunMat);
-                gun.position.set(0.4 * scale, 1.0 * scale, 0.4 * scale);
-                group.add(gun);
+                // Position gun at the hand level (bottom of arm, extending forward)
+                gun.position.set(0, -0.45 * scale, 0.35 * scale);
+                armR.add(gun); // Gun is child of Right Arm!
                 group.userData.gun = gun;
+                
+                // Set initial pointing forward
+                armR.rotation.x = Math.PI / 2.0;
             } else if (isEnemy && skinColor === 0x475569) {
-                // Raider Gun
+                // Raider Gun (child of Right Arm as well)
                 let gunGeo = new THREE.BoxGeometry(0.12, 0.12, 0.85);
                 let gunMat = new THREE.MeshLambertMaterial({ color: 0x1f2937 });
                 let gun = new THREE.Mesh(gunGeo, gunMat);
-                gun.position.set(-0.4 * scale, 1.0 * scale, 0.4 * scale);
-                group.add(gun);
+                gun.position.set(0, -0.45 * scale, 0.35 * scale);
+                armR.add(gun);
+                
+                armR.rotation.x = Math.PI / 2.0;
             }
             
             return group;
@@ -3266,10 +3443,8 @@
             d.rotation.y = THREE.MathUtils.randFloat(0, Math.PI*2);
             scene.add(d);
             
-            // Cap at 100 decals
             d.userData.isDecal = true;
-            // Add to general clean-up lists
-            colliders.push(new THREE.Box3().setFromObject(d)); // just a dummy AABB, not used for player collision
+            colliders.push(new THREE.Box3().setFromObject(d)); // just a dummy AABB
         }
         
         // Weapons specs
@@ -3319,7 +3494,8 @@
             bulletDir.y = 0; // lock to horizontal plane
             bulletDir.normalize();
             
-            let gunOffset = new THREE.Vector3(0.4, 1.0, 0.5);
+            // Spawn relative to Right Hand gun position
+            let gunOffset = new THREE.Vector3(-0.55, 1.1, 0.35); // right arm local
             gunOffset.applyQuaternion(playerGroup.quaternion);
             let spawnPos = playerGroup.position.clone().add(gunOffset);
             
@@ -3352,7 +3528,7 @@
             b.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(pos, pos.clone().add(dir), new THREE.Vector3(0, 1, 0)));
             scene.add(b);
             
-            b.userData.velocity = dir.clone().multiplyScalar(15.0); // 15 units per sec
+            b.userData.velocity = dir.clone().multiplyScalar(15.0);
             b.userData.damage = dmg;
             b.userData.spawnTime = Date.now();
             b.userData.lifeTime = lifeTimeMs;
@@ -3399,13 +3575,13 @@
         function spawn3DLoot(pos, type) {
             let lootGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
             let color = 0xffffff;
-            if (type === 'wood') color = 0xf97316; // Orange
-            else if (type === 'scrap') color = 0x3b82f6; // Blue
-            else if (type === 'food') color = 0xf43f5e; // Crimson red
-            else if (type === 'water') color = 0x06b6d4; // Cyan
-            else if (type === 'ammo') color = 0xeab308; // Gold
-            else if (type === 'medkit') color = 0x10b981; // Green
-            else if (type === 'gasmask') color = 0xa855f7; // Purple
+            if (type === 'wood') color = 0xf97316;
+            else if (type === 'scrap') color = 0x3b82f6;
+            else if (type === 'food') color = 0xf43f5e;
+            else if (type === 'water') color = 0x06b6d4;
+            else if (type === 'ammo') color = 0xeab308;
+            else if (type === 'medkit') color = 0x10b981;
+            else if (type === 'gasmask') color = 0xa855f7;
             
             let lootMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
             let loot = new THREE.Mesh(lootGeo, lootMat);
@@ -3434,9 +3610,7 @@
             
             for (let limb of limbs) {
                 if (limb.mesh) {
-                    // Extract mesh from group
                     let m = limb.mesh.clone();
-                    // Put in world space
                     let worldPos = origin.clone().add(limb.offset);
                     m.position.copy(worldPos);
                     m.quaternion.copy(group.quaternion);
@@ -3458,7 +3632,6 @@
                 }
             }
             
-            // Remove group
             scene.remove(group);
         }
         
@@ -3493,16 +3666,21 @@
             }
             
             // Baseplate Ground Plane (Roblox style studs grid)
-            let groundColor = '#0f2e14'; // default green grass
-            if (loc.theme === 'sand') groundColor = '#5e4319';
-            else if (loc.theme === 'city') groundColor = '#27272a';
-            else if (loc.theme === 'asphalt') groundColor = '#18181b';
-            else if (loc.theme === 'tunnel') groundColor = '#0a0a0d';
-            else if (loc.theme === 'bunker') groundColor = '#18181b';
+            let groundColor = '#14532d';
+            let groundMat = materials.grassTex;
+            if (loc.theme === 'sand') groundMat = materials.sandTex;
+            else if (loc.theme === 'city') groundMat = materials.asphaltTex;
+            else if (loc.theme === 'asphalt') groundMat = materials.asphaltTex;
+            else if (loc.theme === 'tunnel') groundMat = materials.asphaltTex;
+            else if (loc.theme === 'bunker') groundMat = materials.asphaltTex;
             
             let groundGeo = new THREE.PlaneGeometry(N * 2.0, N * 2.0);
-            let groundMat = new THREE.MeshStandardMaterial({ color: groundColor, roughness: 0.9 });
-            groundMesh = new THREE.Mesh(groundGeo, groundMat);
+            let groundMeshMat = new THREE.MeshStandardMaterial({ map: groundMat, roughness: 0.9 });
+            groundMeshMat.map.repeat.set(N, N);
+            groundMeshMat.map.wrapS = THREE.RepeatWrapping;
+            groundMeshMat.map.wrapT = THREE.RepeatWrapping;
+            
+            groundMesh = new THREE.Mesh(groundGeo, groundMeshMat);
             groundMesh.rotation.x = -Math.PI / 2;
             groundMesh.receiveShadow = true;
             scene.add(groundMesh);
@@ -4231,7 +4409,8 @@
                     playerGroup.userData.legL.rotation.x = Math.sin(animTime) * 0.65;
                     playerGroup.userData.legR.rotation.x = -Math.sin(animTime) * 0.65;
                     playerGroup.userData.armL.rotation.x = -Math.sin(animTime) * 0.6;
-                    playerGroup.userData.armR.rotation.x = Math.sin(animTime) * 0.6;
+                    // Рука с оружием направлена вперед при ходьбе
+                    playerGroup.userData.armR.rotation.x = Math.PI / 2.0;
                     
                     // Spawn dust particles
                     if (Math.random() < 0.25) {
@@ -4242,7 +4421,8 @@
                     playerGroup.userData.legL.rotation.x = 0;
                     playerGroup.userData.legR.rotation.x = 0;
                     playerGroup.userData.armL.rotation.x = 0;
-                    playerGroup.userData.armR.rotation.x = 0;
+                    // Рука с оружием всегда смотрит вперед (готовность стрелять)
+                    playerGroup.userData.armR.rotation.x = Math.PI / 2.0;
                 }
                 
                 // Update Spotlight Target pos
@@ -4435,6 +4615,7 @@
                             let t = Date.now() * 0.01;
                             e.userData.legL.rotation.x = Math.sin(t) * 0.5;
                             e.userData.legR.rotation.x = -Math.sin(t) * 0.5;
+                            e.userData.armR.rotation.x = Math.PI / 2.0; // Raider gun arm
                         } else {
                             e.userData.legL.rotation.x = 0;
                             e.userData.legR.rotation.x = 0;

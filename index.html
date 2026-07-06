@@ -1409,7 +1409,6 @@
     </style>
 </head>
 <body>
-    <div class="scanlines"></div>
     <div id="game-container"></div>
 
     <!-- 1. ГЛАВНОЕ МЕНЮ -->
@@ -1598,11 +1597,17 @@
                     <span class="btn-icon">⚡</span>
                     <span class="btn-lbl">Спринт</span>
                 </button>
-                <!-- Кнопка Взаимодействия (Сбор ресурсов / Вход во внедорожник) -->
-                <button id="btn-mobile-interact" class="mobile-btn">
-                    <span class="btn-icon">⛽</span>
-                    <span class="btn-lbl">Сбор / Вход</span>
-                </button>
+                <!-- Группа взаимодействия и стрельбы справа -->
+                <div style="display: flex; gap: 8px; pointer-events: none;">
+                    <button id="btn-mobile-interact" class="mobile-btn" style="pointer-events: auto;">
+                        <span class="btn-icon">⛽</span>
+                        <span class="btn-lbl">Сбор/Вход</span>
+                    </button>
+                    <button id="btn-mobile-fire" class="mobile-btn" style="pointer-events: auto;">
+                        <span class="btn-icon">🎯</span>
+                        <span class="btn-lbl">Огонь</span>
+                    </button>
+                </div>
             </div>
             
             <!-- Правый джойстик (Стрельба и Прицеливание) -->
@@ -3403,8 +3408,8 @@
             });
             
             // 7. Ground baseplates
-            materials.grassTex = createPixelTexture(64, 64, '#14532d', 6, (ctx, w, h) => {
-                ctx.fillStyle = '#16a34a'; // Grass blades
+            materials.grassTex = createPixelTexture(64, 64, '#33372c', 6, (ctx, w, h) => {
+                ctx.fillStyle = '#524c38'; // Withered grass blades
                 for (let i = 0; i < 60; i++) {
                     let rx = Math.floor(Math.random() * w);
                     let ry = Math.floor(Math.random() * h);
@@ -3412,8 +3417,8 @@
                 }
             });
             
-            materials.sandTex = createPixelTexture(64, 64, '#6b5220', 8, (ctx, w, h) => {
-                ctx.fillStyle = '#ca8a04'; // finer sand grain
+            materials.sandTex = createPixelTexture(64, 64, '#3b3225', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#544635'; // Dry dust spots
                 for (let i = 0; i < 80; i++) {
                     let rx = Math.floor(Math.random() * w);
                     let ry = Math.floor(Math.random() * h);
@@ -3421,8 +3426,8 @@
                 }
             });
             
-            materials.asphaltTex = createPixelTexture(64, 64, '#1c1917', 5, (ctx, w, h) => {
-                ctx.fillStyle = '#eab308'; // Center double yellow line segment
+            materials.asphaltTex = createPixelTexture(64, 64, '#171615', 5, (ctx, w, h) => {
+                ctx.fillStyle = '#7a6b35'; // Faded/cracked yellow marker line segment
                 ctx.fillRect(30, 0, 2, 64);
                 ctx.fillRect(34, 0, 2, 64);
             });
@@ -4142,12 +4147,12 @@
             gridHelper.position.y = 0.02;
             scene.add(gridHelper);
             
-            // 3D Ambient Light
-            let ambient = new THREE.AmbientLight(0xffffff, loc.theme === 'tunnel' ? 0.05 : 0.45);
+            // 3D Ambient Light (Darkened for grittier post-apoc atmosphere)
+            let ambient = new THREE.AmbientLight(0xdcdcdc, loc.theme === 'tunnel' ? 0.02 : 0.12);
             scene.add(ambient);
             
-            // 3D Sunlight
-            let sunLight = new THREE.DirectionalLight(0xffffff, loc.theme === 'tunnel' ? 0.05 : 0.85);
+            // 3D Sunlight (Dimmed to represent hazy, sun-choked post-apoc sky)
+            let sunLight = new THREE.DirectionalLight(0xe0dbcd, loc.theme === 'tunnel' ? 0.02 : 0.35);
             sunLight.position.set(15, 30, 10);
             sunLight.castShadow = true;
             sunLight.shadow.mapSize.width = 1024;
@@ -5575,6 +5580,18 @@
                 triggerMobileInteractionEnd();
                 e.preventDefault();
             }, { passive: false });
+            
+            const btnFire = document.getElementById('btn-mobile-fire');
+            btnFire.addEventListener('touchstart', (e) => {
+                if (gameActive && playerGroup && gameState.hp > 0) {
+                    // Shoot straight in the direction the player is currently facing
+                    let lookAngle = playerGroup.rotation.y;
+                    let aimDir = new THREE.Vector3(Math.sin(lookAngle), 0, Math.cos(lookAngle)).normalize();
+                    worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
+                    fireWeapon();
+                }
+                e.preventDefault();
+            }, { passive: false });
 
             // Support tap to shoot anywhere else on screen
             window.addEventListener('touchstart', (e) => {
@@ -5586,8 +5603,20 @@
                 }
                 
                 const touch = e.touches[0];
-                mouseCoords.x = (touch.clientX / window.innerWidth) * 2 - 1;
-                mouseCoords.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+                let tc = new THREE.Vector2(
+                    (touch.clientX / window.innerWidth) * 2 - 1,
+                    -(touch.clientY / window.innerHeight) * 2 + 1
+                );
+                
+                // Raycast target coordinates to find 3D ground intersection
+                raycaster.setFromCamera(tc, camera);
+                let intersects = new THREE.Vector3();
+                raycaster.ray.intersectPlane(groundPlane, intersects);
+                worldMousePoint.copy(intersects);
+                
+                // Rotate player Group to face the tap location
+                let lookAngle = Math.atan2(worldMousePoint.x - playerGroup.position.x, worldMousePoint.z - playerGroup.position.z);
+                playerGroup.rotation.y = lookAngle;
                 
                 // Trigger shoot
                 fireWeapon();

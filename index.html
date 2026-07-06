@@ -3246,11 +3246,16 @@
         let flickeringMeshes = [];
         
         // Input state
-        let keys = { W: false, A: false, S: false, D: false, Shift: false, Space: false };
+        let keys = { W: false, A: false, S: false, D: false, Shift: false, Space: false, mouseDown: false };
         let mouseCoords = new THREE.Vector2();
         let groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
         let raycaster = new THREE.Raycaster();
         let worldMousePoint = new THREE.Vector3();
+        let muzzleFlashLight = null;
+        let bulletGeo = new THREE.BoxGeometry(0.12, 0.12, 0.4);
+        let bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+        let enemyBulletGeo = new THREE.BoxGeometry(0.15, 0.15, 0.4);
+        let enemyBulletMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
         
         // Timing
         let lastTime = 0;
@@ -3392,30 +3397,90 @@
                 ctx.strokeRect(0.5, 0.5, 31, 31);
             });
             
-            // 7. Ground baseplates
-            materials.grassTex = createPixelTexture(64, 64, '#33372c', 6, (ctx, w, h) => {
+            // 7. Ground baseplates (4 variations for each terrain type to prevent tiling monotony)
+            let grass1 = createPixelTexture(64, 64, '#33372c', 6, (ctx, w, h) => {
                 ctx.fillStyle = '#524c38'; // Withered grass blades
                 for (let i = 0; i < 60; i++) {
-                    let rx = Math.floor(Math.random() * w);
-                    let ry = Math.floor(Math.random() * h);
-                    ctx.fillRect(rx, ry, 2, 4);
+                    ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 2, 4);
                 }
             });
-            
-            materials.sandTex = createPixelTexture(64, 64, '#3b3225', 8, (ctx, w, h) => {
+            let grass2 = createPixelTexture(64, 64, '#2d2922', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#3e382d'; // Dark mud patches
+                for (let i = 0; i < 30; i++) {
+                    ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 4, 4);
+                }
+            });
+            let grass3 = createPixelTexture(64, 64, '#424534', 6, (ctx, w, h) => {
+                ctx.fillStyle = '#5c5f49'; // Mossy dry spots
+                for (let i = 0; i < 40; i++) {
+                    ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 3, 3);
+                }
+            });
+            let grass4 = createPixelTexture(64, 64, '#242621', 10, (ctx, w, h) => {
+                ctx.fillStyle = '#1a1c18'; // Radioactive soot spots
+                for (let i = 0; i < 50; i++) {
+                    ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 2, 2);
+                }
+            });
+            materials.grassTexs = [grass1, grass2, grass3, grass4];
+            materials.grassTex = grass1;
+
+            let sand1 = createPixelTexture(64, 64, '#3b3225', 8, (ctx, w, h) => {
                 ctx.fillStyle = '#544635'; // Dry dust spots
                 for (let i = 0; i < 80; i++) {
-                    let rx = Math.floor(Math.random() * w);
-                    let ry = Math.floor(Math.random() * h);
-                    ctx.fillRect(rx, ry, 1, 1);
+                    ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 1, 1);
                 }
             });
-            
-            materials.asphaltTex = createPixelTexture(64, 64, '#171615', 5, (ctx, w, h) => {
-                ctx.fillStyle = '#7a6b35'; // Faded/cracked yellow marker line segment
+            let sand2 = createPixelTexture(64, 64, '#473e33', 10, (ctx, w, h) => {
+                ctx.fillStyle = '#2b2520'; // Stony gravel specs
+                for (let i = 0; i < 50; i++) {
+                    ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 2, 2);
+                }
+            });
+            let sand3 = createPixelTexture(64, 64, '#2b211a', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#1c1510'; // Dark dry clay spots
+                for (let i = 0; i < 60; i++) {
+                    ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 3, 2);
+                }
+            });
+            let sand4 = createPixelTexture(64, 64, '#4f4232', 12, (ctx, w, h) => {
+                ctx.fillStyle = '#332a20'; // Faded mud cracks
+                ctx.fillRect(15, 0, 2, 64);
+                ctx.fillRect(0, 30, 64, 2);
+            });
+            materials.sandTexs = [sand1, sand2, sand3, sand4];
+            materials.sandTex = sand1;
+
+            let asphalt1 = createPixelTexture(64, 64, '#171615', 5, (ctx, w, h) => {
+                ctx.fillStyle = '#7a6b35'; // Faded yellow marker line segment
                 ctx.fillRect(30, 0, 2, 64);
                 ctx.fillRect(34, 0, 2, 64);
             });
+            let asphalt2 = createPixelTexture(64, 64, '#2b2c2e', 14, (ctx, w, h) => {
+                ctx.strokeStyle = '#17181a'; // Cracked concrete lines
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, 20); ctx.lineTo(64, 35);
+                ctx.moveTo(32, 0); ctx.lineTo(40, 64);
+                ctx.stroke();
+            });
+            let asphalt3 = createPixelTexture(64, 64, '#242528', 12, (ctx, w, h) => {
+                ctx.strokeStyle = '#1a1a1c'; // Industrial steel plating grates
+                ctx.lineWidth = 2;
+                for (let i = 0; i <= 64; i += 16) {
+                    ctx.moveTo(i, 0); ctx.lineTo(i, 64);
+                    ctx.moveTo(0, i); ctx.lineTo(64, i);
+                }
+                ctx.stroke();
+            });
+            let asphalt4 = createPixelTexture(64, 64, '#1b1c1e', 10, (ctx, w, h) => {
+                ctx.fillStyle = '#0d0e0f'; // Dark oil grease stains
+                for (let i = 0; i < 15; i++) {
+                    ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 8, 8);
+                }
+            });
+            materials.asphaltTexs = [asphalt1, asphalt2, asphalt3, asphalt4];
+            materials.asphaltTex = asphalt1;
             
             // 8. Train metal (bolted armored plates with weld/rust marks)
             let trainMetalTex = createPixelTexture(32, 32, '#2d2f33', 6, (ctx, w, h) => {
@@ -3558,12 +3623,17 @@
                 new THREE.MeshStandardMaterial({ map: slabTex4, roughness: 0.65, metalness: 0.4 })
             ];
             
+            // Initialize muzzle flash PointLight once to avoid WebGL shader compilation lags on first shot
+            muzzleFlashLight = new THREE.PointLight(0xfef08a, 0.0, 5.0);
+            scene.add(muzzleFlashLight);
+            
             // Listeners
             window.addEventListener('resize', onWindowResize);
             window.addEventListener('keydown', onKeyDown);
             window.addEventListener('keyup', onKeyUp);
             window.addEventListener('mousemove', onMouseMove);
             window.addEventListener('mousedown', onMouseDown);
+            window.addEventListener('mouseup', onMouseUp);
             
             // Compatibility reference
             activeGameScene = {
@@ -3699,9 +3769,17 @@
         }
         
         function onMouseDown(e) {
-            if (e.button === 0 && gameActive && playerGroup && gameState.hp > 0) {
-                // Shoot weapon
-                fireWeapon();
+            if (e.button === 0) {
+                keys.mouseDown = true;
+                if (gameActive && playerGroup && gameState.hp > 0) {
+                    fireWeapon();
+                }
+            }
+        }
+        
+        function onMouseUp(e) {
+            if (e.button === 0) {
+                keys.mouseDown = false;
             }
         }
         
@@ -3768,7 +3846,7 @@
             // Arms (Roblox blocks)
             let armGeo = new THREE.BoxGeometry(0.3 * scale, 0.9 * scale, 0.3 * scale);
             
-            let armL = new THREE.Mesh(armGeo, skinMat);
+            let armL = new THREE.Mesh(armGeo.clone(), skinMat);
             armL.position.set(0.55 * scale, 1.1 * scale, 0);
             // set anchor to shoulder for arm swinging
             armL.geometry.translate(0, -0.35 * scale, 0);
@@ -3777,7 +3855,7 @@
             group.add(armL);
             group.userData.armL = armL;
             
-            let armR = new THREE.Mesh(armGeo, skinMat);
+            let armR = new THREE.Mesh(armGeo.clone(), skinMat);
             armR.position.set(-0.55 * scale, 1.1 * scale, 0);
             armR.geometry.translate(0, -0.35 * scale, 0);
             armR.position.y += 0.35 * scale;
@@ -3979,18 +4057,24 @@
             // Spawn bullet
             let bulletDir = worldMousePoint.clone().sub(playerGroup.position);
             bulletDir.y = 0; // lock to horizontal plane
-            bulletDir.normalize();
+            if (bulletDir.lengthSq() < 0.01) {
+                // If aiming exactly under oneself, fire in character's facing direction
+                bulletDir.set(Math.sin(playerGroup.rotation.y), 0, Math.cos(playerGroup.rotation.y));
+            } else {
+                bulletDir.normalize();
+            }
             
             // Spawn relative to Right Hand gun position
             let gunOffset = new THREE.Vector3(-0.55, 1.1, 0.35); // right arm local
             gunOffset.applyQuaternion(playerGroup.quaternion);
             let spawnPos = playerGroup.position.clone().add(gunOffset);
             
-            // Muzzle flash light
-            let flashLight = new THREE.PointLight(0xfef08a, 4.0, 5.0);
-            flashLight.position.copy(spawnPos);
-            scene.add(flashLight);
-            setTimeout(() => { scene.remove(flashLight); }, 40);
+            // Muzzle flash light (Toggle intensity on global light to prevent WebGL shader compilation freeze)
+            if (muzzleFlashLight) {
+                muzzleFlashLight.position.copy(spawnPos);
+                muzzleFlashLight.intensity = 4.0;
+                setTimeout(() => { if (muzzleFlashLight) muzzleFlashLight.intensity = 0.0; }, 40);
+            }
             
             if (currentActiveWeapon === 'shotgun') {
                 // Shoot 5 spread pellets
@@ -4008,8 +4092,6 @@
         }
         
         function spawnBulletMesh(pos, dir, dmg, lifeTimeMs) {
-            let bulletGeo = new THREE.BoxGeometry(0.12, 0.12, 0.4);
-            let bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
             let b = new THREE.Mesh(bulletGeo, bulletMat);
             b.position.copy(pos);
             b.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(pos, pos.clone().add(dir), new THREE.Vector3(0, 1, 0)));
@@ -4025,9 +4107,7 @@
         }
         
         function spawnEnemyBullet(pos, dir, dmg) {
-            let bulletGeo = new THREE.BoxGeometry(0.15, 0.15, 0.4);
-            let bulletMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
-            let b = new THREE.Mesh(bulletGeo, bulletMat);
+            let b = new THREE.Mesh(enemyBulletGeo, enemyBulletMat);
             b.position.copy(pos);
             b.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(pos, pos.clone().add(dir), new THREE.Vector3(0, 1, 0)));
             scene.add(b);
@@ -4058,22 +4138,120 @@
             bullets.push(b);
         }
         
-        // Spawn dynamic 3D dropped loot
+        // Spawn dynamic 3D dropped loot with detailed models, shadows & nameplates
         function spawn3DLoot(pos, type) {
-            let lootGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-            let color = 0xffffff;
-            if (type === 'wood') color = 0xf97316;
-            else if (type === 'scrap') color = 0x3b82f6;
-            else if (type === 'food') color = 0xf43f5e;
-            else if (type === 'water') color = 0x06b6d4;
-            else if (type === 'ammo') color = 0xeab308;
-            else if (type === 'medkit') color = 0x10b981;
-            else if (type === 'gasmask') color = 0xa855f7;
-            
-            let lootMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
-            let loot = new THREE.Mesh(lootGeo, lootMat);
+            let loot = new THREE.Group();
             loot.position.set(pos.x, 0.4, pos.z);
+            
+            let nameTag = "";
+            
+            if (type === 'wood') {
+                nameTag = "БЕНЗИН";
+                let b = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.4, 0.18), new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 }));
+                b.castShadow = true; b.receiveShadow = true;
+                loot.add(b);
+                let h = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.12), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+                h.position.y = 0.22;
+                h.castShadow = true;
+                loot.add(h);
+                let c = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 6), new THREE.MeshStandardMaterial({ color: 0xeab308 }));
+                c.position.set(0.08, 0.21, 0);
+                c.castShadow = true;
+                loot.add(c);
+            }
+            else if (type === 'scrap') {
+                nameTag = "ХЛАМ";
+                for (let i = 0; i < 3; i++) {
+                    let p = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.06, 0.35), new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.6, metalness: 0.8 }));
+                    p.position.y = -0.1 + i * 0.08;
+                    p.rotation.y = i * 0.5;
+                    p.castShadow = true; p.receiveShadow = true;
+                    loot.add(p);
+                }
+            }
+            else if (type === 'food') {
+                nameTag = "КОНСЕРВЫ";
+                let c = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.32, 8), new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.5, metalness: 0.5 }));
+                c.castShadow = true; c.receiveShadow = true;
+                loot.add(c);
+                let rimTop = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.03, 8), new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.2, metalness: 0.9 }));
+                rimTop.position.y = 0.165;
+                rimTop.castShadow = true;
+                loot.add(rimTop);
+                let rimBot = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.03, 8), new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.2, metalness: 0.9 }));
+                rimBot.position.y = -0.165;
+                rimBot.castShadow = true;
+                loot.add(rimBot);
+            }
+            else if (type === 'water') {
+                nameTag = "ВОДА";
+                let b = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.32, 8), new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.3, transparent: true, opacity: 0.8 }));
+                b.castShadow = true; b.receiveShadow = true;
+                loot.add(b);
+                let neck = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 8), new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.3 }));
+                neck.position.y = 0.18;
+                neck.castShadow = true;
+                loot.add(neck);
+                let cap = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
+                cap.position.y = 0.22;
+                cap.castShadow = true;
+                loot.add(cap);
+            }
+            else if (type === 'ammo') {
+                nameTag = "ПАТРОНЫ";
+                let box = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, 0.22), new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5, metalness: 0.6 }));
+                box.castShadow = true; box.receiveShadow = true;
+                loot.add(box);
+                let clasp = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.1, 0.04), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
+                clasp.position.set(0.18, 0, 0);
+                clasp.castShadow = true;
+                loot.add(clasp);
+            }
+            else if (type === 'medkit') {
+                nameTag = "АПТЕЧКА";
+                let box = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.28, 0.15), new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.6 }));
+                box.castShadow = true; box.receiveShadow = true;
+                loot.add(box);
+                let c1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.18, 0.16), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+                c1.position.z = 0.005;
+                loot.add(c1);
+                let c2 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.16), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+                c2.position.z = 0.005;
+                loot.add(c2);
+            }
+            else if (type === 'gasmask') {
+                nameTag = "ФИЛЬТР";
+                let can = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.15, 8), new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.5 }));
+                can.castShadow = true; can.receiveShadow = true;
+                loot.add(can);
+                let core = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.04, 6), new THREE.MeshStandardMaterial({ color: 0x1f2937 }));
+                core.position.y = 0.08;
+                core.castShadow = true;
+                loot.add(core);
+            }
+            
+            // Floating text label
+            let canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 32;
+            let ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(0, 0, 128, 32);
+            ctx.font = 'bold 12px Outfit, Arial';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(nameTag, 64, 16);
+            
+            let labelTex = new THREE.CanvasTexture(canvas);
+            let labelMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true });
+            let labelSprite = new THREE.Sprite(labelMat);
+            labelSprite.position.set(0, 0.65, 0);
+            labelSprite.scale.set(1.4, 0.35, 1);
+            loot.add(labelSprite);
+
             scene.add(loot);
+            loot.updateMatrixWorld(true);
             
             loot.userData.type = type;
             loot.userData.spawnTime = Date.now();
@@ -4154,25 +4332,46 @@
                 gameState.thirst = 100;
             }
             
-            // Baseplate Ground Plane (Roblox style studs grid)
-            let groundColor = '#14532d';
-            let groundMat = materials.grassTex;
-            if (loc.theme === 'sand') groundMat = materials.sandTex;
-            else if (loc.theme === 'city') groundMat = materials.asphaltTex;
-            else if (loc.theme === 'asphalt') groundMat = materials.asphaltTex;
-            else if (loc.theme === 'tunnel') groundMat = materials.asphaltTex;
-            else if (loc.theme === 'bunker') groundMat = materials.asphaltTex;
+            // Baseplate Ground Plane (Roblox style studs grid) - Prevent tiling monotony using 4 variations via InstancedMesh
+            let groundTexs = materials.grassTexs;
+            if (loc.theme === 'sand') groundTexs = materials.sandTexs;
+            else if (loc.theme === 'city' || loc.theme === 'asphalt' || loc.theme === 'tunnel' || loc.theme === 'bunker') groundTexs = materials.asphaltTexs;
             
-            let groundGeo = new THREE.PlaneGeometry(N * 4.0, N * 4.0);
-            let groundMeshMat = new THREE.MeshStandardMaterial({ map: groundMat, roughness: 0.9 });
-            groundMeshMat.map.repeat.set(N * 2, N * 2);
-            groundMeshMat.map.wrapS = THREE.RepeatWrapping;
-            groundMeshMat.map.wrapT = THREE.RepeatWrapping;
+            let tileSize = 4.0;
+            let tileGeo = new THREE.PlaneGeometry(tileSize, tileSize);
+            let instancedMeshes = [];
             
-            groundMesh = new THREE.Mesh(groundGeo, groundMeshMat);
-            groundMesh.rotation.x = -Math.PI / 2;
-            groundMesh.receiveShadow = true;
-            scene.add(groundMesh);
+            for (let i = 0; i < 4; i++) {
+                let tileMat = new THREE.MeshStandardMaterial({ map: groundTexs[i], roughness: 0.9 });
+                let instMesh = new THREE.InstancedMesh(tileGeo, tileMat, N * N);
+                instMesh.receiveShadow = true;
+                instancedMeshes.push(instMesh);
+            }
+            
+            let counts = [0, 0, 0, 0];
+            let dummy = new THREE.Object3D();
+            let halfMap = N * 2.0;
+            
+            for (let gx = -halfMap; gx < halfMap; gx += tileSize) {
+                for (let gz = -halfMap; gz < halfMap; gz += tileSize) {
+                    let hash = Math.abs(Math.sin(gx * 12.9898 + gz * 78.233) * 43758.5453);
+                    let varIdx = Math.floor((hash % 1) * 4);
+                    
+                    dummy.position.set(gx + tileSize/2, 0.0, gz + tileSize/2);
+                    dummy.rotation.x = -Math.PI / 2;
+                    dummy.updateMatrix();
+                    
+                    let instMesh = instancedMeshes[varIdx];
+                    let instIdx = counts[varIdx];
+                    instMesh.setMatrixAt(instIdx, dummy.matrix);
+                    counts[varIdx]++;
+                }
+            }
+            
+            for (let i = 0; i < 4; i++) {
+                instancedMeshes[i].count = counts[i];
+                scene.add(instancedMeshes[i]);
+            }
             
             // 3D Ambient Light (Darkened for grittier post-apoc atmosphere)
             let ambient = new THREE.AmbientLight(0xdcdcdc, loc.theme === 'tunnel' ? 0.02 : 0.12);
@@ -4338,35 +4537,85 @@
             );
             colliders.push(trainCollider);
             
-            // 9. Cargo Trailer (towed behind SUV, replaces the carriage)
+            // 9. Armored Motorhome / RV (towed behind SUV)
             let trailerGroup = new THREE.Group();
-            trailerGroup.position.set(-6.0, 0, -10.5);
+            trailerGroup.position.set(-6.0, 0, -9.5); // position closer to attach properly
             
-            let trailerBody = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.4, 3.6), materials.trainMetal);
-            trailerBody.position.y = 0.9;
-            trailerBody.castShadow = true;
-            trailerBody.receiveShadow = true;
-            trailerGroup.add(trailerBody);
+            // RV Main Chassis Body (Taller, wider, armored)
+            let rvBody = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.8, 4.2), materials.trainMetal);
+            rvBody.position.y = 1.1;
+            rvBody.castShadow = true;
+            rvBody.receiveShadow = true;
+            trailerGroup.add(rvBody);
             
-            // Trailer wheels
-            let twL = new THREE.Mesh(wheelGeo, wheelMat);
-            twL.position.set(-1.1, 0.45, 0);
-            let twR = new THREE.Mesh(wheelGeo, wheelMat);
-            twR.position.set(1.1, 0.45, 0);
-            trailerGroup.add(twL);
-            trailerGroup.add(twR);
+            // Side Windows (tinted armored glass on left/right sides)
+            let rvWinGeo = new THREE.BoxGeometry(0.05, 0.45, 0.8);
+            let rvWinL1 = new THREE.Mesh(rvWinGeo, materials.goldGlow);
+            rvWinL1.position.set(-1.16, 1.3, 0.8);
+            let rvWinL2 = new THREE.Mesh(rvWinGeo, materials.goldGlow);
+            rvWinL2.position.set(-1.16, 1.3, -0.8);
             
-            // Tow bar connecting SUV to trailer
-            let towBar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 2.8), new THREE.MeshStandardMaterial({ color: 0x1a1c1e, roughness: 0.7 }));
-            towBar.position.set(0, 0.45, 2.2);
+            let rvWinR1 = new THREE.Mesh(rvWinGeo, materials.goldGlow);
+            rvWinR1.position.set(1.16, 1.3, 0.8);
+            let rvWinR2 = new THREE.Mesh(rvWinGeo, materials.goldGlow);
+            rvWinR2.position.set(1.16, 1.3, -0.8);
+            
+            trailerGroup.add(rvWinL1);
+            trailerGroup.add(rvWinL2);
+            trailerGroup.add(rvWinR1);
+            trailerGroup.add(rvWinR2);
+            
+            // Heavy armor plating patches on sides (rusty brown steel plates)
+            let armPlateMat = new THREE.MeshStandardMaterial({ color: 0x542c1e, roughness: 0.8, metalness: 0.5 });
+            let plateL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, 2.0), armPlateMat);
+            plateL.position.set(-1.17, 0.7, 0);
+            let plateR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, 2.0), armPlateMat);
+            plateR.position.set(1.17, 0.7, 0);
+            trailerGroup.add(plateL);
+            trailerGroup.add(plateR);
+            
+            // Roof exhaust chimney pipe
+            let chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.6, 8), new THREE.MeshStandardMaterial({ color: 0x1a1c1e, roughness: 0.7 }));
+            chimney.position.set(0.6, 2.2, -1.2);
+            trailerGroup.add(chimney);
+            
+            // Rear escape ladder (metal rungs)
+            let ladderMat = new THREE.MeshStandardMaterial({ color: 0x111214, roughness: 0.7 });
+            let railL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.5, 0.1), ladderMat);
+            railL.position.set(-0.5, 1.1, -2.12);
+            let railR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.5, 0.1), ladderMat);
+            railR.position.set(-0.2, 1.1, -2.12);
+            trailerGroup.add(railL);
+            trailerGroup.add(railR);
+            for (let h = 0.5; h <= 1.8; h += 0.3) {
+                let rung = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.05), ladderMat);
+                rung.position.set(-0.35, h, -2.12);
+                trailerGroup.add(rung);
+            }
+            
+            // Tandem wheels (4 tires total, dual axles for heavy RV)
+            let twFL = new THREE.Mesh(wheelGeo, wheelMat);
+            twFL.position.set(-1.15, 0.45, 0.9);
+            let twFR = new THREE.Mesh(wheelGeo, wheelMat);
+            twFR.position.set(1.15, 0.45, 0.9);
+            let twBL = new THREE.Mesh(wheelGeo, wheelMat);
+            twBL.position.set(-1.15, 0.45, -0.9);
+            let twBR = new THREE.Mesh(wheelGeo, wheelMat);
+            twBR.position.set(1.15, 0.45, -0.9);
+            trailerGroup.add(twFL);
+            trailerGroup.add(twFR);
+            trailerGroup.add(twBL);
+            trailerGroup.add(twBR);
+            
+            // Solid tow bar coupling connecting SUV to RV
+            let towBar = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, 1.8), new THREE.MeshStandardMaterial({ color: 0x111214, roughness: 0.7, metalness: 0.8 }));
+            towBar.position.set(0, 0.45, 2.7); // extends from RV nose (z=2.1) forward to SUV rear (z=3.6 relative to RV = global z=-5.9)
             trailerGroup.add(towBar);
             
             scene.add(trailerGroup);
+            trailerGroup.updateMatrixWorld(true);
             
-            let carriageCollider = new THREE.Box3(
-                new THREE.Vector3(-7.2, 0, -12.5),
-                new THREE.Vector3(-4.8, 2.2, -8.5)
-            );
+            let carriageCollider = new THREE.Box3().setFromObject(rvBody);
             colliders.push(carriageCollider);
         }
         
@@ -4422,16 +4671,43 @@
             
             let rustMat = new THREE.MeshStandardMaterial({ color: 0x542c1e, roughness: 0.85, metalness: 0.3 });
             
-            // Car chassis
-            let body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 3.0), rustMat);
-            body.position.y = 0.35;
+            // Car chassis (lower body)
+            let body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.45, 3.2), rustMat);
+            body.position.y = 0.325;
             body.castShadow = true;
             body.receiveShadow = true;
             group.add(body);
             
+            // Front bonnet/hood block for detail
+            let hood = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.35, 1.1), rustMat);
+            hood.position.set(0, 0.35, 0.95);
+            hood.castShadow = true;
+            group.add(hood);
+            
+            // Bumpers
+            let bumperMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.8 });
+            let fBumper = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 0.15), bumperMat);
+            fBumper.position.set(0, 0.18, 1.625);
+            fBumper.castShadow = true;
+            group.add(fBumper);
+            let rBumper = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 0.15), bumperMat);
+            rBumper.position.set(0, 0.18, -1.625);
+            rBumper.castShadow = true;
+            group.add(rBumper);
+            
+            // Headlights (hollow/burnt)
+            let hlGeo = new THREE.BoxGeometry(0.2, 0.2, 0.05);
+            let hlMat = new THREE.MeshStandardMaterial({ color: 0x1c1917 });
+            let hlL = new THREE.Mesh(hlGeo, hlMat);
+            hlL.position.set(-0.5, 0.42, 1.51);
+            let hlR = new THREE.Mesh(hlGeo, hlMat);
+            hlR.position.set(0.5, 0.42, 1.51);
+            group.add(hlL);
+            group.add(hlR);
+            
             // Sunken cabin roof
-            let cabin = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 1.5), rustMat);
-            cabin.position.set(0, 0.8, -0.2);
+            let cabin = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.45, 1.6), rustMat);
+            cabin.position.set(0, 0.775, -0.35);
             cabin.castShadow = true;
             group.add(cabin);
             
@@ -4443,11 +4719,39 @@
             for (let i = 0; i < 4; i++) {
                 let w = new THREE.Mesh(wheelGeo, wheelMat);
                 let wx = (i % 2 === 0) ? -0.8 : 0.8;
-                let wz = (i < 2) ? 0.8 : -0.8;
+                let wz = (i < 2) ? 0.9 : -0.9;
                 w.position.set(wx, 0.32, wz);
                 w.rotation.x += Math.random() * 0.3 - 0.15;
                 w.rotation.z += Math.random() * 0.3 - 0.15;
                 group.add(w);
+            }
+            
+            // 40% chance that the car is on fire!
+            if (Math.random() < 0.4) {
+                // Flickering Orange Fire Light
+                let fireLight = new THREE.PointLight(0xff5500, 2.5, 12.0);
+                fireLight.position.set(0, 0.9, 0.4);
+                fireLight.castShadow = true;
+                group.add(fireLight);
+                
+                flickeringLights.push({
+                    light: fireLight,
+                    baseIntensity: 2.5,
+                    seed: Math.random() * 100
+                });
+                
+                // Fire flame mesh
+                let fireGeo = new THREE.ConeGeometry(0.35, 0.8, 6);
+                let fireMat = new THREE.MeshBasicMaterial({ color: 0xff3f00 });
+                let fire = new THREE.Mesh(fireGeo, fireMat);
+                fire.position.set(0, 0.9, 0.4);
+                group.add(fire);
+                
+                flickeringMeshes.push({
+                    mesh: fire,
+                    baseScale: 1.0,
+                    seed: Math.random() * 100
+                });
             }
             
             scene.add(group);
@@ -4562,6 +4866,21 @@
                         group.add(rightPil);
                         meshesToCollide.push(leftPil);
                         meshesToCollide.push(rightPil);
+                        
+                        // Broken cyan glass shards inside the window cutout
+                        if (Math.random() < 0.65) {
+                            let shardGeo = new THREE.BoxGeometry(0.35, 0.5, 0.02);
+                            let shard = new THREE.Mesh(shardGeo, new THREE.MeshStandardMaterial({ 
+                                color: 0x67e8f9, 
+                                transparent: true, 
+                                opacity: 0.45, 
+                                roughness: 0.1 
+                            }));
+                            shard.position.set(wx * 2.0, 1.3, wz * 2.0);
+                            shard.rotation.z = THREE.MathUtils.randFloat(-0.6, 0.6);
+                            if (wz === 0 || wz === length - 1) shard.rotation.y = Math.PI / 2;
+                            group.add(shard);
+                        }
                     } else {
                         // Solid Wall
                         let h = THREE.MathUtils.randFloat(1.8, 2.6);
@@ -4663,15 +4982,66 @@
         }
         
         function spawnWallMesh(x, z, geo) {
-            let mesh = new THREE.Mesh(geo, materials.wall);
-            mesh.position.set(x, 1.5, z);
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            scene.add(mesh);
-            mesh.updateMatrixWorld(true);
+            let loc = LOCATIONS[gameState.currentLocationIndex];
+            let theme = loc.theme;
             
-            walls.push(mesh);
-            colliders.push(new THREE.Box3().setFromObject(mesh));
+            let wallGroup = new THREE.Group();
+            wallGroup.position.set(x, 0, z);
+            
+            let colliderBox;
+            
+            if (theme === 'grass') {
+                // Spawn a tall blocky forest tree as the wall!
+                let trunk = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.6, 0.6), materials.wood);
+                trunk.position.y = 0.8;
+                trunk.castShadow = true;
+                trunk.receiveShadow = true;
+                wallGroup.add(trunk);
+                
+                let leaves1 = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.0, 1.8), materials.leaf);
+                leaves1.position.y = 1.9;
+                leaves1.castShadow = true;
+                leaves1.receiveShadow = true;
+                wallGroup.add(leaves1);
+
+                let leaves2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 1.2), materials.leaf);
+                leaves2.position.y = 2.6;
+                leaves2.castShadow = true;
+                leaves2.receiveShadow = true;
+                wallGroup.add(leaves2);
+                
+                scene.add(wallGroup);
+                wallGroup.updateMatrixWorld(true);
+                
+                colliderBox = new THREE.Box3(
+                    new THREE.Vector3(x - 0.7, 0, z - 0.7),
+                    new THREE.Vector3(x + 0.7, 3.2, z + 0.7)
+                );
+            } else {
+                // Concrete wall for city, asphalt, tunnel, bunker
+                let block = new THREE.Mesh(geo, materials.wall);
+                block.position.y = 1.5;
+                block.castShadow = true;
+                block.receiveShadow = true;
+                wallGroup.add(block);
+                
+                // Add concrete detail line/beam to make it look like concrete blocks
+                let ironMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.5, metalness: 0.8 });
+                let beam = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.25, 2.05), ironMat);
+                beam.position.y = 2.85;
+                wallGroup.add(beam);
+                
+                scene.add(wallGroup);
+                wallGroup.updateMatrixWorld(true);
+                
+                colliderBox = new THREE.Box3(
+                    new THREE.Vector3(x - 1.0, 0, z - 1.0),
+                    new THREE.Vector3(x + 1.0, 3.0, z + 1.0)
+                );
+            }
+            
+            walls.push(wallGroup);
+            colliders.push(colliderBox);
         }
 
         function spawnBloodDecal(x, z) {
@@ -4694,10 +5064,11 @@
             scene.add(playerGroup);
             worldMousePoint.set(0, 0, -8.0);    // Aim North by default
             
-            // Flashlight SpotLight for dark themes
+            // Flashlight SpotLight for dark themes (move slightly forward to z=0.4 and add bias to prevent self-shadowing from head/torso)
             let flashlight = new THREE.SpotLight(0xffffff, loc.theme === 'tunnel' ? 8.0 : 2.0, 30.0, Math.PI / 7, 0.5, 1);
-            flashlight.position.set(0, 1.6, 0);
+            flashlight.position.set(0, 1.6, 0.4);
             flashlight.castShadow = true;
+            flashlight.shadow.bias = -0.002;
             playerGroup.add(flashlight);
             playerGroup.userData.flashlight = flashlight;
             
@@ -4785,7 +5156,8 @@
             
             // 4. Enemies
             for (let [eType, qty] of Object.entries(loc.enemies)) {
-                let actualQty = eType.startsWith('zombie') ? Math.round(qty * 3.0) : qty; // 3x more zombies!
+                // Use exact quantity defined in LOCATIONS for perfect game balance (avoiding unplayable laggy mobs)
+                let actualQty = qty;
                 for (let i = 0; i < actualQty; i++) {
                     let rx = THREE.MathUtils.randFloat(-sizeRange, sizeRange);
                     let rz = THREE.MathUtils.randFloat(-sizeRange, sizeRange);
@@ -4800,7 +5172,20 @@
                     
                     if (isInsideWall(rx, rz)) continue;
                     
-                    spawn3DEnemy(rx, rz, eType);
+                    // Mix in different enemy types for variety!
+                    let finalType = eType;
+                    if (eType !== 'boss' && Math.random() < 0.25) {
+                        let choices = ['zombie', 'zombie_fast', 'zombie_fat'];
+                        if (loc.theme === 'city' || loc.theme === 'asphalt') {
+                            choices.push('raider');
+                        }
+                        if (loc.theme === 'sand' || loc.theme === 'tunnel' || loc.theme === 'bunker') {
+                            choices.push('mutant');
+                        }
+                        finalType = choices[Math.floor(Math.random() * choices.length)];
+                    }
+                    
+                    spawn3DEnemy(rx, rz, finalType);
                 }
             }
 
@@ -4855,22 +5240,28 @@
             let tree = new THREE.Group();
             tree.position.set(x, 0, z);
             
-            // Fuel pump body (rusty red)
-            let pumpBody = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.5, 0.7), new THREE.MeshStandardMaterial({ color: 0x8b1e1e, roughness: 0.6 }));
-            pumpBody.position.y = 0.75;
-            pumpBody.castShadow = true;
-            tree.add(pumpBody);
+            // Detailed Jerrycan (Fuel Canister) model instead of a stupid looking gas pump
+            let canMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.5 }); // Red metal jerrycan
+            let body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.75, 0.35), canMat);
+            body.position.y = 0.375;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            tree.add(body);
             
-            // Pump display/top (dark slate gray dial)
-            let pumpTop = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.5), new THREE.MeshStandardMaterial({ color: 0x222325, roughness: 0.8 }));
-            pumpTop.position.y = 1.6;
-            pumpTop.castShadow = true;
-            tree.add(pumpTop);
+            // Canister handle
+            let handleMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.5 });
+            let handle = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.18, 0.28), handleMat);
+            handle.position.set(0, 0.81, 0);
+            handle.castShadow = true;
+            tree.add(handle);
             
-            // Neon status indicator light (gold glow)
-            let indicator = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.1), materials.headlightGlow);
-            indicator.position.set(0, 1.6, 0.26);
-            tree.add(indicator);
+            // Yellow Cap/Nozzle
+            let capMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
+            let cap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.12, 8), capMat);
+            cap.position.set(0.14, 0.78, 0.08);
+            cap.rotation.z = -0.2;
+            cap.castShadow = true;
+            tree.add(cap);
 
             scene.add(tree);
             tree.updateMatrixWorld(true);
@@ -5000,7 +5391,7 @@
         function killEnemy(enemy) {
             sound.playDeath();
             spawnBoxSparks(enemy.position, 0xd90429, 20, 0.15); // blood boxes!
-            spawnBloodDecal(enemy.position);
+            spawnBloodDecal(enemy.position.x, enemy.position.z);
             
             let xp = 15;
             if (enemy.userData.type === 'zombie_fast') xp = 25;
@@ -5083,6 +5474,14 @@
                 if (nearestNode.userData.type === 'scrap') checkTutorial('scrap', '⚙️ Сбор металлолома', 'Подойдите к куче хлама и зажмите ПРОБЕЛ, чтобы собрать металлолом для крафта.', '⚙️');
                 
                 if (keys.Space) {
+                    if (nearestNode.userData.type === 'tree') {
+                        let cap = getMaxWoodCapacity();
+                        if (gameState.inventory.wood >= cap) {
+                            addLogMessage(`Багажник для бензина забит! (Максимум: ${cap})`, "warning");
+                            clearProgressBar();
+                            return;
+                        }
+                    }
                     playerGroup.userData.isHarvesting = true;
                     playerGroup.userData.harvestProgress += dt;
                     
@@ -5203,31 +5602,27 @@
                 let isMoving = (vx !== 0 || vz !== 0);
 
                 // 2. Aiming & Rotation (Unified Mobile & PC)
-                if (isShootingJoystickActive && (joystickShootInput.x !== 0 || joystickShootInput.y !== 0)) {
-                    // Mobile: aim based on right joystick input
-                    let aimDir = new THREE.Vector3(joystickShootInput.x, 0, joystickShootInput.y).normalize();
-                    let lookAngle = Math.atan2(joystickShootInput.x, joystickShootInput.y);
-                    playerGroup.rotation.y = lookAngle;
-                    worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
-                } else if (isMoving) {
-                    // Face movement direction while running (both PC and Mobile!)
-                    let lookAngle = Math.atan2(vx, vz);
-                    playerGroup.rotation.y = lookAngle;
-                    
-                    let aimDir = new THREE.Vector3(vx, 0, vz).normalize();
-                    worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
-                } else if (!isMobileDevice) {
-                    // PC: Only rotate to face the mouse if the mouse is far enough (aiming outward)
+                if (isMobileDevice) {
+                    if (isShootingJoystickActive && (joystickShootInput.x !== 0 || joystickShootInput.y !== 0)) {
+                        let aimDir = new THREE.Vector3(joystickShootInput.x, 0, joystickShootInput.y).normalize();
+                        let lookAngle = Math.atan2(joystickShootInput.x, joystickShootInput.y);
+                        playerGroup.rotation.y = lookAngle;
+                        worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
+                    } else if (isMoving) {
+                        let lookAngle = Math.atan2(vx, vz);
+                        playerGroup.rotation.y = lookAngle;
+                        let aimDir = new THREE.Vector3(vx, 0, vz).normalize();
+                        worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
+                    }
+                } else {
+                    // PC: Always rotate to face the mouse, even when moving
                     raycaster.setFromCamera(mouseCoords, camera);
                     let intersects = new THREE.Vector3();
                     raycaster.ray.intersectPlane(groundPlane, intersects);
                     
-                    let distToMouse = intersects.distanceTo(playerGroup.position);
-                    if (distToMouse > 2.0) {
-                        worldMousePoint.copy(intersects);
-                        let lookAngle = Math.atan2(worldMousePoint.x - playerGroup.position.x, worldMousePoint.z - playerGroup.position.z);
-                        playerGroup.rotation.y = lookAngle;
-                    }
+                    worldMousePoint.copy(intersects);
+                    let lookAngle = Math.atan2(worldMousePoint.x - playerGroup.position.x, worldMousePoint.z - playerGroup.position.z);
+                    playerGroup.rotation.y = lookAngle;
                 }
                 
                 // Draw 3D laser sight
@@ -5308,6 +5703,11 @@
 
                 // Auto-fire on mobile right joystick
                 if (isShootingJoystickActive && (joystickShootInput.x !== 0 || joystickShootInput.y !== 0)) {
+                    fireWeapon();
+                }
+                
+                // Auto-fire rifle if mouse is held down (automatic fire)
+                if (keys.mouseDown && currentActiveWeapon === 'rifle') {
                     fireWeapon();
                 }
                 
@@ -5458,7 +5858,6 @@
                         checkTutorial('enemy', '🧟 Опасность близко!', 'На вас бежит зомби! Выберите оружие на 1-3 и стреляйте.', '🧟');
                     }
                     if (dist < viewRange) {
-                        
                         // Move straight to player
                         let stepX = Math.sin(angle) * e.userData.speed * dt;
                         let stepZ = Math.cos(angle) * e.userData.speed * dt;
@@ -5476,7 +5875,34 @@
                             if (colBox.intersectsBox(col)) { collided = true; break; }
                         }
                         if (!collided) {
-                            e.position.set(nextX, 0, nextZ);
+                            // Prevent zombie overlapping player - maintain 0.8 units distance
+                            let targetDist = 0.8;
+                            let nextPos = new THREE.Vector3(nextX, 0, nextZ);
+                            if (nextPos.distanceTo(playerGroup.position) >= targetDist) {
+                                e.position.set(nextX, 0, nextZ);
+                            } else {
+                                let pushDir = e.position.clone().sub(playerGroup.position);
+                                pushDir.y = 0;
+                                if (pushDir.lengthSq() < 0.01) pushDir.set(1, 0, 0);
+                                pushDir.normalize().multiplyScalar(targetDist);
+                                let finalPos = playerGroup.position.clone().add(pushDir);
+                                e.position.set(finalPos.x, 0, finalPos.z);
+                            }
+                        }
+                        
+                        // Separation between zombies to prevent them from merging into one box
+                        for (let k = 0; k < enemies.length; k++) {
+                            if (e !== enemies[k] && enemies[k].userData.type.startsWith('zombie')) {
+                                let edist = e.position.distanceTo(enemies[k].position);
+                                if (edist < 0.75) {
+                                    let push = e.position.clone().sub(enemies[k].position);
+                                    push.y = 0;
+                                    if (push.lengthSq() < 0.01) push.set(Math.random()-0.5, 0, Math.random()-0.5);
+                                    push.normalize().multiplyScalar(0.25 * dt); // push apart gently
+                                    e.position.add(push);
+                                    enemies[k].position.sub(push);
+                                }
+                            }
                         }
                         
                         // Swing limbs
@@ -5550,9 +5976,21 @@
                                 e.userData.leapVelocity.set(0, 0, 0);
                             }
                         } else {
-                            // normal walk
-                            e.position.x += Math.sin(angle) * e.userData.speed * dt;
-                            e.position.z += Math.cos(angle) * e.userData.speed * dt;
+                            // normal walk with player overlap prevention
+                            let nextX = e.position.x + Math.sin(angle) * e.userData.speed * dt;
+                            let nextZ = e.position.z + Math.cos(angle) * e.userData.speed * dt;
+                            let targetDist = 0.8;
+                            let nextPos = new THREE.Vector3(nextX, 0, nextZ);
+                            if (nextPos.distanceTo(playerGroup.position) >= targetDist) {
+                                e.position.set(nextX, 0, nextZ);
+                            } else {
+                                let pushDir = e.position.clone().sub(playerGroup.position);
+                                pushDir.y = 0;
+                                if (pushDir.lengthSq() < 0.01) pushDir.set(1, 0, 0);
+                                pushDir.normalize().multiplyScalar(targetDist);
+                                let finalPos = playerGroup.position.clone().add(pushDir);
+                                e.position.set(finalPos.x, 0, finalPos.z);
+                            }
                         }
                     }
                     
@@ -5674,7 +6112,8 @@
             window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('keyup', onKeyUp);
             window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mousedown', onMouseMove);
+            window.removeEventListener('mousedown', onMouseDown);
+            window.removeEventListener('mouseup', onMouseUp);
             
             const container = document.getElementById('game-container');
             container.innerHTML = '';

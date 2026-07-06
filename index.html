@@ -3242,6 +3242,8 @@
         let lootItems = []; // floating resource boxes
         let physicalParts = []; // bouncing death blocks
         let activeLights = [];
+        let flickeringLights = [];
+        let flickeringMeshes = [];
         
         // Input state
         let keys = { W: false, A: false, S: false, D: false, Shift: false, Space: false };
@@ -3322,76 +3324,70 @@
             container.appendChild(renderer.domElement);
             
             // Generate procedural pixel textures
-            // 1. Player face
-            let playerFaceTex = createPixelTexture(32, 32, '#ffdbac', 4, (ctx, w, h) => {
-                ctx.fillStyle = '#0f172a'; // Eyes
+            // 1. Player face (gritty desaturated dirty skin, neutral grim mouth)
+            let playerFaceTex = createPixelTexture(32, 32, '#c0b19f', 6, (ctx, w, h) => {
+                ctx.fillStyle = '#0d0f12'; // Grim eyes
                 ctx.fillRect(7, 9, 4, 6);
                 ctx.fillRect(21, 9, 4, 6);
                 ctx.fillStyle = '#ffffff'; // Glint
                 ctx.fillRect(8, 10, 1, 2);
                 ctx.fillRect(22, 10, 1, 2);
-                ctx.fillStyle = '#ef4444'; // Smile mouth
-                ctx.fillRect(12, 20, 8, 3);
-                ctx.fillRect(11, 19, 1, 1);
-                ctx.fillRect(20, 19, 1, 1);
+                ctx.fillStyle = '#2b241e'; // Grim straight mouth
+                ctx.fillRect(11, 20, 10, 2);
             });
             
-            // 2. Player torso (blue hoodie with cargo vest straps)
-            let playerTorsoTex = createPixelTexture(32, 32, '#0284c7', 10, (ctx, w, h) => {
-                ctx.strokeStyle = '#eab308'; // Straps
+            // 2. Player torso (dark charcoal tactical gear and black straps)
+            let playerTorsoTex = createPixelTexture(32, 32, '#2d2e30', 10, (ctx, w, h) => {
+                ctx.strokeStyle = '#141517'; // Tactical black vest straps
                 ctx.lineWidth = 2;
                 ctx.strokeRect(5.5, -1, 2, 34);
                 ctx.strokeRect(24.5, -1, 2, 34);
-                ctx.fillStyle = '#1e293b'; // Belt
+                ctx.fillStyle = '#0f0f10'; // Belt
                 ctx.fillRect(0, 24, 32, 4);
-                ctx.fillStyle = '#eab308'; // Buckle
+                ctx.fillStyle = '#5a5c61'; // Weathered steel buckle
                 ctx.fillRect(14, 23, 4, 6);
             });
             
-            // 3. Zombie face
-            let zombieFaceTex = createPixelTexture(32, 32, '#15803d', 8, (ctx, w, h) => {
-                ctx.fillStyle = '#ef4444'; // Glowing red eyes
-                ctx.fillRect(6, 10, 5, 5);
-                ctx.fillRect(21, 10, 5, 5);
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(8, 12, 2, 2);
-                ctx.fillRect(23, 12, 2, 2);
-                ctx.fillStyle = '#050505'; // Scary open mouth
-                ctx.fillRect(10, 21, 12, 6);
+            // 3. Zombie face (decayed grey-green skin, tiny pinpoint red pupils)
+            let zombieFaceTex = createPixelTexture(32, 32, '#3a3f35', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#12140f'; // Dark hollow eye sockets
+                ctx.fillRect(5, 9, 6, 6);
+                ctx.fillRect(20, 9, 6, 6);
+                ctx.fillStyle = '#991b1b'; // Pinpoint glowing red pupils
+                ctx.fillRect(7, 11, 2, 2);
+                ctx.fillRect(22, 11, 2, 2);
+                ctx.fillStyle = '#1c0707'; // Gaping rotting jaw
+                ctx.fillRect(9, 20, 14, 7);
             });
             
-            // 4. Zombie torso (ripped shirt)
-            let zombieTorsoTex = createPixelTexture(32, 32, '#451a03', 10, (ctx, w, h) => {
-                ctx.fillStyle = '#15803d'; // Exposed rotten skin
+            // 4. Zombie torso (shredded brown rags over rotting grey-green skin)
+            let zombieTorsoTex = createPixelTexture(32, 32, '#2b231d', 12, (ctx, w, h) => {
+                ctx.fillStyle = '#3a3f35'; // Exposed rotting flesh
                 ctx.fillRect(4, 18, 8, 14);
                 ctx.fillRect(20, 4, 6, 12);
-                ctx.fillStyle = '#f43f5e'; // Flesh/blood spots
-                ctx.fillRect(6, 22, 2, 2);
-                ctx.fillRect(22, 8, 2, 2);
+                ctx.fillStyle = '#4a1515'; // Dark dried blood stains
+                ctx.fillRect(6, 22, 3, 3);
+                ctx.fillRect(21, 8, 3, 3);
             });
             
-            // 5. Raider torso (military green camo vest)
-            let raiderTorsoTex = createPixelTexture(32, 32, '#3f491c', 12, (ctx, w, h) => {
-                ctx.fillStyle = '#78350f'; // brown camo blobs
-                ctx.fillRect(2, 4, 8, 6);
-                ctx.fillRect(18, 14, 10, 8);
-                ctx.fillStyle = '#14532d'; // dark green blobs
-                ctx.fillRect(12, 2, 6, 8);
-                ctx.fillRect(4, 20, 8, 6);
-                ctx.fillStyle = '#0f172a'; // black straps
-                ctx.fillRect(6, 0, 3, 32);
-                ctx.fillRect(23, 0, 3, 32);
+            // 5. Raider torso (olive drab camo vest with black kevlar plates)
+            let raiderTorsoTex = createPixelTexture(32, 32, '#33372f', 12, (ctx, w, h) => {
+                ctx.fillStyle = '#191b1c'; // Tactical black vest plates
+                ctx.fillRect(4, 4, 24, 24);
+                ctx.fillStyle = '#222520'; // Camo spots
+                ctx.fillRect(6, 8, 20, 3);
+                ctx.fillRect(6, 16, 20, 3);
             });
             
-            // 6. Cyber wall texture (caution stripes)
-            let wallTex = createPixelTexture(32, 32, '#27272a', 6, (ctx, w, h) => {
-                ctx.fillStyle = '#fbbf24'; // Caution yellow
+            // 6. Brick wall textures (dirty concrete and faded caution stripes)
+            let wallTex = createPixelTexture(32, 32, '#42454a', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#8c732b'; // Faded caution yellow
                 ctx.beginPath();
                 for (let i = -16; i < 48; i += 8) {
                     ctx.moveTo(i, 0); ctx.lineTo(i + 4, 0); ctx.lineTo(i - 4, 32); ctx.lineTo(i - 8, 32);
-                    ctx.closePath(); ctx.fill();
                 }
-                ctx.strokeStyle = '#09090b'; // dark metal plates line
+                ctx.closePath(); ctx.fill();
+                ctx.strokeStyle = '#1d1e21'; // soot and panel division line
                 ctx.lineWidth = 1;
                 ctx.strokeRect(0.5, 0.5, 31, 31);
             });
@@ -3421,13 +3417,17 @@
                 ctx.fillRect(34, 0, 2, 64);
             });
             
-            // 8. Train metal (bolted sheet plate)
-            let trainMetalTex = createPixelTexture(32, 32, '#090d16', 6, (ctx, w, h) => {
-                ctx.strokeStyle = '#06b6d4'; // neon cyan borders
+            // 8. Train metal (bolted armored plates with weld/rust marks)
+            let trainMetalTex = createPixelTexture(32, 32, '#2d2f33', 6, (ctx, w, h) => {
+                ctx.strokeStyle = '#1c1d1f'; // dark plate borders
                 ctx.lineWidth = 1;
                 ctx.strokeRect(0.5, 0.5, 31, 31);
+                // Weld/Rust marks
+                ctx.fillStyle = '#42261b';
+                ctx.fillRect(12, 1, 8, 1);
+                ctx.fillRect(1, 15, 1, 6);
                 // Rivets/bolts
-                ctx.fillStyle = '#0891b2';
+                ctx.fillStyle = '#121314';
                 ctx.fillRect(2, 2, 2, 2);
                 ctx.fillRect(28, 2, 2, 2);
                 ctx.fillRect(2, 28, 2, 2);
@@ -3490,32 +3490,73 @@
                 ctx.stroke();
             });
 
-            materials.playerSkin = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.7 });
-            materials.playerSkinTextured = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#ffdbac', 4), roughness: 0.7 });
-            materials.playerSkinFace = new THREE.MeshStandardMaterial({ map: playerFaceTex, roughness: 0.7 });
-            materials.playerTorso = new THREE.MeshStandardMaterial({ map: playerTorsoTex, roughness: 0.8 });
-            materials.playerLegs = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#1e293b', 8), roughness: 0.8 });
+            // 15. Procedural broken slab textures (4 variations)
+            let slabTex1 = createPixelTexture(32, 32, '#383a3d', 15, (ctx, w, h) => {
+                ctx.strokeStyle = '#1d1e21'; // cracks
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(4, 4); ctx.lineTo(16, 12); ctx.lineTo(28, 6);
+                ctx.moveTo(10, 20); ctx.lineTo(22, 22); ctx.lineTo(26, 28);
+                ctx.stroke();
+            });
+            let slabTex2 = createPixelTexture(32, 32, '#454840', 12, (ctx, w, h) => {
+                ctx.strokeStyle = '#20231b'; // mossy cracks
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(2, 8); ctx.lineTo(12, 18); ctx.lineTo(24, 26);
+                ctx.stroke();
+            });
+            let slabTex3 = createPixelTexture(32, 32, '#473e35', 10, (ctx, w, h) => {
+                ctx.fillStyle = '#2b2520'; // gravel spots
+                for (let i = 0; i < 20; i++) {
+                    ctx.fillRect(Math.random()*30, Math.random()*30, 2, 2);
+                }
+            });
+            let slabTex4 = createPixelTexture(32, 32, '#5c3d2e', 14, (ctx, w, h) => {
+                ctx.strokeStyle = '#2b1b14'; // rust plates division
+                ctx.strokeRect(0.5, 0.5, 31, 31);
+                ctx.fillStyle = '#2b1b14'; // dark spots
+                ctx.fillRect(4, 4, 3, 3);
+                ctx.fillRect(24, 24, 3, 3);
+            });
+
+            // Use gritty desaturated colors for skins and props
+            materials.playerSkin = new THREE.MeshStandardMaterial({ color: 0xc0b19f, roughness: 0.75 });
+            materials.playerSkinTextured = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#c0b19f', 4), roughness: 0.75 });
+            materials.playerSkinFace = new THREE.MeshStandardMaterial({ map: playerFaceTex, roughness: 0.75 });
+            materials.playerTorso = new THREE.MeshStandardMaterial({ map: playerTorsoTex, roughness: 0.85 });
+            materials.playerLegs = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#1a1c1e', 8), roughness: 0.9 });
             
-            materials.zombieSkin = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#15803d', 6), roughness: 0.8 });
+            materials.zombieSkin = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#3a3f35', 6), roughness: 0.8 });
             materials.zombieSkinFace = new THREE.MeshStandardMaterial({ map: zombieFaceTex, roughness: 0.8 });
             materials.zombieTorso = new THREE.MeshStandardMaterial({ map: zombieTorsoTex, roughness: 0.85 });
             
-            materials.zombieFastSkin = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#ea580c', 8), roughness: 0.8 });
-            materials.zombieFatTorso = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#4d7c0f', 12), roughness: 0.85 });
+            materials.zombieFastSkin = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#5f3c25', 8), roughness: 0.8 });
+            materials.zombieFatTorso = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#2e3a1f', 12), roughness: 0.85 });
             
-            materials.raiderArmor = new THREE.MeshStandardMaterial({ map: raiderTorsoTex, roughness: 0.4, metalness: 0.6 });
+            materials.raiderArmor = new THREE.MeshStandardMaterial({ map: raiderTorsoTex, roughness: 0.5, metalness: 0.5 });
             materials.mutantBody = new THREE.MeshStandardMaterial({ map: mutantSkinTex, roughness: 0.9, metalness: 0.1 });
-            materials.bossMetal = new THREE.MeshStandardMaterial({ map: bossMetalTex, roughness: 0.35, metalness: 0.8 });
+            materials.bossMetal = new THREE.MeshStandardMaterial({ map: bossMetalTex, roughness: 0.45, metalness: 0.75 });
             materials.redGlow = new THREE.MeshBasicMaterial({ color: 0xef4444 });
-            materials.trainMetal = new THREE.MeshStandardMaterial({ map: trainMetalTex, roughness: 0.35, metalness: 0.85 });
-            materials.goldGlow = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+            materials.trainMetal = new THREE.MeshStandardMaterial({ map: trainMetalTex, roughness: 0.4, metalness: 0.8 });
+            // Dark glass for cabin windshield/windows instead of gold glowing yellow!
+            materials.goldGlow = new THREE.MeshStandardMaterial({ color: 0x181a1c, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.85 });
+            // Separate basic material for actual glowing headlights/indicators
+            materials.headlightGlow = new THREE.MeshBasicMaterial({ color: 0xffedd5 });
             materials.wood = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.9 });
             materials.leaf = new THREE.MeshStandardMaterial({ map: leafTex, roughness: 0.95 });
-            materials.scrap = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.4, metalness: 0.8 });
-            materials.radBarrel = new THREE.MeshStandardMaterial({ map: radBarrelTex, roughness: 0.3, metalness: 0.6 });
-            materials.wall = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.7, metalness: 0.25 });
+            materials.scrap = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.5, metalness: 0.75 });
+            materials.radBarrel = new THREE.MeshStandardMaterial({ map: radBarrelTex, roughness: 0.35, metalness: 0.5 });
+            materials.wall = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.75, metalness: 0.2 });
             materials.bloodSplatter = new THREE.MeshBasicMaterial({ map: bloodSplatterTex, transparent: true, opacity: 0.85, depthWrite: false });
-            materials.brokenSlab = new THREE.MeshStandardMaterial({ map: slabTex, roughness: 0.8 });
+            
+            // Multiple ground variations
+            materials.brokenSlabs = [
+                new THREE.MeshStandardMaterial({ map: slabTex1, roughness: 0.8 }),
+                new THREE.MeshStandardMaterial({ map: slabTex2, roughness: 0.85 }),
+                new THREE.MeshStandardMaterial({ map: slabTex3, roughness: 0.9 }),
+                new THREE.MeshStandardMaterial({ map: slabTex4, roughness: 0.65, metalness: 0.4 })
+            ];
             
             // Listeners
             window.addEventListener('resize', onWindowResize);
@@ -4095,6 +4136,8 @@
             lootItems = [];
             physicalParts = [];
             activeLights = [];
+            flickeringLights = [];
+            flickeringMeshes = [];
             
             // Clear Three.js Scene objects
             while(scene.children.length > 0){ 
@@ -4120,9 +4163,9 @@
             else if (loc.theme === 'tunnel') groundMat = materials.asphaltTex;
             else if (loc.theme === 'bunker') groundMat = materials.asphaltTex;
             
-            let groundGeo = new THREE.PlaneGeometry(N * 2.0, N * 2.0);
+            let groundGeo = new THREE.PlaneGeometry(N * 4.0, N * 4.0);
             let groundMeshMat = new THREE.MeshStandardMaterial({ map: groundMat, roughness: 0.9 });
-            groundMeshMat.map.repeat.set(N, N);
+            groundMeshMat.map.repeat.set(N * 2, N * 2);
             groundMeshMat.map.wrapS = THREE.RepeatWrapping;
             groundMeshMat.map.wrapT = THREE.RepeatWrapping;
             
@@ -4255,9 +4298,36 @@
             let lightConeGeo = new THREE.ConeGeometry(3.5, 12.0, 16);
             let lightConeMat = new THREE.MeshBasicMaterial({ color: 0xffedd5, transparent: true, opacity: 0.08, depthWrite: false });
             let lightCone = new THREE.Mesh(lightConeGeo, lightConeMat);
-            lightCone.rotation.x = Math.PI / 2;
+            // Rotate -Math.PI / 2 so the narrow end starts at the headlights and gets wider forward
+            lightCone.rotation.x = -Math.PI / 2;
             lightCone.position.set(0, 0.8, 8.2);
             trainGroup.add(lightCone);
+            
+            // Real SUV headlight SpotLights (one for left, one for right headlight)
+            let headlightL_Light = new THREE.SpotLight(0xffedd5, 15.0, 35.0, Math.PI / 6, 0.5, 1);
+            headlightL_Light.position.set(-0.7, 0.8, 2.2);
+            headlightL_Light.castShadow = true;
+            headlightL_Light.shadow.mapSize.width = 512;
+            headlightL_Light.shadow.mapSize.height = 512;
+            trainGroup.add(headlightL_Light);
+            
+            let headlightR_Light = new THREE.SpotLight(0xffedd5, 15.0, 35.0, Math.PI / 6, 0.5, 1);
+            headlightR_Light.position.set(0.7, 0.8, 2.2);
+            headlightR_Light.castShadow = true;
+            headlightR_Light.shadow.mapSize.width = 512;
+            headlightR_Light.shadow.mapSize.height = 512;
+            trainGroup.add(headlightR_Light);
+            
+            // Spotlight targets pointing forward relative to the SUV
+            let targetL = new THREE.Object3D();
+            targetL.position.set(-0.7, 0.8, 12.0);
+            trainGroup.add(targetL);
+            headlightL_Light.target = targetL;
+            
+            let targetR = new THREE.Object3D();
+            targetR.position.set(0.7, 0.8, 12.0);
+            trainGroup.add(targetR);
+            headlightR_Light.target = targetR;
             
             scene.add(trainGroup);
             
@@ -4300,6 +4370,211 @@
             colliders.push(carriageCollider);
         }
         
+        function spawnFireBarrel(x, z) {
+            let group = new THREE.Group();
+            group.position.set(x, 0, z);
+            
+            // 1. Rusted steel barrel
+            let barrelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.9, 8);
+            let barrelMat = new THREE.MeshStandardMaterial({ color: 0x4f362b, roughness: 0.7, metalness: 0.6 });
+            let barrel = new THREE.Mesh(barrelGeo, barrelMat);
+            barrel.position.y = 0.45;
+            barrel.castShadow = true;
+            barrel.receiveShadow = true;
+            group.add(barrel);
+            
+            // 2. Flickering Orange Fire Light
+            let fireLight = new THREE.PointLight(0xff5500, 2.5, 10.0);
+            fireLight.position.set(0, 1.0, 0);
+            fireLight.castShadow = true;
+            group.add(fireLight);
+            
+            flickeringLights.push({
+                light: fireLight,
+                baseIntensity: 2.5,
+                seed: Math.random() * 100
+            });
+            
+            // 3. Fire flame mesh
+            let fireGeo = new THREE.ConeGeometry(0.25, 0.5, 6);
+            let fireMat = new THREE.MeshBasicMaterial({ color: 0xff3f00 });
+            let fire = new THREE.Mesh(fireGeo, fireMat);
+            fire.position.set(0, 1.0, 0);
+            group.add(fire);
+            
+            flickeringMeshes.push({
+                mesh: fire,
+                baseScale: 1.0,
+                seed: Math.random() * 100
+            });
+            
+            scene.add(group);
+            
+            let box = new THREE.Box3().setFromObject(barrel);
+            colliders.push(box);
+        }
+
+        function spawnRuinedCar(x, z) {
+            let group = new THREE.Group();
+            group.position.set(x, 0, z);
+            group.rotation.y = Math.random() * Math.PI * 2;
+            
+            let rustMat = new THREE.MeshStandardMaterial({ color: 0x542c1e, roughness: 0.85, metalness: 0.3 });
+            
+            // Car chassis
+            let body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 3.0), rustMat);
+            body.position.y = 0.35;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            group.add(body);
+            
+            // Sunken cabin roof
+            let cabin = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 1.5), rustMat);
+            cabin.position.set(0, 0.8, -0.2);
+            cabin.castShadow = true;
+            group.add(cabin);
+            
+            // Burnt tires / rusted wheel hubs
+            let wheelMat = new THREE.MeshStandardMaterial({ color: 0x181615, roughness: 0.95 });
+            let wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.28, 8);
+            wheelGeo.rotateZ(Math.PI / 2);
+            
+            for (let i = 0; i < 4; i++) {
+                let w = new THREE.Mesh(wheelGeo, wheelMat);
+                let wx = (i % 2 === 0) ? -0.8 : 0.8;
+                let wz = (i < 2) ? 0.8 : -0.8;
+                w.position.set(wx, 0.32, wz);
+                w.rotation.x += Math.random() * 0.3 - 0.15;
+                w.rotation.z += Math.random() * 0.3 - 0.15;
+                group.add(w);
+            }
+            
+            scene.add(group);
+            
+            let box = new THREE.Box3().setFromObject(body);
+            colliders.push(box);
+        }
+
+        function spawnManhole(x, z) {
+            let manholeGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.015, 8);
+            let manholeMat = new THREE.MeshStandardMaterial({ color: 0x1f2124, roughness: 0.65, metalness: 0.75 });
+            let manhole = new THREE.Mesh(manholeGeo, manholeMat);
+            manhole.position.set(x, 0.021, z);
+            manhole.receiveShadow = true;
+            scene.add(manhole);
+        }
+
+        function spawnStreetDebris(x, z) {
+            let debrisType = Math.random();
+            if (debrisType < 0.45) {
+                // Pile of trash bags
+                let count = THREE.MathUtils.randInt(2, 4);
+                let bagMat = new THREE.MeshStandardMaterial({ color: 0x151618, roughness: 0.9 });
+                for (let i = 0; i < count; i++) {
+                    let s = THREE.MathUtils.randFloat(0.35, 0.5);
+                    let bagGeo = new THREE.BoxGeometry(s, s, s);
+                    let bag = new THREE.Mesh(bagGeo, bagMat);
+                    bag.position.set(x + THREE.MathUtils.randFloat(-0.25, 0.25), s/2, z + THREE.MathUtils.randFloat(-0.25, 0.25));
+                    bag.rotation.set(Math.random()*0.25, Math.random()*3.14, Math.random()*0.25);
+                    bag.castShadow = true;
+                    scene.add(bag);
+                }
+            } else {
+                // Broken crate
+                let crateGeo = new THREE.BoxGeometry(0.55, 0.55, 0.55);
+                let crate = new THREE.Mesh(crateGeo, materials.wood);
+                crate.position.set(x, 0.275, z);
+                crate.rotation.set(0, Math.random()*3.14, 0);
+                crate.castShadow = true;
+                scene.add(crate);
+                colliders.push(new THREE.Box3().setFromObject(crate));
+            }
+        }
+
+        function spawnRuinedBuilding(x, z) {
+            let group = new THREE.Group();
+            group.position.set(x * 2.0, 0, z * 2.0);
+            
+            let width = THREE.MathUtils.randInt(3, 5);
+            let length = THREE.MathUtils.randInt(3, 5);
+            
+            let wallMat = materials.wall;
+            
+            for (let wx = 0; wx < width; wx++) {
+                for (let wz = 0; wz < length; wz++) {
+                    let isPerimeter = (wx === 0 || wx === width - 1 || wz === 0 || wz === length - 1);
+                    if (!isPerimeter) continue;
+                    
+                    // Ruined wall gaps
+                    if (Math.random() < 0.28) {
+                        let rubCount = THREE.MathUtils.randInt(2, 4);
+                        for (let r = 0; r < rubCount; r++) {
+                            let rh = THREE.MathUtils.randFloat(0.15, 0.45);
+                            let rubGeo = new THREE.BoxGeometry(THREE.MathUtils.randFloat(0.4, 0.9), rh, THREE.MathUtils.randFloat(0.4, 0.9));
+                            let rub = new THREE.Mesh(rubGeo, materials.scrap);
+                            rub.position.set(wx * 2.0 + THREE.MathUtils.randFloat(-0.5, 0.5), rh/2, wz * 2.0 + THREE.MathUtils.randFloat(-0.5, 0.5));
+                            rub.rotation.set(Math.random()*0.3, Math.random()*3.14, Math.random()*0.3);
+                            rub.castShadow = true;
+                            group.add(rub);
+                        }
+                        continue;
+                    }
+                    
+                    // Windows cutouts
+                    let hasWindow = Math.random() > 0.45;
+                    if (hasWindow) {
+                        // Base support
+                        let lowGeo = new THREE.BoxGeometry(2.0, 0.8, 0.4);
+                        let lowWall = new THREE.Mesh(lowGeo, wallMat);
+                        lowWall.position.set(wx * 2.0, 0.4, wz * 2.0);
+                        if (wz === 0 || wz === length - 1) lowWall.rotation.y = Math.PI / 2;
+                        lowWall.castShadow = true;
+                        lowWall.receiveShadow = true;
+                        group.add(lowWall);
+                        colliders.push(new THREE.Box3().setFromObject(lowWall));
+                        
+                        // Header beam
+                        let topGeo = new THREE.BoxGeometry(2.0, 0.4, 0.4);
+                        let topWall = new THREE.Mesh(topGeo, wallMat);
+                        topWall.position.set(wx * 2.0, 2.4, wz * 2.0);
+                        if (wz === 0 || wz === length - 1) topWall.rotation.y = Math.PI / 2;
+                        topWall.castShadow = true;
+                        group.add(topWall);
+                        
+                        // Pillars
+                        let pilGeo = new THREE.BoxGeometry(0.4, 1.2, 0.4);
+                        let leftPil = new THREE.Mesh(pilGeo, wallMat);
+                        let rightPil = new THREE.Mesh(pilGeo, wallMat);
+                        if (wx === 0 || wx === width - 1) {
+                            leftPil.position.set(wx * 2.0, 1.4, wz * 2.0 - 0.75);
+                            rightPil.position.set(wx * 2.0, 1.4, wz * 2.0 + 0.75);
+                        } else {
+                            leftPil.position.set(wx * 2.0 - 0.75, 1.4, wz * 2.0);
+                            rightPil.position.set(wx * 2.0 + 0.75, 1.4, wz * 2.0);
+                        }
+                        leftPil.castShadow = true;
+                        rightPil.castShadow = true;
+                        group.add(leftPil);
+                        group.add(rightPil);
+                        colliders.push(new THREE.Box3().setFromObject(leftPil));
+                        colliders.push(new THREE.Box3().setFromObject(rightPil));
+                    } else {
+                        // Solid Wall
+                        let h = THREE.MathUtils.randFloat(1.8, 2.6);
+                        let wGeo = new THREE.BoxGeometry(2.0, h, 0.4);
+                        let wall = new THREE.Mesh(wGeo, wallMat);
+                        wall.position.set(wx * 2.0, h/2, wz * 2.0);
+                        if (wz === 0 || wz === length - 1) wall.rotation.y = Math.PI / 2;
+                        wall.castShadow = true;
+                        wall.receiveShadow = true;
+                        group.add(wall);
+                        colliders.push(new THREE.Box3().setFromObject(wall));
+                    }
+                }
+            }
+            scene.add(group);
+        }
+
         function build3DProceduralWalls(N, theme) {
             let sizeOffset = N; // Grid cells go from -N to N in coordinate space
             
@@ -4346,8 +4621,8 @@
                     }
                 }
             } else {
-                // For grass, sand, city, asphalt: spawn ruined building walls, concrete blocks, and debris!
-                let ruinCount = Math.round(N / 3.0); // e.g. 8 to 15 ruin clusters
+                // For grass, sand, city, asphalt: spawn ruined buildings, burning barrels, cars, and trash!
+                let ruinCount = Math.round(N / 2.5); // e.g. 10 to 18 clusters
                 for (let r = 0; r < ruinCount; r++) {
                     let rx = THREE.MathUtils.randInt(-N + 8, N - 8);
                     let rz = THREE.MathUtils.randInt(-N + 8, N - 8);
@@ -4355,45 +4630,24 @@
                     // Skip spawn zone around starting SUV
                     if (rx > -12 && rx < 6 && rz > -18 && rz < 6) continue;
                     
-                    // Spawn a ruined L-shaped or linear wall cluster
-                    let wallType = Math.random() > 0.5 ? 'L' : 'Line';
-                    let length = THREE.MathUtils.randInt(3, 6);
+                    let roll = Math.random();
+                    if (roll < 0.35) {
+                        // 1. Spawn Ruined Building (modular concrete structure with windows & doors)
+                        spawnRuinedBuilding(rx, rz);
+                    } else if (roll < 0.55) {
+                        // 2. Spawn Burning Fire Barrel (with dynamic point light flickering!)
+                        spawnFireBarrel(rx * 2.0, rz * 2.0);
+                    } else if (roll < 0.75) {
+                        // 3. Spawn Burnt/Rusted Car Wreck obstacle
+                        spawnRuinedCar(rx * 2.0, rz * 2.0);
+                    } else {
+                        // 4. Spawn Street Trash / Crate piles
+                        spawnStreetDebris(rx * 2.0, rz * 2.0);
+                    }
                     
-                    for (let l = 0; l < length; l++) {
-                        let wx = rx;
-                        let wz = rz;
-                        if (wallType === 'Line') {
-                            wx += l;
-                        } else {
-                            if (l < length / 2) wx += l;
-                            else wz += (l - Math.floor(length / 2));
-                        }
-                        
-                        // Vary wall height to make it look ruined/damaged
-                        let h = THREE.MathUtils.randFloat(1.2, 3.2);
-                        let wGeo = new THREE.BoxGeometry(2.0, h, 2.0);
-                        
-                        // Spawn wall
-                        let mesh = new THREE.Mesh(wGeo, materials.wall);
-                        mesh.position.set(wx * 2.0, h / 2.0, wz * 2.0);
-                        mesh.castShadow = true;
-                        mesh.receiveShadow = true;
-                        scene.add(mesh);
-                        
-                        walls.push(mesh);
-                        colliders.push(new THREE.Box3().setFromObject(mesh));
-                        
-                        // Add some concrete/rust debris scattered around the wall base
-                        if (Math.random() > 0.5) {
-                            let debH = THREE.MathUtils.randFloat(0.3, 0.9);
-                            let debGeo = new THREE.BoxGeometry(1.2, debH, 1.2);
-                            let debMesh = new THREE.Mesh(debGeo, materials.scrap);
-                            debMesh.position.set((wx + THREE.MathUtils.randFloat(-1, 1)) * 2.0, debH / 2, (wz + THREE.MathUtils.randFloat(-1, 1)) * 2.0);
-                            debMesh.rotation.set(Math.random()*0.4, Math.random()*3.14, Math.random()*0.4);
-                            scene.add(debMesh);
-                            
-                            colliders.push(new THREE.Box3().setFromObject(debMesh));
-                        }
+                    // On city/asphalt streets, occasionally spawn a manhole cover
+                    if ((theme === 'city' || theme === 'asphalt') && Math.random() < 0.3) {
+                        spawnManhole((rx + THREE.MathUtils.randFloat(-2, 2)) * 2.0, (rz + THREE.MathUtils.randFloat(-2, 2)) * 2.0);
                     }
                 }
             }
@@ -4550,7 +4804,8 @@
                 
                 let size = THREE.MathUtils.randFloat(1.2, 2.5);
                 let slabGeo = new THREE.BoxGeometry(size, THREE.MathUtils.randFloat(0.04, 0.12), size);
-                let slab = new THREE.Mesh(slabGeo, materials.brokenSlab);
+                let slabMat = materials.brokenSlabs[Math.floor(Math.random() * materials.brokenSlabs.length)];
+                let slab = new THREE.Mesh(slabGeo, slabMat);
                 slab.position.set(rx, slabGeo.parameters.height / 2, rz);
                 slab.rotation.y = Math.random() * Math.PI * 2;
                 slab.castShadow = true;
@@ -5141,6 +5396,17 @@
                 camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 0.5, -0.5)));
             }
             
+            // Animate flickering fire barrel lights and flame meshes
+            let lightTime = Date.now() * 0.005;
+            for (let fl of flickeringLights) {
+                fl.light.intensity = fl.baseIntensity * (0.85 + Math.sin(lightTime + fl.seed) * 0.15 + Math.random() * 0.05);
+            }
+            for (let fm of flickeringMeshes) {
+                let scaleY = fm.baseScale * (1.0 + Math.sin(lightTime * 1.5 + fm.seed) * 0.25 + Math.random() * 0.1);
+                let scaleXZ = fm.baseScale * (1.0 + Math.cos(lightTime * 1.2 + fm.seed) * 0.12);
+                fm.mesh.scale.set(scaleXZ, scaleY, scaleXZ);
+            }
+            
             // 10. Render
             if (renderer) {
                 renderer.render(scene, camera);
@@ -5408,6 +5674,8 @@
             lootItems = [];
             physicalParts = [];
             activeLights = [];
+            flickeringLights = [];
+            flickeringMeshes = [];
             
             renderer = null;
             scene = null;

@@ -2461,10 +2461,19 @@
             
             gameState.hp = Math.max(0, gameState.hp - amount);
             
-            // Сочные спецэффекты попадания по игроку
+            // Сочные спецэффекты попадания по игроку (только при существенном уроне или ударах врагов)
             if (activeGameScene && activeGameScene.scene.isActive()) {
-                activeGameScene.cameras.main.shake(150, 0.01);
-                activeGameScene.flashSprite(activeGameScene.player, 0xff3333, 100);
+                let isTick = sourceText.includes("голода") || sourceText.includes("радиации") || sourceText.includes("окружающей");
+                if (!isTick) {
+                    activeGameScene.cameras.main.shake(150, 0.012);
+                    activeGameScene.flashSprite(activeGameScene.player, 0xff3333, 100);
+                } else {
+                    // Для периодического урона от среды - слабая редкая тряска раз в 2 секунды
+                    if (Math.random() < 0.015) {
+                        activeGameScene.cameras.main.shake(100, 0.003);
+                        activeGameScene.flashSprite(activeGameScene.player, 0xff5555, 60);
+                    }
+                }
             }
             
             if (gameState.hp <= 0) {
@@ -3244,6 +3253,7 @@
         let activeLights = [];
         let flickeringLights = [];
         let flickeringMeshes = [];
+        let speechBubbles = [];
         
         // Input state
         let keys = { W: false, A: false, S: false, D: false, Shift: false, Space: false, mouseDown: false };
@@ -5156,36 +5166,79 @@
             
             // 4. Enemies
             for (let [eType, qty] of Object.entries(loc.enemies)) {
-                // Use exact quantity defined in LOCATIONS for perfect game balance (avoiding unplayable laggy mobs)
                 let actualQty = qty;
                 for (let i = 0; i < actualQty; i++) {
-                    let rx = THREE.MathUtils.randFloat(-sizeRange, sizeRange);
-                    let rz = THREE.MathUtils.randFloat(-sizeRange, sizeRange);
+                    let rx = 0, rz = 0;
+                    let found = false;
                     
-                    if (eType === 'boss') {
-                        // Boss spawns far east
-                        rx = sizeRange - 8.0;
-                        rz = 0;
-                    } else {
-                        if (rx > -15 && rx < 10 && rz > -20 && rz < 10) continue; // Safe zone
+                    // Search for a valid location up to 15 times to prevent them from being skipped by safe zones or walls
+                    for (let attempt = 0; attempt < 15; attempt++) {
+                        rx = THREE.MathUtils.randFloat(-sizeRange, sizeRange);
+                        rz = THREE.MathUtils.randFloat(-sizeRange, sizeRange);
+                        
+                        if (eType === 'boss') {
+                            rx = sizeRange - 8.0;
+                            rz = 0;
+                            found = true;
+                            break;
+                        } else {
+                            if (rx > -15 && rx < 10 && rz > -20 && rz < 10) continue; // Safe zone
+                        }
+                        
+                        if (!isInsideWall(rx, rz)) {
+                            found = true;
+                            break;
+                        }
                     }
                     
-                    if (isInsideWall(rx, rz)) continue;
-                    
-                    // Mix in different enemy types for variety!
-                    let finalType = eType;
-                    if (eType !== 'boss' && Math.random() < 0.25) {
-                        let choices = ['zombie', 'zombie_fast', 'zombie_fat'];
-                        if (loc.theme === 'city' || loc.theme === 'asphalt') {
-                            choices.push('raider');
+                    if (found) {
+                        // Mix in different enemy types for variety!
+                        let finalType = eType;
+                        if (eType !== 'boss' && Math.random() < 0.25) {
+                            let choices = ['zombie', 'zombie_fast', 'zombie_fat'];
+                            if (loc.theme === 'city' || loc.theme === 'asphalt') {
+                                choices.push('raider');
+                            }
+                            if (loc.theme === 'sand' || loc.theme === 'tunnel' || loc.theme === 'bunker') {
+                                choices.push('mutant');
+                            }
+                            finalType = choices[Math.floor(Math.random() * choices.length)];
                         }
-                        if (loc.theme === 'sand' || loc.theme === 'tunnel' || loc.theme === 'bunker') {
-                            choices.push('mutant');
-                        }
-                        finalType = choices[Math.floor(Math.random() * choices.length)];
+                        spawn3DEnemy(rx, rz, finalType);
                     }
-                    
-                    spawn3DEnemy(rx, rz, finalType);
+                }
+            }
+            
+            // 4b. Clear and Spawn Atmospheric NPCs
+            speechBubbles = [];
+            
+            if (gameState.currentLocationIndex === 0) {
+                // Spawn grandfather Stepan sitting next to campfire on the first tutorial map
+                spawn3DNpc(4.0, -3.0, 'campfire');
+            } else {
+                // Spawn 1-2 flavor NPCs in the world depending on theme
+                let npcCount = (theme === 'tunnel' || theme === 'bunker') ? 1 : 2;
+                for (let i = 0; i < npcCount; i++) {
+                    let rx = 0, rz = 0;
+                    let found = false;
+                    for (let attempt = 0; attempt < 20; attempt++) {
+                        rx = THREE.MathUtils.randFloat(-sizeRange + 10.0, sizeRange - 10.0);
+                        rz = THREE.MathUtils.randFloat(-sizeRange + 10.0, sizeRange - 10.0);
+                        if (rx > -15 && rx < 15 && rz > -20 && rz < 15) continue; // Stay away from starter SUV area
+                        if (!isInsideWall(rx, rz)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        let npcType = 'campfire';
+                        if (theme === 'city' || theme === 'sand') {
+                            npcType = 'wounded';
+                        } else if (theme === 'tunnel' || theme === 'bunker') {
+                            npcType = 'guard';
+                        }
+                        spawn3DNpc(rx, rz, npcType);
+                    }
                 }
             }
 
@@ -5272,6 +5325,175 @@
             
             harvestables.push(tree);
             colliders.push(tree.userData.box);
+        }
+        
+        function spawn3DNpc(x, z, npcType) {
+            let group = new THREE.Group();
+            group.position.set(x, 0, z);
+            
+            let phrases = [];
+            
+            // Build the character
+            let skinColor = '#dfc4a5';
+            let torsoColor = '#15803d'; // stalker green
+            let legColor = '#1d4ed8'; // blue pants
+            
+            if (npcType === 'campfire') {
+                phrases = [
+                    "Холодает... Ночь близко.",
+                    "Слышишь эти завывания в чащах?",
+                    "Хорошо хоть костер еще горит...",
+                    "Эй, путник! Присаживайся погреться."
+                ];
+                
+                // Spawn a campfire near them!
+                let fireGroup = new THREE.Group();
+                fireGroup.position.set(1.2, 0, 1.2);
+                
+                // Stones around fire
+                let stoneMat = new THREE.MeshStandardMaterial({ color: 0x52525b, roughness: 0.8 });
+                for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+                    let stone = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.2), stoneMat);
+                    stone.position.set(Math.sin(a) * 0.4, 0.075, Math.cos(a) * 0.4);
+                    stone.rotation.set(Math.random() * 0.5, Math.random() * 3.14, Math.random() * 0.5);
+                    fireGroup.add(stone);
+                }
+                
+                // Fire light
+                let fireLight = new THREE.PointLight(0xff5500, 2.5, 8.0);
+                fireLight.position.set(0, 0.5, 0);
+                fireLight.castShadow = true;
+                fireGroup.add(fireLight);
+                flickeringLights.push({ light: fireLight, baseIntensity: 2.5, seed: Math.random() * 100 });
+                
+                // Flame
+                let fireGeo = new THREE.ConeGeometry(0.18, 0.45, 6);
+                let fireMat = new THREE.MeshBasicMaterial({ color: 0xff3f00 });
+                let fire = new THREE.Mesh(fireGeo, fireMat);
+                fire.position.set(0, 0.35, 0);
+                fireGroup.add(fire);
+                flickeringMeshes.push({ mesh: fire, baseScale: 1.0, seed: Math.random() * 100 });
+                
+                group.add(fireGroup);
+                
+                // Sit log
+                let log = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.3, 0.3), materials.wood);
+                log.position.set(0, 0.15, 0);
+                log.rotation.y = 0.5;
+                log.castShadow = true;
+                log.receiveShadow = true;
+                group.add(log);
+                
+                // The Sitting Stalker
+                let stalker = createRobloxCharacter('#15803d', '#dfc4a5', '#1d4ed8');
+                stalker.position.set(0, 0.25, 0);
+                stalker.rotation.y = 0.5 - Math.PI / 2;
+                
+                // Sitting pose limbs rotation
+                stalker.userData.legL.rotation.x = -Math.PI / 2.0;
+                stalker.userData.legR.rotation.x = -Math.PI / 2.0;
+                stalker.userData.armL.rotation.x = -Math.PI / 6.0;
+                stalker.userData.armR.rotation.x = -Math.PI / 6.0;
+                
+                group.add(stalker);
+                
+            } else if (npcType === 'wounded') {
+                phrases = [
+                    "Агх... эти твари меня покусали...",
+                    "Рейдеры устроили засаду...",
+                    "У тебя случайно нет лишней Аптечки?",
+                    "Помоги мне... не бросай здесь..."
+                ];
+                
+                // Lying Stalker
+                let stalker = createRobloxCharacter('#7f1d1d', '#dfc4a5', '#3f3f46');
+                stalker.position.set(0, 0.12, 0);
+                stalker.rotation.x = Math.PI / 2.0; // lying down!
+                stalker.rotation.z = Math.random() * 3.14;
+                
+                // Lying limbs rotation
+                stalker.userData.legL.rotation.z = 0.2;
+                stalker.userData.legR.rotation.z = -0.3;
+                stalker.userData.armL.rotation.y = 0.5;
+                stalker.userData.armR.rotation.y = -0.5;
+                
+                group.add(stalker);
+                
+                // Spawn blood puddle decal under them
+                spawnBloodDecal(x, z);
+                spawnBloodDecal(x + 0.3, z - 0.2);
+                
+            } else {
+                // Standing Guard Stalker
+                phrases = [
+                    "Оружие наизготовку!",
+                    "Будь аккуратнее на пустошах.",
+                    "Впереди большая угроза...",
+                    "Держи ухо востро!"
+                ];
+                
+                let stalker = createRobloxCharacter('#1e293b', '#dfc4a5', '#1e293b');
+                stalker.position.set(0, 0, 0);
+                stalker.rotation.y = Math.random() * Math.PI * 2;
+                
+                // Guard holding gun pose
+                stalker.userData.armR.rotation.x = -Math.PI / 2.0;
+                stalker.userData.armL.rotation.x = -Math.PI / 3.0;
+                stalker.userData.armL.rotation.y = 0.3;
+                
+                group.add(stalker);
+            }
+            
+            // Floating Speech Bubble Sprite
+            let canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 64;
+            let ctx = canvas.getContext('2d');
+            
+            // Draw initial frame
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2.5;
+            ctx.fillRect(4, 4, 248, 42);
+            ctx.strokeRect(4, 4, 248, 42);
+            
+            // Pointer triangle
+            ctx.beginPath();
+            ctx.moveTo(118, 45);
+            ctx.lineTo(138, 45);
+            ctx.lineTo(128, 55);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.font = 'bold 11px Arial, sans-serif';
+            ctx.fillStyle = '#0f172a';
+            ctx.textAlign = 'center';
+            ctx.fillText(phrases[0], 128, 28);
+            
+            let labelTex = new THREE.CanvasTexture(canvas);
+            let labelMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true });
+            let labelSprite = new THREE.Sprite(labelMat);
+            labelSprite.position.set(0, 2.3, 0);
+            labelSprite.scale.set(2.4, 0.6, 1);
+            group.add(labelSprite);
+            
+            scene.add(group);
+            group.updateMatrixWorld(true);
+            
+            // Add custom collider box so player runs into them (solid obstacle)
+            let box = new THREE.Box3().setFromObject(group);
+            colliders.push(box);
+            
+            speechBubbles.push({
+                sprite: labelSprite,
+                phrases: phrases,
+                currentIndex: 0,
+                lastChangeTime: Date.now(),
+                canvas: canvas,
+                context: ctx,
+                texture: labelTex
+            });
         }
         
         function spawn3DScrap(x, z) {
@@ -5799,6 +6021,42 @@
             // 8. Update physical parts (death ragdoll bounce)
             update3DPhysicalParts(dt);
             
+            // 8b. Update NPC speech bubbles cycle
+            let nowSb = Date.now();
+            for (let sb of speechBubbles) {
+                if (nowSb > sb.lastChangeTime + 4000) {
+                    sb.lastChangeTime = nowSb;
+                    sb.currentIndex = (sb.currentIndex + 1) % sb.phrases.length;
+                    
+                    let ctx = sb.context;
+                    ctx.clearRect(0, 0, 256, 64);
+                    
+                    // Draw comic speech bubble
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                    ctx.strokeStyle = '#0f172a';
+                    ctx.lineWidth = 2.5;
+                    ctx.fillRect(4, 4, 248, 42);
+                    ctx.strokeRect(4, 4, 248, 42);
+                    
+                    // Triangle pointer pointing down
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                    ctx.beginPath();
+                    ctx.moveTo(118, 45);
+                    ctx.lineTo(138, 45);
+                    ctx.lineTo(128, 55);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    ctx.font = 'bold 11px Arial, sans-serif';
+                    ctx.fillStyle = '#0f172a';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(sb.phrases[sb.currentIndex], 128, 28);
+                    
+                    sb.texture.needsUpdate = true;
+                }
+            }
+            
             // 9. Camera follow player
             if (playerGroup) {
                 // Lerp camera position (adjust height/depth based on mobile aspect ratio to zoom out horizontally)
@@ -6126,6 +6384,7 @@
             harvestables = [];
             lootItems = [];
             physicalParts = [];
+            speechBubbles = [];
             activeLights = [];
             flickeringLights = [];
             flickeringMeshes = [];

@@ -4409,6 +4409,7 @@
             });
             
             scene.add(group);
+            group.updateMatrixWorld(true);
             
             let box = new THREE.Box3().setFromObject(barrel);
             colliders.push(box);
@@ -4450,6 +4451,7 @@
             }
             
             scene.add(group);
+            group.updateMatrixWorld(true);
             
             let box = new THREE.Box3().setFromObject(body);
             colliders.push(box);
@@ -4487,6 +4489,7 @@
                 crate.rotation.set(0, Math.random()*3.14, 0);
                 crate.castShadow = true;
                 scene.add(crate);
+                crate.updateMatrixWorld(true);
                 colliders.push(new THREE.Box3().setFromObject(crate));
             }
         }
@@ -4499,6 +4502,7 @@
             let length = THREE.MathUtils.randInt(3, 5);
             
             let wallMat = materials.wall;
+            let meshesToCollide = [];
             
             for (let wx = 0; wx < width; wx++) {
                 for (let wz = 0; wz < length; wz++) {
@@ -4531,7 +4535,7 @@
                         lowWall.castShadow = true;
                         lowWall.receiveShadow = true;
                         group.add(lowWall);
-                        colliders.push(new THREE.Box3().setFromObject(lowWall));
+                        meshesToCollide.push(lowWall);
                         
                         // Header beam
                         let topGeo = new THREE.BoxGeometry(2.0, 0.4, 0.4);
@@ -4556,8 +4560,8 @@
                         rightPil.castShadow = true;
                         group.add(leftPil);
                         group.add(rightPil);
-                        colliders.push(new THREE.Box3().setFromObject(leftPil));
-                        colliders.push(new THREE.Box3().setFromObject(rightPil));
+                        meshesToCollide.push(leftPil);
+                        meshesToCollide.push(rightPil);
                     } else {
                         // Solid Wall
                         let h = THREE.MathUtils.randFloat(1.8, 2.6);
@@ -4568,11 +4572,16 @@
                         wall.castShadow = true;
                         wall.receiveShadow = true;
                         group.add(wall);
-                        colliders.push(new THREE.Box3().setFromObject(wall));
+                        meshesToCollide.push(wall);
                     }
                 }
             }
             scene.add(group);
+            group.updateMatrixWorld(true);
+            
+            for (let mesh of meshesToCollide) {
+                colliders.push(new THREE.Box3().setFromObject(mesh));
+            }
         }
 
         function build3DProceduralWalls(N, theme) {

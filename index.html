@@ -1200,204 +1200,210 @@
 
         /* Медиа-запрос для оптимизации вертикального экрана (мобильные устройства) */
         @media (max-width: 768px) {
+            /* Hide slot hotkeys on mobile */
             .inv-slot-key {
                 display: none;
             }
             
+            /* Stats panel (top-left) */
             .hud-stats-panel {
                 top: 0.5rem;
                 left: 0.5rem;
-                width: calc(50% - 0.75rem);
-                padding: 0.5rem;
-                font-size: 0.8rem;
+                width: 38%;
+                padding: 0.4rem;
+                font-size: 0.75rem;
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
             }
             .stat-row {
-                margin-bottom: 0.4rem;
+                margin-bottom: 0.3rem;
             }
             .stat-icon {
-                font-size: 1rem;
-                width: 18px;
-                margin-right: 4px;
+                font-size: 0.9rem;
+                width: 14px;
+                margin-right: 2px;
             }
             .stat-bar-container {
-                height: 8px;
+                height: 6px;
             }
             .stat-text {
-                font-size: 0.65rem;
-                top: -3px;
+                font-size: 0.6rem;
+                top: -4px;
             }
 
+            /* Weapon panel (top-right) */
             .hud-weapon-panel {
                 top: 0.5rem;
                 right: 0.5rem;
-                width: calc(50% - 0.75rem);
-                padding: 0.5rem;
+                width: 38%;
+                padding: 0.4rem;
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
-                height: 62px;
+                height: 52px;
             }
             .weapon-title {
-                font-size: 0.7rem;
-                margin-bottom: 0.1rem;
+                font-size: 0.65rem;
+                margin-bottom: 0.05rem;
             }
             .weapon-name {
-                font-size: 0.9rem;
-                margin-bottom: 0.1rem;
+                font-size: 0.8rem;
+                margin-bottom: 0.05rem;
             }
             .weapon-ammo {
-                font-size: 0.8rem;
-            }
-
-            .hud-level-panel {
-                top: 5rem;
-                padding: 0.2rem 0.8rem;
-                font-size: 0.8rem;
-            }
-            .level-text {
-                font-size: 0.8rem;
-                margin-right: 6px;
-            }
-            .xp-bar-container {
-                width: 90px;
-                height: 5px;
-            }
-
-            .hud-inventory-panel {
-                bottom: 0.5rem;
-                padding: 4px;
-                gap: 4px;
-                background: rgba(15, 15, 20, 0.9);
-                width: 96%;
-                max-width: 340px;
-                justify-content: center;
-            }
-            .inv-slot {
-                width: 40px;
-                height: 40px;
-                border-radius: 6px;
-            }
-            .inv-slot-icon {
-                font-size: 1.1rem;
-                margin-bottom: 0;
-            }
-            .inv-slot-amount {
-                font-size: 0.65rem;
-                position: absolute;
-                bottom: 1px;
-                right: 2px;
-                background: rgba(0, 0, 0, 0.5);
-                padding: 0px 2px;
-                border-radius: 3px;
-            }
-
-            .hud-mats-panel {
-                bottom: 9.5rem;
-                left: 0.5rem;
-                padding: 0.4rem 0.6rem;
-                font-size: 0.8rem;
-                gap: 4px;
-                background: rgba(15, 15, 20, 0.8);
-            }
-            .mat-item {
                 font-size: 0.75rem;
             }
-            .mat-icon {
-                font-size: 0.9rem;
-                margin-right: 4px;
+
+            /* Level panel (top-center, between stats & weapon) */
+            .hud-level-panel {
+                top: 0.5rem;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 0.2rem 0.5rem;
+                font-size: 0.75rem;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                background: rgba(15, 15, 20, 0.85);
+                z-index: 55;
+            }
+            .level-text {
+                font-size: 0.7rem;
+                margin-right: 0;
+                margin-bottom: 2px;
+            }
+            .xp-bar-container {
+                width: 60px;
+                height: 4px;
             }
 
+            /* Materials panel (moved below stats) */
+            .hud-mats-panel {
+                top: 5.5rem;
+                left: 0.5rem;
+                bottom: auto !important;
+                padding: 0.4rem;
+                font-size: 0.75rem;
+                gap: 3px;
+                background: rgba(15, 15, 20, 0.85);
+                display: flex;
+                flex-direction: column;
+                z-index: 55;
+            }
+            .mat-item {
+                font-size: 0.7rem;
+            }
+            .mat-icon {
+                font-size: 0.8rem;
+                margin-right: 2px;
+            }
+
+            /* Minimap panel (moved below weapon) */
             .hud-minimap-panel {
-                bottom: 9.5rem;
+                top: 5.5rem;
                 right: 0.5rem;
-                width: 72px;
-                height: 72px;
+                bottom: auto !important;
+                width: 64px;
+                height: 64px;
                 padding: 2px;
+                z-index: 55;
             }
             #minimap-canvas {
-                width: 66px;
-                height: 66px;
+                width: 58px;
+                height: 58px;
             }
 
+            /* Game Log (moved below materials/minimap) */
             #game-log {
-                bottom: 14rem;
+                top: 11.5rem;
+                bottom: auto !important;
                 left: 0.5rem;
                 width: calc(100% - 1rem);
-                max-height: 70px;
+                max-height: 55px;
                 gap: 2px;
+                pointer-events: none;
             }
             .log-msg {
-                font-size: 0.7rem;
-                padding: 2px 6px;
+                font-size: 0.65rem;
+                padding: 1px 4px;
             }
 
-            .glass-panel {
-                padding: 1rem;
-                width: 95%;
-                max-width: 95%;
-                margin: auto;
+            /* Quick Inventory (small size, bottom-center) */
+            .hud-inventory-panel {
+                bottom: 0.5rem;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 3px;
+                gap: 3px;
+                background: rgba(15, 15, 20, 0.9);
+                width: 90%;
+                max-width: 250px;
+                justify-content: center;
+                z-index: 55;
             }
-            
-            .station-box {
-                flex-direction: column;
-                max-height: 96%;
-                overflow-y: auto;
+            .inv-slot {
+                width: 30px;
+                height: 30px;
+                border-radius: 4px;
+            }
+            .inv-slot-icon {
+                font-size: 0.95rem;
+            }
+            .inv-slot-amount {
+                font-size: 0.55rem;
+                bottom: 0px;
+                right: 1px;
+            }
+
+            /* Mobile controls - Joysticks & Buttons positioning */
+            #joystick-move-zone {
+                bottom: 2rem;
+                left: 1rem;
+            }
+            #joystick-shoot-zone {
+                bottom: 2rem;
+                right: 1rem;
+            }
+            #mobile-action-buttons {
+                bottom: 8.5rem;
+                left: 0;
+                width: 100%;
                 display: flex;
-                width: 95% !important;
-                height: 95% !important;
+                justify-content: space-between;
+                padding: 0 1.5rem;
+                pointer-events: none;
+            }
+            .mobile-btn {
+                width: 46px;
+                height: 46px;
+                pointer-events: auto;
+            }
+            .mobile-btn .btn-icon {
+                font-size: 1rem;
+            }
+            .mobile-btn .btn-lbl {
+                font-size: 0.4rem;
+            }
+
+            /* Overlay layouts (Pause, Settings, Station) */
+            .glass-panel {
+                padding: 0.8rem;
+                width: 96%;
+                max-width: 96%;
+            }
+            .station-box {
+                width: 96% !important;
+                height: 96% !important;
             }
             .station-sidebar {
-                flex-direction: row;
-                width: 100% !important;
-                border-right: none !important;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                padding: 0.5rem !important;
-                margin-bottom: 0.5rem;
-                overflow-x: auto;
-                display: flex;
-                gap: 6px;
-                white-space: nowrap;
-            }
-            .station-sidebar h3 {
-                display: none;
+                padding: 0.3rem !important;
             }
             .tab-btn {
-                padding: 0.4rem 0.8rem !important;
-                font-size: 0.8rem !important;
-                margin: 0 !important;
-                display: inline-flex !important;
-                align-items: center;
-                border-left: none !important;
-                border-bottom: 2px solid transparent;
-                border-radius: 4px !important;
-            }
-            .tab-btn.active {
-                border-bottom: 2px solid var(--primary-accent);
-                border-radius: 4px !important;
-                padding-left: 0.8rem !important;
+                padding: 0.3rem 0.6rem !important;
+                font-size: 0.75rem !important;
             }
             .station-content {
-                padding: 1rem !important;
-                height: auto !important;
-                overflow-y: visible !important;
-            }
-
-            .menu-content {
-                width: 100%;
-            }
-            .game-title {
-                font-size: 1.6rem;
-            }
-            .game-subtitle {
-                font-size: 0.8rem;
-                margin-bottom: 1.5rem;
-            }
-            .menu-btn {
-                padding: 0.8rem;
-                font-size: 0.95rem;
-                margin: 0.5rem 0;
+                padding: 0.6rem !important;
             }
         }
     </style>
@@ -4767,14 +4773,40 @@
             if (dt > 0.1) dt = 0.1;
             
             if (gameActive && playerGroup && gameState.hp > 0) {
+                // 1. Keyboard & Joystick Movement Inputs (XZ Plane)
+                let vx = 0;
+                let vz = 0;
+                if (keys.W) vz = -1;
+                if (keys.S) vz = 1;
+                if (keys.A) vx = -1;
+                if (keys.D) vx = 1;
+                
+                // Fallback to left virtual joystick if keyboard is idle
+                if (vx === 0 && vz === 0) {
+                    vx = joystickInput.x;
+                    vz = joystickInput.y;
+                }
+                
+                let isMoving = (vx !== 0 || vz !== 0);
+
+                // 2. Aiming & Rotation (Mobile support: face direction of movement when left joystick is active and right joystick is idle)
                 if (isShootingJoystickActive && (joystickShootInput.x !== 0 || joystickShootInput.y !== 0)) {
                     // Aim based on right joystick input
                     let aimDir = new THREE.Vector3(joystickShootInput.x, 0, joystickShootInput.y).normalize();
                     let lookAngle = Math.atan2(joystickShootInput.x, joystickShootInput.y);
                     playerGroup.rotation.y = lookAngle;
                     worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
+                } else if (isMobileDevice) {
+                    // On mobile, face movement direction if moving and not aiming/shooting
+                    if (isMoving) {
+                        let lookAngle = Math.atan2(vx, vz);
+                        playerGroup.rotation.y = lookAngle;
+                        
+                        let aimDir = new THREE.Vector3(vx, 0, vz).normalize();
+                        worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
+                    }
                 } else {
-                    // 1. Raycast mouse to look at ground plane (aiming)
+                    // Raycast mouse to look at ground plane (aiming on PC)
                     raycaster.setFromCamera(mouseCoords, camera);
                     let intersects = new THREE.Vector3();
                     raycaster.ray.intersectPlane(groundPlane, intersects);
@@ -4796,22 +4828,6 @@
                     positions[3] = worldMousePoint.x; positions[4] = 0.1; positions[5] = worldMousePoint.z;
                     laserLine.geometry.attributes.position.needsUpdate = true;
                 }
-                
-                // 2. Keyboard & Joystick Movement Physics (XZ Plane)
-                let vx = 0;
-                let vz = 0;
-                if (keys.W) vz = -1;
-                if (keys.S) vz = 1;
-                if (keys.A) vx = -1;
-                if (keys.D) vx = 1;
-                
-                // Fallback to left virtual joystick if keyboard is idle
-                if (vx === 0 && vz === 0) {
-                    vx = joystickInput.x;
-                    vz = joystickInput.y;
-                }
-                
-                let isMoving = (vx !== 0 || vz !== 0);
                 let isSprinting = false;
                 let speed = 4.5 * (1 + gameState.skills.agility * 0.08); // 4.5 units/s
                 

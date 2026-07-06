@@ -4668,6 +4668,7 @@
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             scene.add(mesh);
+            mesh.updateMatrixWorld(true);
             
             walls.push(mesh);
             colliders.push(new THREE.Box3().setFromObject(mesh));
@@ -4820,6 +4821,7 @@
                 slab.castShadow = true;
                 slab.receiveShadow = true;
                 scene.add(slab);
+                slab.updateMatrixWorld(true);
                 
                 // If it is thick/large enough, make it a minor physical obstacle!
                 if (size > 1.8) {
@@ -4871,6 +4873,7 @@
             tree.add(indicator);
 
             scene.add(tree);
+            tree.updateMatrixWorld(true);
             
             tree.userData.type = 'tree'; // Keep internal type as 'tree' to prevent breaking dependencies
             tree.userData.hp = 100;
@@ -4894,6 +4897,7 @@
             }
             
             scene.add(scrap);
+            scrap.updateMatrixWorld(true);
             
             scrap.userData.type = 'scrap';
             scrap.userData.hp = 100;
@@ -4918,6 +4922,7 @@
             bGroup.add(plug);
             
             scene.add(bGroup);
+            bGroup.updateMatrixWorld(true);
             
             bGroup.userData.type = 'barrel';
             bGroup.userData.box = new THREE.Box3().setFromObject(bGroup);

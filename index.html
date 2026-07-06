@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Последний Поезд: Выживание в Апокалипсисе</title>
+    <title>Последний Внедорожник: Выживание в Апокалипсисе</title>
     <!-- Three.js 3D CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Google Fonts -->
@@ -946,16 +946,18 @@
             width: 100%;
             height: 80px;
             position: relative;
-            background: linear-gradient(transparent 45%, #444 48%, #444 52%, transparent 55%);
+            background: #1e293b;
+            border-top: 4px solid #475569;
+            border-bottom: 4px solid #475569;
             margin-bottom: 2rem;
             overflow: hidden;
         }
 
         .travel-track-sleepers {
             position: absolute;
-            top: 0; left: 0; width: 200%; height: 100%;
-            background: repeating-linear-gradient(90deg, transparent, transparent 15px, #271b10 15px, #271b10 22px);
-            animation: moveTracks 1.5s linear infinite;
+            top: calc(50% - 3px); left: 0; width: 200%; height: 6px;
+            background: repeating-linear-gradient(90deg, #fef08a, #fef08a 20px, transparent 20px, transparent 40px);
+            animation: moveTracks 1s linear infinite;
         }
 
         @keyframes moveTracks {
@@ -1068,6 +1070,336 @@
             font-size: 2rem;
             margin-bottom: 1rem;
         }
+
+        /* Мобильное управление */
+        #mobile-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 60;
+            display: none;
+        }
+
+        #joystick-move-zone {
+            position: absolute;
+            bottom: 4.5rem;
+            left: 1rem;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+
+        #joystick-move-outer {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            position: relative;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        #joystick-move-knob {
+            width: 36px;
+            height: 36px;
+            background: var(--primary-accent);
+            border-radius: 50%;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            box-shadow: 0 0 10px var(--primary-accent);
+            transition: transform 0.05s ease-out;
+        }
+
+        #joystick-shoot-zone {
+            position: absolute;
+            bottom: 4.5rem;
+            right: 1rem;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+
+        #joystick-shoot-outer {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            position: relative;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        #joystick-shoot-knob {
+            width: 36px;
+            height: 36px;
+            background: var(--danger-accent);
+            border-radius: 50%;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            box-shadow: 0 0 10px var(--danger-accent);
+            transition: transform 0.05s ease-out;
+        }
+
+        #mobile-action-buttons {
+            position: absolute;
+            bottom: 10.5rem;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            pointer-events: none;
+        }
+
+        .mobile-btn {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: rgba(15, 15, 20, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+        }
+
+        .mobile-btn:active {
+            background: var(--primary-accent);
+            color: #000;
+            border-color: var(--primary-accent);
+        }
+
+        .mobile-btn .btn-icon {
+            font-size: 1.2rem;
+            margin-bottom: 2px;
+        }
+
+        .mobile-btn .btn-lbl {
+            font-size: 0.45rem;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        /* Медиа-запрос для оптимизации вертикального экрана (мобильные устройства) */
+        @media (max-width: 768px) {
+            .inv-slot-key {
+                display: none;
+            }
+            
+            .hud-stats-panel {
+                top: 0.5rem;
+                left: 0.5rem;
+                width: calc(50% - 0.75rem);
+                padding: 0.5rem;
+                font-size: 0.8rem;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            }
+            .stat-row {
+                margin-bottom: 0.4rem;
+            }
+            .stat-icon {
+                font-size: 1rem;
+                width: 18px;
+                margin-right: 4px;
+            }
+            .stat-bar-container {
+                height: 8px;
+            }
+            .stat-text {
+                font-size: 0.65rem;
+                top: -3px;
+            }
+
+            .hud-weapon-panel {
+                top: 0.5rem;
+                right: 0.5rem;
+                width: calc(50% - 0.75rem);
+                padding: 0.5rem;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                height: 62px;
+            }
+            .weapon-title {
+                font-size: 0.7rem;
+                margin-bottom: 0.1rem;
+            }
+            .weapon-name {
+                font-size: 0.9rem;
+                margin-bottom: 0.1rem;
+            }
+            .weapon-ammo {
+                font-size: 0.8rem;
+            }
+
+            .hud-level-panel {
+                top: 5rem;
+                padding: 0.2rem 0.8rem;
+                font-size: 0.8rem;
+            }
+            .level-text {
+                font-size: 0.8rem;
+                margin-right: 6px;
+            }
+            .xp-bar-container {
+                width: 90px;
+                height: 5px;
+            }
+
+            .hud-inventory-panel {
+                bottom: 0.5rem;
+                padding: 4px;
+                gap: 4px;
+                background: rgba(15, 15, 20, 0.9);
+                width: 96%;
+                max-width: 340px;
+                justify-content: center;
+            }
+            .inv-slot {
+                width: 40px;
+                height: 40px;
+                border-radius: 6px;
+            }
+            .inv-slot-icon {
+                font-size: 1.1rem;
+                margin-bottom: 0;
+            }
+            .inv-slot-amount {
+                font-size: 0.65rem;
+                position: absolute;
+                bottom: 1px;
+                right: 2px;
+                background: rgba(0, 0, 0, 0.5);
+                padding: 0px 2px;
+                border-radius: 3px;
+            }
+
+            .hud-mats-panel {
+                bottom: 9.5rem;
+                left: 0.5rem;
+                padding: 0.4rem 0.6rem;
+                font-size: 0.8rem;
+                gap: 4px;
+                background: rgba(15, 15, 20, 0.8);
+            }
+            .mat-item {
+                font-size: 0.75rem;
+            }
+            .mat-icon {
+                font-size: 0.9rem;
+                margin-right: 4px;
+            }
+
+            .hud-minimap-panel {
+                bottom: 9.5rem;
+                right: 0.5rem;
+                width: 72px;
+                height: 72px;
+                padding: 2px;
+            }
+            #minimap-canvas {
+                width: 66px;
+                height: 66px;
+            }
+
+            #game-log {
+                bottom: 14rem;
+                left: 0.5rem;
+                width: calc(100% - 1rem);
+                max-height: 70px;
+                gap: 2px;
+            }
+            .log-msg {
+                font-size: 0.7rem;
+                padding: 2px 6px;
+            }
+
+            .glass-panel {
+                padding: 1rem;
+                width: 95%;
+                max-width: 95%;
+                margin: auto;
+            }
+            
+            .station-box {
+                flex-direction: column;
+                max-height: 96%;
+                overflow-y: auto;
+                display: flex;
+                width: 95% !important;
+                height: 95% !important;
+            }
+            .station-sidebar {
+                flex-direction: row;
+                width: 100% !important;
+                border-right: none !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 0.5rem !important;
+                margin-bottom: 0.5rem;
+                overflow-x: auto;
+                display: flex;
+                gap: 6px;
+                white-space: nowrap;
+            }
+            .station-sidebar h3 {
+                display: none;
+            }
+            .tab-btn {
+                padding: 0.4rem 0.8rem !important;
+                font-size: 0.8rem !important;
+                margin: 0 !important;
+                display: inline-flex !important;
+                align-items: center;
+                border-left: none !important;
+                border-bottom: 2px solid transparent;
+                border-radius: 4px !important;
+            }
+            .tab-btn.active {
+                border-bottom: 2px solid var(--primary-accent);
+                border-radius: 4px !important;
+                padding-left: 0.8rem !important;
+            }
+            .station-content {
+                padding: 1rem !important;
+                height: auto !important;
+                overflow-y: visible !important;
+            }
+
+            .menu-content {
+                width: 100%;
+            }
+            .game-title {
+                font-size: 1.6rem;
+            }
+            .game-subtitle {
+                font-size: 0.8rem;
+                margin-bottom: 1.5rem;
+            }
+            .menu-btn {
+                padding: 0.8rem;
+                font-size: 0.95rem;
+                margin: 0.5rem 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1077,7 +1409,7 @@
     <!-- 1. ГЛАВНОЕ МЕНЮ -->
     <div id="main-menu-overlay" class="overlay">
         <div class="glass-panel menu-content">
-            <h1 class="game-title">ПОСЛЕДНИЙ<br>ПОЕЗД</h1>
+            <h1 class="game-title">ПОСЛЕДНИЙ<br>ВНЕДОРОЖНИК</h1>
             <p class="game-subtitle">Постапокалиптическое Выживание</p>
             <button class="menu-btn" onclick="startNewGame()">Новая Игра</button>
             <button class="menu-btn" id="continue-btn" onclick="loadSavedGame()" disabled>Продолжить</button>
@@ -1089,17 +1421,20 @@
     <div id="settings-overlay" class="overlay" style="display:none;">
         <div class="glass-panel" style="width: 500px; text-align: left;">
             <h2 class="tab-title" style="margin-bottom: 1rem; text-align: center; color: var(--primary-accent);">СПРАВКА И НАСТРОЙКИ</h2>
-            <div style="font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 8px;">
-                <p><strong>🕹️ Управление:</strong></p>
-                <p>• <strong>W, A, S, D</strong> или <strong>Стрелочки</strong> – Передвижение.</p>
-                <p>• <strong>Мышь</strong> – Прицеливание (поворот персонажа).</p>
-                <p>• <strong>Левая кнопка мыши (ЛКМ)</strong> – Стрельба.</p>
-                <p>• <strong>Shift (зажать)</strong> – Бег (расходует Выносливость).</p>
-                <p>• <strong>Клавиши 1, 2, 3</strong> – Смена оружия (Пистолет, Автомат, Дробовик).</p>
-                <p>• <strong>Клавиши 4, 5, 6, 7</strong> – Быстрое использование предметов.</p>
-                <p>• <strong>Пробел / Зажать ЛКМ</strong> – Рубить деревья / Собирать хлам.</p>
-                <p>• <strong>E (или клик по поезду)</strong> – Войти в паровоз (на станции).</p>
-                <p>• <strong>ESC</strong> – Пауза / Меню настроек во время боя.</p>
+            <div style="font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 5px;">
+                <p><strong>🕹️ Управление (ПК):</strong></p>
+                <p>• <strong>W, A, S, D</strong> / <strong>Стрелочки</strong> – Передвижение.</p>
+                <p>• <strong>Мышь</strong> – Прицеливание, <strong>ЛКМ</strong> – Выстрел.</p>
+                <p>• <strong>Shift</strong> – Спринт, <strong>Пробел</strong> – Сбор бензина и хлама.</p>
+                <p>• <strong>E (или клик)</strong> – Войти во внедорожник (на стоянке).</p>
+                <p>• <strong>1, 2, 3</strong> – Смена оружия, <strong>4, 5, 6, 7</strong> – Предметы.</p>
+                <p><strong>📱 Управление (Мобильные):</strong></p>
+                <p>• <strong>Левый джойстик</strong> – Передвижение.</p>
+                <p>• <strong>Правый джойстик</strong> – Прицеливание и Автострельба.</p>
+                <p>• <strong>Одиночный тап по экрану</strong> – Выстрел в точку касания.</p>
+                <p>• <strong>Кнопка ⛽</strong> – Сбор ресурсов / Войти во внедорожник.</p>
+                <p>• <strong>Кнопка ⚡</strong> – Включение спринта (бег).</p>
+                <p>• <strong>Быстрые слоты снизу</strong> – Выбор оружия и лечение.</p>
             </div>
             
             <div style="margin-bottom: 1.5rem;">
@@ -1185,7 +1520,7 @@
         <!-- Дрова и Металлолом (левый низ выше лога) -->
         <div class="hud-mats-panel hud-element" style="bottom: 1.5rem;">
             <div class="mat-item">
-                <span class="mat-icon">🪵</span> Дрова:
+                <span class="mat-icon">⛽</span> Бензин:
                 <span class="mat-amount" id="hud-wood">5 / 30</span>
             </div>
             <div class="mat-item">
@@ -1241,6 +1576,37 @@
             </div>
         </div>
 
+        <!-- Виртуальный джойстик и кнопки для мобильных устройств -->
+        <div id="mobile-controls" class="hud-element">
+            <!-- Левый джойстик (Передвижение) -->
+            <div id="joystick-move-zone">
+                <div id="joystick-move-outer">
+                    <div id="joystick-move-knob"></div>
+                </div>
+            </div>
+
+            <!-- Правые кнопки управления -->
+            <div id="mobile-action-buttons">
+                <!-- Кнопка Бега (Спринт) -->
+                <button id="btn-mobile-sprint" class="mobile-btn">
+                    <span class="btn-icon">⚡</span>
+                    <span class="btn-lbl">Спринт</span>
+                </button>
+                <!-- Кнопка Взаимодействия (Сбор ресурсов / Вход во внедорожник) -->
+                <button id="btn-mobile-interact" class="mobile-btn">
+                    <span class="btn-icon">⛽</span>
+                    <span class="btn-lbl">Сбор / Вход</span>
+                </button>
+            </div>
+            
+            <!-- Правый джойстик (Стрельба и Прицеливание) -->
+            <div id="joystick-shoot-zone">
+                <div id="joystick-shoot-outer">
+                    <div id="joystick-shoot-knob"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Мини-карта (правый низ) -->
         <div class="hud-minimap-panel hud-element">
             <canvas id="minimap-canvas" width="100" height="100"></canvas>
@@ -1252,7 +1618,7 @@
         <div class="glass-panel station-box">
             <!-- Sidebar -->
             <div class="station-sidebar">
-                <h3 id="sidebar-station-title">СТАНЦИЯ</h3>
+                <h3 id="sidebar-station-title">СТОЯНКА</h3>
                 <button class="tab-btn active" onclick="switchStationTab('location')">
                     <span class="tab-btn-icon">🌍</span>Локация
                 </button>
@@ -1260,7 +1626,7 @@
                     <span class="tab-btn-icon">⚒️</span>Верстак
                 </button>
                 <button class="tab-btn" onclick="switchStationTab('locomotive')">
-                    <span class="tab-btn-icon">🚂</span>Паровоз
+                    <span class="tab-btn-icon">🚙</span>Внедорожник
                 </button>
                 <button class="tab-btn" onclick="switchStationTab('survivor')">
                     <span class="tab-btn-icon">👤</span>Персонаж
@@ -1281,8 +1647,8 @@
             <div class="station-content">
                 <!-- 5.A Вкладка Локации -->
                 <div class="tab-panel active" id="panel-location">
-                    <h2 class="tab-title" id="panel-loc-title">Стартовая станция</h2>
-                    <p class="tab-desc" id="panel-loc-desc">Безопасное место. Здесь вы нашли заброшенный паровоз. Соберите дрова и подготовьтесь к пути.</p>
+                    <h2 class="tab-title" id="panel-loc-title">Стартовая стоянка</h2>
+                    <p class="tab-desc" id="panel-loc-desc">Безопасное место. Здесь вы нашли заброшенный внедорожник. Соберите бензин и подготовьтесь к пути.</p>
                     
                     <div class="loc-details-box">
                         <div class="loc-info-row">
@@ -1295,11 +1661,11 @@
                         </div>
                         <div class="loc-info-row">
                             <span>Основные ресурсы:</span>
-                            <span style="font-weight: 600;" id="panel-loc-mats">Дрова, Ягоды</span>
+                            <span style="font-weight: 600;" id="panel-loc-mats">Бензин, Ягоды</span>
                         </div>
                     </div>
 
-                    <button class="menu-btn" style="margin-top: auto; margin-bottom: 0;" onclick="enterTacticalMap()">Выйти из поезда (Исследовать)</button>
+                    <button class="menu-btn" style="margin-top: auto; margin-bottom: 0;" onclick="enterTacticalMap()">Выйти из машины (Исследовать)</button>
                 </div>
 
                 <!-- 5.B Вкладка Крафта -->
@@ -1312,20 +1678,20 @@
                     </div>
                 </div>
 
-                <!-- 5.C Вкладка Паровоза -->
+                <!-- 5.C Вкладка Внедорожника -->
                 <div class="tab-panel" id="panel-locomotive">
-                    <h2 class="tab-title">Управление Паровозом</h2>
-                    <p class="tab-desc">Следите за топкой и улучшайте детали паровоза для выживания на рельсах.</p>
+                    <h2 class="tab-title">Управление Внедорожником</h2>
+                    <p class="tab-desc">Следите за бензобаком и улучшайте детали внедорожника для выживания на пустошах.</p>
                     
                     <div class="train-boiler-box">
                         <div class="boiler-title">
-                            <span>🔥 Топливо в топке:</span>
+                            <span>⛽ Запас бензина в баке:</span>
                             <span id="boiler-fuel-txt">50 / 100</span>
                         </div>
                         <div class="boiler-gauge">
                             <div class="boiler-bar" id="boiler-fuel-fill" style="width: 50%;"></div>
                         </div>
-                        <button class="craft-btn" onclick="addFuelToBoiler()" id="boiler-refuel-btn" style="padding: 6px 12px; width: 100%;">Загрузить дрова (+5 топлива за 1 дрова)</button>
+                        <button class="craft-btn" onclick="addFuelToBoiler()" id="boiler-refuel-btn" style="padding: 6px 12px; width: 100%;">Залить бензин (+12 к баку за 1 канистру)</button>
                     </div>
 
                     <div class="train-upgrade-list">
@@ -1348,8 +1714,8 @@
                         <!-- Склад -->
                         <div class="train-upgrade-row">
                             <div class="upg-info">
-                                <span class="upg-name" id="upg-storage-name">Расширение Склада (Ур. 0)</span>
-                                <span class="upg-desc">Увеличивает вместимость дров (сейчас макс: 30)</span>
+                                <span class="upg-name" id="upg-storage-name">Расширение Багажника (Ур. 0)</span>
+                                <span class="upg-desc">Увеличивает вместимость бензина (сейчас макс: 30)</span>
                             </div>
                             <button class="craft-btn" id="upg-storage-btn" onclick="upgradeTrain('storage')">Улучшить (⚙️4)</button>
                         </div>
@@ -1433,7 +1799,7 @@
                         <div class="npc-avatar">🧓</div>
                         <div class="npc-dialog-side">
                             <div class="npc-name" id="trader-name">Сидорович</div>
-                            <div class="npc-text" id="trader-dialog-txt">«Заходи, не бойся. У меня есть отличные патроны и аптечки. Принимаю дрова и хлам.»</div>
+                            <div class="npc-text" id="trader-dialog-txt">«Заходи, не бойся. У меня есть отличные патроны и аптечки. Принимаю бензин и хлам.»</div>
                             <div class="npc-actions" id="trader-actions-list">
                                 <!-- Список сделок через JS -->
                             </div>
@@ -1443,7 +1809,7 @@
 
                 <!-- 5.G Вкладка Квеста (Динамическая) -->
                 <div class="tab-panel" id="panel-dialog">
-                    <h2 class="tab-title">Встреча на Станции</h2>
+                    <h2 class="tab-title">Встреча на Стоянке</h2>
                     <p class="tab-desc">Взаимодействие с выжившими.</p>
                     
                     <div class="npc-box">
@@ -1461,14 +1827,14 @@
         </div>
     </div>
 
-    <!-- 6. ЭКРАН ПЕРЕЕЗДА (АНИМАЦИЯ ПОЕЗДА) -->
+    <!-- 6. ЭКРАН ПЕРЕЕЗДА (АНИМАЦИЯ ВНЕДОРОЖНИКА) -->
     <div id="travel-overlay" class="overlay">
         <div class="travel-track-visual">
             <div class="travel-track-sleepers"></div>
-            <div class="travel-train-icon">🚂</div>
+            <div class="travel-train-icon">🚙</div>
         </div>
-        <div class="travel-status" id="travel-status-txt">Паровоз отправляется в путь...</div>
-        <div class="travel-subtext" id="travel-subtext-txt">На следующей станции нас ждут новые опасности и припасы.</div>
+        <div class="travel-status" id="travel-status-txt">Внедорожник отправляется в путь...</div>
+        <div class="travel-subtext" id="travel-subtext-txt">На следующей стоянке нас ждут новые опасности и припасы.</div>
         <div class="travel-progress-bar">
             <div class="travel-progress-fill" id="travel-progress-fill"></div>
         </div>
@@ -1491,7 +1857,7 @@
             <p style="color: var(--primary-accent); font-weight: bold; margin-bottom: 1rem; font-size: 1.2rem;">ПОБЕДА!</p>
             <p style="margin-bottom: 2rem; color: var(--text-muted); line-height: 1.5; text-align: left;">
                 Вы победили гигантского Сверхмутанта в Бункере «Омега» и открыли гермозатвор. 
-                Ваши выжившие и поезд в безопасности под надежной защитой горных укреплений. 
+                Ваши выжившие и внедорожник в безопасности под надежной защитой горных укреплений. 
                 Человечество получило новый шанс на спасение!
             </p>
             <button class="menu-btn" onclick="goToMainMenu()">В Главное Меню</button>
@@ -1504,7 +1870,7 @@
             <h2 class="game-title" style="color: var(--primary-accent); text-shadow: 0 0 10px rgba(163,230,53,0.5);">ИГРА ПАУЗА</h2>
             <p class="game-subtitle" style="margin-bottom: 2rem;">Вылазка приостановлена</p>
             <button class="menu-btn" onclick="resumeGameFromPause()">Продолжить бой</button>
-            <button class="menu-btn" onclick="retreatToTrain()">Отступить в поезд (Потеря 20% лога дров/хлама)</button>
+            <button class="menu-btn" onclick="retreatToTrain()">Отступить во внедорожник (Потеря 20% бензина/хлама)</button>
             <button class="menu-btn btn-danger" onclick="goToMainMenu()">Выйти в меню</button>
         </div>
     </div>
@@ -1689,33 +2055,34 @@
                 osc.stop(t + 0.35);
             }
 
-            // Звук движения поезда (чух-чух)
+            // Звук движения внедорожника (урчание мотора)
             playChug() {
                 this.init();
                 if (!this.ctx) return;
                 let t = this.ctx.currentTime;
-                let bufferSize = this.ctx.sampleRate * 0.12;
-                let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                let data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
-                let noise = this.ctx.createBufferSource();
-                noise.buffer = buffer;
-
+                
+                // Low rumble oscillator
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(45, t);
+                osc.frequency.linearRampToValueAtTime(75, t + 0.15);
+                osc.frequency.linearRampToValueAtTime(45, t + 0.3);
+                
+                // Filter to make it less harsh
                 let filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(160, t);
-
-                let gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.18, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-
-                noise.connect(filter);
+                filter.frequency.setValueAtTime(180, t);
+                
+                gain.gain.setValueAtTime(0.25, t);
+                gain.gain.exponentialRampToValueAtTime(0.005, t + 0.3);
+                
+                osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.masterGain);
-                noise.start(t);
-                noise.stop(t + 0.12);
+                
+                osc.start(t);
+                osc.stop(t + 0.3);
             }
 
             // Треск счетчика Гейгера (Радиация)
@@ -1767,8 +2134,8 @@
         // =========================================================================
         const LOCATIONS = [
             {
-                name: "Станция «Рассвет»",
-                description: "Безопасная точка. Здесь вы нашли заброшенный паровоз. Соберите базовые припасы и дрова, чтобы начать движение.",
+                name: "Стоянка «Рассвет»",
+                description: "Безопасная точка. Здесь вы нашли заброшенный внедорожник. Соберите базовые припасы и бензин, чтобы начать движение.",
                 type: "station",
                 theme: "grass",
                 size: 32, // размер сетки 32x32
@@ -1776,7 +2143,7 @@
                 fuelCost: 0,
                 npc: { 
                     name: "Дед Степан", 
-                    text: "Здорово, малец! Паровоз-то на ходу, да топке дрова нужны. Пойди в лес вон на восток, наруби дровишек (подходи к деревьям и руби на Пробел). Нам надо заправить котел!",
+                    text: "Здорово, малец! Внедорожник-то на ходу, да бензобаку бензин нужен. Пойди в лес вон на восток, найди бензин (подходи к бензоколонкам и собирай на Пробел). Нам надо заправить бак!",
                     questItem: null
                 },
                 enemies: { zombie: 2, zombie_fast: 0, zombie_fat: 0, raider: 0, mutant: 0 },
@@ -1784,7 +2151,7 @@
             },
             {
                 name: "Тихий Лес",
-                description: "Густой хвойный лес. Здесь огромное количество сухих дров и диких ягод, но в чащах прячутся восставшие мертвецы.",
+                description: "Густой хвойный лес. Здесь осталось огромное количество канистр с бензином и диких ягод, но в чащах прячутся восставшие мертвецы.",
                 type: "forest",
                 theme: "grass",
                 size: 40,
@@ -1825,7 +2192,7 @@
                 resources: { wood: 5, food: 4, water: 4, scrap: 20, ammo: 40, medkit: 3, gasmask: 1 }
             },
             {
-                name: "Железнодорожный Туннель",
+                name: "Автомобильный Туннель",
                 description: "Заброшенный глухой туннель под холмами. Царит кромешная тьма, ваш фонарик освещает лишь малую зону. Остерегайтесь проворных мутантов.",
                 type: "tunnel",
                 theme: "tunnel",
@@ -2060,7 +2427,7 @@
                 } else {
                     // Копим радиацию
                     gameState.radiation = Math.min(100, gameState.radiation + radIntensity * 1.5 * deltaSeconds);
-                    checkTutorial('rad', '☢️ Опасная Радиация!', 'Вы находитесь в радиоактивной зоне без фильтра противогаза! Здоровье начнет быстро падать, когда шкала радиации заполнится. Срочно скрафтите Фильтр на верстаке поезда.', '☢️');
+                    checkTutorial('rad', '☢️ Опасная Радиация!', 'Вы находитесь в радиоактивной зоне без фильтра противогаза! Здоровье начнет быстро падать, когда шкала радиации заполнится. Срочно скрафтите Фильтр на верстаке внедорожника.', '☢️');
                 }
             } else {
                 // Вне зоны радиация медленно спадает
@@ -2230,8 +2597,8 @@
             } else if (type === 'gasmask') {
                 // Зарядка фильтра
                 if (gameState.inventory.gasmask < 100) {
-                    // Используем дрова и хлам, если крафтим на лету, либо просто кнопку фильтра.
-                    // У нас по логике 7 клавиша перезаряжает фильтр из ресурсов (крафтит на ходу за 2 хлама + 1 дерево)
+                    // Используем бензин и хлам, если крафтим на лету, либо просто кнопку фильтра.
+                    // У нас по логике 7 клавиша перезаряжает фильтр из ресурсов (крафтит на ходу за 2 хлама + 1 бензин)
                     if (gameState.inventory.scrap >= 2 && gameState.inventory.wood >= 1) {
                         gameState.inventory.scrap -= 2;
                         gameState.inventory.wood -= 1;
@@ -2239,7 +2606,7 @@
                         sound.playCollect();
                         addLogMessage("🎭 Фильтр противогаза заменен! Заряд 100%", "system");
                     } else {
-                        addLogMessage("Недостаточно ресурсов (нужно: 2 Хлама, 1 Дрова)", "danger");
+                        addLogMessage("Недостаточно ресурсов (нужно: 2 Хлама, 1 Бензин)", "danger");
                     }
                 } else {
                     addLogMessage("Противогаз полностью заряжен!", "warning");
@@ -2277,7 +2644,7 @@
                 gameState.level++;
                 gameState.skillPoints += 2;
                 sound.playLevelUp();
-                showTutorialPopup("💥 Уровень Повышен!", `Вы достигли ${gameState.level} уровня! Получено 2 очка навыков. Войдите в паровоз, перейдите во вкладку «Персонаж» и распределите очки, чтобы стать сильнее.`, "🎖️");
+                showTutorialPopup("💥 Уровень Повышен!", `Вы достигли ${gameState.level} уровня! Получено 2 очка навыков. Войдите во внедорожник, перейдите во вкладку «Персонаж» и распределите очки, чтобы стать сильнее.`, "🎖️");
                 addLogMessage(`🎉 УРОВЕНЬ ПОВЫШЕН до ${gameState.level}!`, "system");
             }
             updateHudVisuals();
@@ -2304,11 +2671,11 @@
             if (gameState.currentLocationIndex === 0) {
                 threatBadge.className = "loc-badge badge-low"; threatBadge.innerText = "Минимальная";
                 radBadge.className = "loc-badge badge-low"; radBadge.innerText = "Отсутствует";
-                matsText.innerText = "Дрова, Консервы, Вода";
+                matsText.innerText = "Бензин, Консервы, Вода";
             } else if (loc.type === 'forest') {
                 threatBadge.className = "loc-badge badge-med"; threatBadge.innerText = "Средняя (Зомби)";
                 radBadge.className = "loc-badge badge-low"; radBadge.innerText = "Отсутствует";
-                matsText.innerText = "Много Дров, Ягоды (Еда), Вода";
+                matsText.innerText = "Много Бензина, Ягоды (Еда), Вода";
             } else if (loc.type === 'city') {
                 threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Высокая (Толпы Зомби)";
                 radBadge.className = "loc-badge badge-high"; radBadge.innerText = "Опасный фон (1.5 рад/с)";
@@ -2409,7 +2776,7 @@
                     let isShort = playerAmount < reqAmount;
                     if (isShort) canCraft = false;
                     
-                    let resLabel = (res === 'scrap') ? '⚙️ Хлам' : (res === 'wood') ? '🪵 Дрова' : (res === 'water') ? '🥤 Вода' : res;
+                    let resLabel = (res === 'scrap') ? '⚙️ Хлам' : (res === 'wood') ? '⛽ Бензин' : (res === 'water') ? '🥤 Вода' : res;
                     matsPills += `<span class="craft-mats-pill ${isShort ? 'insufficient' : ''}">${resLabel}: ${playerAmount}/${reqAmount}</span>`;
                 }
 
@@ -2480,16 +2847,16 @@
             updateHudVisuals();
         }
 
-        // Вкладка Паровоза
+        // Вкладка Внедорожника
         function updateTrainTab() {
             let maxWood = getMaxWoodCapacity();
             document.getElementById('boiler-fuel-txt').innerText = `${Math.round(gameState.trainFuel)} / 100`;
             document.getElementById('boiler-fuel-fill').style.width = `${gameState.trainFuel}%`;
             
-            // Отключение кнопки заправки, если нет дров
+            // Отключение кнопки заправки, если нет бензина
             document.getElementById('boiler-refuel-btn').disabled = (gameState.inventory.wood <= 0 || gameState.trainFuel >= 100);
 
-            // Апгрейды поезда
+            // Апгрейды внедорожника
             // Двигатель
             let engLvl = gameState.trainUpgrades.engine;
             let engCost = (engLvl === 0) ? 5 : (engLvl === 1) ? 10 : (engLvl === 2) ? 20 : 999;
@@ -2506,7 +2873,7 @@
             // Броня
             let armLvl = gameState.trainUpgrades.armor;
             let armCost = (armLvl === 0) ? 6 : (armLvl === 1) ? 12 : (armLvl === 2) ? 22 : 999;
-            document.getElementById('upg-armor-name').innerText = `Усиление Брони поезда (Ур. ${armLvl}/3)`;
+            document.getElementById('upg-armor-name').innerText = `Усиление Брони внедорожника (Ур. ${armLvl}/3)`;
             let armBtn = document.getElementById('upg-armor-btn');
             if (armLvl >= 3) {
                 armBtn.innerText = "Максимум";
@@ -2519,7 +2886,7 @@
             // Склад
             let stLvl = gameState.trainUpgrades.storage;
             let stCost = (stLvl === 0) ? 4 : (stLvl === 1) ? 8 : (stLvl === 2) ? 15 : 999;
-            document.getElementById('upg-storage-name').innerText = `Расширение Склада (Ур. ${stLvl}/3)`;
+            document.getElementById('upg-storage-name').innerText = `Расширение Багажника (Ур. ${stLvl}/3)`;
             let stBtn = document.getElementById('upg-storage-btn');
             if (stLvl >= 3) {
                 stBtn.innerText = "Максимум";
@@ -2556,7 +2923,7 @@
                 gameState.inventory.scrap -= cost;
                 gameState.trainUpgrades[type]++;
                 sound.playCollect();
-                addLogMessage(`🚂 Поезд: Модернизирован ${type === 'engine' ? 'двигатель' : type === 'armor' ? 'корпус брони' : 'грузовой отсек'}!`, "system");
+                addLogMessage(`🚙 Внедорожник: Модернизирован ${type === 'engine' ? 'двигатель' : type === 'armor' ? 'корпус брони' : 'багажник'}!`, "system");
                 saveGameData();
                 updateTrainTab();
                 updateHudVisuals();
@@ -2649,12 +3016,12 @@
             travelOverlay.style.display = 'flex';
             
             let targetLocName = LOCATIONS[targetIdx].name;
-            document.getElementById('travel-status-txt').innerText = `Переезд на станцию: ${targetLocName}...`;
+            document.getElementById('travel-status-txt').innerText = `Переезд на стоянку: ${targetLocName}...`;
             
             let fill = document.getElementById('travel-progress-fill');
             fill.style.width = '0%';
             
-            // Начинаем звук поезда
+            // Начинаем звук двигателя
             let chugInterval = setInterval(() => {
                 sound.playChug();
             }, 300);
@@ -2685,7 +3052,7 @@
                     gameState.currentLocationIndex = targetIdx;
                     saveGameData();
                     openStationMenu();
-                    addLogMessage(`🚂 Прибыли на станцию: ${targetLocName}!`, "system");
+                    addLogMessage(`🚙 Прибыли на стоянку: ${targetLocName}!`, "system");
                 }
             }, stepTime);
         }
@@ -2703,22 +3070,22 @@
                 gameState.inventory.scrap = Math.max(0, gameState.inventory.scrap - scrapLoss);
                 gameState.inventory.food = Math.max(0, gameState.inventory.food - foodLoss);
                 
-                subtext.innerText = `⚠️ Событие: На поезд напали рейдеры! Броня заблокировала часть потерь. Потеряно: ⚙️${scrapLoss} хлама, 🥫${foodLoss} еды.`;
+                subtext.innerText = `⚠️ Событие: На внедорожник напали рейдеры! Броня заблокировала часть потерь. Потеряно: ⚙️${scrapLoss} хлама, 🥫${foodLoss} еды.`;
                 subtext.style.color = 'var(--danger-accent)';
             } else if (roll < 0.50) {
-                // Нашли припасы на путях
+                // Нашли припасы на дороге
                 gameState.inventory.scrap += 4;
                 gameState.inventory.ammo_pistol += 20;
-                subtext.innerText = `⚙️ Событие: Вы нашли заброшенную дрезину! Получено: ⚙️4 хлама, 🔫20 пистолетных пуль.`;
+                subtext.innerText = `⚙️ Событие: Вы нашли заброшенную машину! Получено: ⚙️4 хлама, 🔫20 пистолетных пуль.`;
                 subtext.style.color = 'var(--primary-accent)';
             } else if (roll < 0.70) {
                 // Раненый попутчик
                 gameState.inventory.food = Math.max(0, gameState.inventory.food - 1);
                 gameState.inventory.medkit += 1;
-                subtext.innerText = `🩹 Событие: Встретили выжившего у путей. Поделились едой (-1 тушенка), он дал вам Аптечку (+1)`;
+                subtext.innerText = `🩹 Событие: Встретили выжившего на дороге. Поделились едой (-1 тушенка), он дал вам Аптечку (+1)`;
                 subtext.style.color = 'var(--cyan-accent)';
             } else {
-                subtext.innerText = `🛤️ Путь свободен. Поезд спокойно катится по рельсам сквозь постапокалиптические туманы.`;
+                subtext.innerText = `🚙 Дорога свободна. Внедорожник спокойно едет по шоссе сквозь постапокалиптические туманы.`;
                 subtext.style.color = 'var(--text-muted)';
             }
             updateHudVisuals();
@@ -2728,7 +3095,7 @@
         function setupTraderTab() {
             let actions = document.getElementById('trader-actions-list');
             actions.innerHTML = `
-                <button class="craft-btn" id="trade-btn-1" onclick="tradeWithNpc(1)">1 Дрова -> 8 Пист. Патронов</button>
+                <button class="craft-btn" id="trade-btn-1" onclick="tradeWithNpc(1)">1 Бензин -> 8 Пист. Патронов</button>
                 <button class="craft-btn" id="trade-btn-2" onclick="tradeWithNpc(2)">3 Хлама -> 1 Аптечка</button>
                 <button class="craft-btn" id="trade-btn-3" onclick="tradeWithNpc(3)">2 Хлама -> 1 Противогаз</button>
             `;
@@ -2747,7 +3114,7 @@
                 gameState.inventory.wood--;
                 gameState.inventory.ammo_pistol += 8;
                 sound.playCollect();
-                addLogMessage("⚖️ Сделка: Дрова обменены на патроны.", "system");
+                addLogMessage("⚖️ Сделка: Бензин обменен на патроны.", "system");
             } else if (dealId === 2 && gameState.inventory.scrap >= 3) {
                 gameState.inventory.scrap -= 3;
                 gameState.inventory.medkit++;
@@ -2854,6 +3221,11 @@
         // activeGameScene объявлен выше в глобальном контексте
         let gameActive = false;
         let animationFrameId = null;
+        
+        let isMobileDevice = false;
+        let joystickInput = { x: 0, y: 0 };
+        let joystickShootInput = { x: 0, y: 0 };
+        let isShootingJoystickActive = false;
         
         // 3D Objects & Groups
         let playerGroup;
@@ -3420,7 +3792,7 @@
             gameState.inventory.wood -= lostWood;
             gameState.inventory.scrap -= lostScrap;
             
-            addLogMessage(`⚠️ Отступили в поезд. Потери: 🪵${lostWood} дров, ⚙️${lostScrap} хлама.`, "danger");
+            addLogMessage(`⚠️ Отступили во внедорожник. Потери: ⛽${lostWood} бензина, ⚙️${lostScrap} хлама.`, "danger");
             openStationMenu();
         }
         
@@ -3759,75 +4131,116 @@
         
         function build3DTrain() {
             trainGroup = new THREE.Group();
-            trainGroup.position.set(-6.0, 0, -4.0); // Station tracks position
+            trainGroup.position.set(-6.0, 0, -4.0); // SUV position
             
-            // Locomotive Cab
-            let cab = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.5, 2.0), materials.trainMetal);
-            cab.position.set(0, 1.25, -1.5);
-            cab.castShadow = true;
-            cab.receiveShadow = true;
-            trainGroup.add(cab);
+            // 1. SUV Main Chassis (Dark grey metal body)
+            let chassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 4.4), materials.trainMetal);
+            chassis.position.set(0, 0.7, 0);
+            chassis.castShadow = true;
+            chassis.receiveShadow = true;
+            trainGroup.add(chassis);
             
-            // Locomotive Boiler
-            let boiler = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.7, 3.2), materials.trainMetal);
-            boiler.position.set(0, 0.85, 1.1);
-            boiler.castShadow = true;
-            trainGroup.add(boiler);
+            // 2. SUV Cabin / Roof (Slightly narrower, dark gray)
+            let cabin = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.9, 2.4), new THREE.MeshLambertMaterial({ color: 0x1f2937 }));
+            cabin.position.set(0, 1.55, -0.6);
+            cabin.castShadow = true;
+            trainGroup.add(cabin);
             
-            // Locomotive chimney
-            let chim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), materials.trainMetal);
-            chim.position.set(0, 2.1, 2.1);
-            trainGroup.add(chim);
+            // 3. Cabin windshield and side windows (yellow gold glowing glass)
+            let windshield = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.5, 0.1), materials.goldGlow);
+            windshield.position.set(0, 1.55, 0.61);
+            trainGroup.add(windshield);
             
-            // Cowcatcher (blocky front wedge)
-            let plow = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.5, 0.8), new THREE.MeshLambertMaterial({ color: 0x990000 }));
-            plow.position.set(0, 0.25, 3.1);
+            let winGeo = new THREE.BoxGeometry(0.1, 0.4, 0.8);
+            let leftWin = new THREE.Mesh(winGeo, materials.goldGlow);
+            leftWin.position.set(-0.96, 1.55, -0.6);
+            let rightWin = new THREE.Mesh(winGeo, materials.goldGlow);
+            rightWin.position.set(0.96, 1.55, -0.6);
+            trainGroup.add(leftWin);
+            trainGroup.add(rightWin);
+            
+            // 4. Wheels (4 black cylinders)
+            let wheelMat = new THREE.MeshLambertMaterial({ color: 0x111827 });
+            let wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.4, 12);
+            wheelGeo.rotateZ(Math.PI / 2);
+            
+            let flWheel = new THREE.Mesh(wheelGeo, wheelMat);
+            flWheel.position.set(-1.15, 0.45, 1.3);
+            let frWheel = new THREE.Mesh(wheelGeo, wheelMat);
+            frWheel.position.set(1.15, 0.45, 1.3);
+            let blWheel = new THREE.Mesh(wheelGeo, wheelMat);
+            blWheel.position.set(-1.15, 0.45, -1.3);
+            let brWheel = new THREE.Mesh(wheelGeo, wheelMat);
+            brWheel.position.set(1.15, 0.45, -1.3);
+            
+            trainGroup.add(flWheel);
+            trainGroup.add(frWheel);
+            trainGroup.add(blWheel);
+            trainGroup.add(brWheel);
+
+            // 5. Front grille guard / Bullbar
+            let plow = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.6, 0.4), new THREE.MeshLambertMaterial({ color: 0x374151 }));
+            plow.position.set(0, 0.5, 2.3);
             trainGroup.add(plow);
             
-            // Headlight
-            let headlight = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.3), materials.goldGlow);
-            headlight.position.set(0, 1.4, 2.7);
-            trainGroup.add(headlight);
+            // 6. Dual headlights
+            let headlightL = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.1), materials.goldGlow);
+            headlightL.position.set(-0.7, 0.8, 2.21);
+            let headlightR = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.1), materials.goldGlow);
+            headlightR.position.set(0.7, 0.8, 2.21);
+            trainGroup.add(headlightL);
+            trainGroup.add(headlightR);
             
-            // Spotlight cone
+            // 7. Roof cargo rack (visual representation for storage upgrade)
+            let rack = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.2, 1.8), new THREE.MeshLambertMaterial({ color: 0x4b5563 }));
+            rack.position.set(0, 2.05, -0.6);
+            trainGroup.add(rack);
+            
+            // 8. Spotlight cone
             let lightConeGeo = new THREE.ConeGeometry(3.5, 12.0, 16);
             let lightConeMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.15, depthWrite: false });
             let lightCone = new THREE.Mesh(lightConeGeo, lightConeMat);
             lightCone.rotation.x = Math.PI / 2;
-            lightCone.position.set(0, 1.4, 8.7);
+            lightCone.position.set(0, 0.8, 8.2);
             trainGroup.add(lightCone);
             
             scene.add(trainGroup);
             
-            // Add train collider box
+            // Add SUV collider box
             let trainCollider = new THREE.Box3(
-                new THREE.Vector3(trainGroup.position.x - 1.2, 0, trainGroup.position.z - 3.0),
-                new THREE.Vector3(trainGroup.position.x + 1.2, 3.0, trainGroup.position.z + 4.0)
+                new THREE.Vector3(trainGroup.position.x - 1.3, 0, trainGroup.position.z - 2.5),
+                new THREE.Vector3(trainGroup.position.x + 1.3, 2.2, trainGroup.position.z + 2.5)
             );
             colliders.push(trainCollider);
             
-            // Carriage (attached behind locomotive)
-            let carriageGeo = new THREE.BoxGeometry(2.0, 2.2, 5.0);
-            let carriage = new THREE.Mesh(carriageGeo, materials.trainMetal);
-            carriage.position.set(-6.0, 1.1, -10.5);
-            carriage.castShadow = true;
-            carriage.receiveShadow = true;
-            scene.add(carriage);
+            // 9. Cargo Trailer (towed behind SUV, replaces the carriage)
+            let trailerGroup = new THREE.Group();
+            trailerGroup.position.set(-6.0, 0, -10.5);
             
-            // Windows
-            let winGeo = new THREE.BoxGeometry(0.1, 0.6, 0.8);
-            for (let zOffset = -1.8; zOffset <= 1.8; zOffset += 1.8) {
-                let winL = new THREE.Mesh(winGeo, materials.goldGlow);
-                winL.position.set(-7.02, 1.3, -10.5 + zOffset);
-                let winR = new THREE.Mesh(winGeo, materials.goldGlow);
-                winR.position.set(-4.98, 1.3, -10.5 + zOffset);
-                scene.add(winL);
-                scene.add(winR);
-            }
+            let trailerBody = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.4, 3.6), materials.trainMetal);
+            trailerBody.position.y = 0.9;
+            trailerBody.castShadow = true;
+            trailerBody.receiveShadow = true;
+            trailerGroup.add(trailerBody);
+            
+            // Trailer wheels
+            let twL = new THREE.Mesh(wheelGeo, wheelMat);
+            twL.position.set(-1.1, 0.45, 0);
+            let twR = new THREE.Mesh(wheelGeo, wheelMat);
+            twR.position.set(1.1, 0.45, 0);
+            trailerGroup.add(twL);
+            trailerGroup.add(twR);
+            
+            // Tow bar connecting SUV to trailer
+            let towBar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 2.8), new THREE.MeshLambertMaterial({ color: 0x1f2937 }));
+            towBar.position.set(0, 0.45, 2.2);
+            trailerGroup.add(towBar);
+            
+            scene.add(trailerGroup);
             
             let carriageCollider = new THREE.Box3(
-                new THREE.Vector3(-7.2, 0, -13.5),
-                new THREE.Vector3(-4.8, 2.5, -7.5)
+                new THREE.Vector3(-7.2, 0, -12.5),
+                new THREE.Vector3(-4.8, 2.2, -8.5)
             );
             colliders.push(carriageCollider);
         }
@@ -3913,26 +4326,25 @@
             flashlight.target = targetObj;
             playerGroup.userData.flashlightTarget = targetObj;
             
-            // 2. Rails
-            let sleeperGeo = new THREE.BoxGeometry(2.4, 0.08, 0.4);
-            let sleeperMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
-            let ironGeo = new THREE.BoxGeometry(0.1, 0.1, 5.0);
-            let ironMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 });
+            // 2. Road (Asphalt pavement and dashed line)
+            let roadGeo = new THREE.BoxGeometry(3.6, 0.02, 5.0);
+            let roadMat = new THREE.MeshLambertMaterial({ color: 0x1f2937 }); // dark slate grey
+            let lineGeo = new THREE.BoxGeometry(0.15, 0.03, 1.5);
+            let lineMat = new THREE.MeshBasicMaterial({ color: 0xfef08a }); // yellow dash line
             
             for (let z = -N * 2.0; z <= N * 2.0; z += 5.0) {
-                // Sleepers
-                for (let k = 0; k < 5; k++) {
-                    let s = new THREE.Mesh(sleeperGeo, sleeperMat);
-                    s.position.set(-6.0, 0.04, z + k * 1.0);
-                    scene.add(s);
-                }
-                // Two steel tracks
-                let trackL = new THREE.Mesh(ironGeo, ironMat);
-                trackL.position.set(-6.6, 0.12, z + 2.5);
-                let trackR = new THREE.Mesh(ironGeo, ironMat);
-                trackR.position.set(-5.4, 0.12, z + 2.5);
-                scene.add(trackL);
-                scene.add(trackR);
+                // Road block
+                let rd = new THREE.Mesh(roadGeo, roadMat);
+                rd.position.set(-6.0, 0.01, z + 2.5);
+                scene.add(rd);
+                
+                // Yellow dashes in center of the road
+                let d1 = new THREE.Mesh(lineGeo, lineMat);
+                d1.position.set(-6.0, 0.02, z + 1.25);
+                let d2 = new THREE.Mesh(lineGeo, lineMat);
+                d2.position.set(-6.0, 0.02, z + 3.75);
+                scene.add(d1);
+                scene.add(d2);
             }
             
             // 3. Harvestables (Trees / Scrap)
@@ -4027,26 +4439,26 @@
             let tree = new THREE.Group();
             tree.position.set(x, 0, z);
             
-            // Trunk
-            let trunk = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.0, 0.4), materials.wood);
-            trunk.position.y = 1.0;
-            trunk.castShadow = true;
-            tree.add(trunk);
+            // Fuel pump body (rusty red)
+            let pumpBody = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.5, 0.7), new THREE.MeshLambertMaterial({ color: 0xb91c1c }));
+            pumpBody.position.y = 0.75;
+            pumpBody.castShadow = true;
+            tree.add(pumpBody);
             
-            // Leaves (boxy blocks)
-            let leaves1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 1.6), materials.leaf);
-            leaves1.position.y = 2.2;
-            leaves1.castShadow = true;
-            tree.add(leaves1);
+            // Pump display/top (dark slate gray dial)
+            let pumpTop = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.5), new THREE.MeshLambertMaterial({ color: 0x4b5563 }));
+            pumpTop.position.y = 1.6;
+            pumpTop.castShadow = true;
+            tree.add(pumpTop);
             
-            let leaves2 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), materials.leaf);
-            leaves2.position.y = 3.0;
-            leaves2.castShadow = true;
-            tree.add(leaves2);
-            
+            // Neon status indicator light (gold glow)
+            let indicator = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.1), materials.goldGlow);
+            indicator.position.set(0, 1.6, 0.26);
+            tree.add(indicator);
+
             scene.add(tree);
             
-            tree.userData.type = 'tree';
+            tree.userData.type = 'tree'; // Keep internal type as 'tree' to prevent breaking dependencies
             tree.userData.hp = 100;
             tree.userData.box = new THREE.Box3().setFromObject(tree);
             
@@ -4248,7 +4660,7 @@
             }
             
             if (nearestNode) {
-                if (nearestNode.userData.type === 'tree') checkTutorial('tree', '🪵 Добыча дров', 'Подойдите к энергетическому пилону и зажмите ПРОБЕЛ, чтобы добыть Дрова для котла поезда.', '🪵');
+                if (nearestNode.userData.type === 'tree') checkTutorial('tree', '⛽ Сбор бензина', 'Подойдите к бензоколонке и зажмите ПРОБЕЛ (или кнопку на экране), чтобы собрать Бензин для внедорожника.', '⛽');
                 if (nearestNode.userData.type === 'scrap') checkTutorial('scrap', '⚙️ Сбор металлолома', 'Подойдите к куче хлама и зажмите ПРОБЕЛ, чтобы собрать металлолом для крафта.', '⚙️');
                 
                 if (keys.Space) {
@@ -4321,10 +4733,10 @@
                 sound.playCollect();
                 let cap = getMaxWoodCapacity();
                 if (gameState.inventory.wood >= cap) {
-                    addLogMessage(`Склад дров забит! (Максимум: ${cap})`, "warning");
+                    addLogMessage(`Багажник для бензина забит! (Максимум: ${cap})`, "warning");
                 } else {
                     gameState.inventory.wood = Math.min(cap, gameState.inventory.wood + 3);
-                    addLogMessage("+3 Дрова", "system");
+                    addLogMessage("+3 Бензин", "system");
                 }
                 gainXp(12);
             } else if (node.userData.type === 'scrap') {
@@ -4355,15 +4767,23 @@
             if (dt > 0.1) dt = 0.1;
             
             if (gameActive && playerGroup && gameState.hp > 0) {
-                // 1. Raycast mouse to look at ground plane (aiming)
-                raycaster.setFromCamera(mouseCoords, camera);
-                let intersects = new THREE.Vector3();
-                raycaster.ray.intersectPlane(groundPlane, intersects);
-                worldMousePoint.copy(intersects);
-                
-                // Rotate player Group to face intersects point
-                let lookAngle = Math.atan2(worldMousePoint.x - playerGroup.position.x, worldMousePoint.z - playerGroup.position.z);
-                playerGroup.rotation.y = lookAngle;
+                if (isShootingJoystickActive && (joystickShootInput.x !== 0 || joystickShootInput.y !== 0)) {
+                    // Aim based on right joystick input
+                    let aimDir = new THREE.Vector3(joystickShootInput.x, 0, joystickShootInput.y).normalize();
+                    let lookAngle = Math.atan2(joystickShootInput.x, joystickShootInput.y);
+                    playerGroup.rotation.y = lookAngle;
+                    worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
+                } else {
+                    // 1. Raycast mouse to look at ground plane (aiming)
+                    raycaster.setFromCamera(mouseCoords, camera);
+                    let intersects = new THREE.Vector3();
+                    raycaster.ray.intersectPlane(groundPlane, intersects);
+                    worldMousePoint.copy(intersects);
+                    
+                    // Rotate player Group to face intersects point
+                    let lookAngle = Math.atan2(worldMousePoint.x - playerGroup.position.x, worldMousePoint.z - playerGroup.position.z);
+                    playerGroup.rotation.y = lookAngle;
+                }
                 
                 // Draw 3D laser sight
                 if (laserLine) {
@@ -4377,13 +4797,19 @@
                     laserLine.geometry.attributes.position.needsUpdate = true;
                 }
                 
-                // 2. Keyboard Movement Physics (XZ Plane)
+                // 2. Keyboard & Joystick Movement Physics (XZ Plane)
                 let vx = 0;
                 let vz = 0;
                 if (keys.W) vz = -1;
                 if (keys.S) vz = 1;
                 if (keys.A) vx = -1;
                 if (keys.D) vx = 1;
+                
+                // Fallback to left virtual joystick if keyboard is idle
+                if (vx === 0 && vz === 0) {
+                    vx = joystickInput.x;
+                    vz = joystickInput.y;
+                }
                 
                 let isMoving = (vx !== 0 || vz !== 0);
                 let isSprinting = false;
@@ -4402,7 +4828,11 @@
                 }
                 
                 // Set moving velocity vector
-                let moveDir = new THREE.Vector3(vx, 0, vz).normalize().multiplyScalar(speed * dt);
+                let moveDir = new THREE.Vector3(vx, 0, vz);
+                if (moveDir.lengthSq() > 1) {
+                    moveDir.normalize();
+                }
+                moveDir.multiplyScalar(speed * dt);
                 
                 if (isMoving && !playerGroup.userData.isHarvesting) {
                     // Try X move
@@ -4445,6 +4875,11 @@
                     aimDir.y = 0;
                     aimDir.normalize();
                     playerGroup.userData.flashlightTarget.position.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(5.0)));
+                }
+
+                // Auto-fire on mobile right joystick
+                if (isShootingJoystickActive && (joystickShootInput.x !== 0 || joystickShootInput.y !== 0)) {
+                    fireWeapon();
                 }
                 
                 // 3. Update Projectiles (Bullets)
@@ -4535,8 +4970,11 @@
             
             // 9. Camera follow player
             if (playerGroup) {
-                // Lerp camera position
-                let targetCamPos = new THREE.Vector3(playerGroup.position.x, playerGroup.position.y + 13.0, playerGroup.position.z + 9.0);
+                // Lerp camera position (adjust height/depth based on mobile aspect ratio to zoom out horizontally)
+                let aspect = window.innerWidth / window.innerHeight;
+                let heightOffset = aspect < 1.0 ? 19.0 : 13.0;
+                let depthOffset = aspect < 1.0 ? 13.0 : 9.0;
+                let targetCamPos = new THREE.Vector3(playerGroup.position.x, playerGroup.position.y + heightOffset, playerGroup.position.z + depthOffset);
                 camera.position.lerp(targetCamPos, 0.08);
                 camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 0.5, -0.5)));
             }
@@ -4718,11 +5156,11 @@
                     if (type === 'wood') {
                         let cap = getMaxWoodCapacity();
                         if (gameState.inventory.wood >= cap) {
-                            addLogMessage(`Склад забит!`, "warning");
+                            addLogMessage(`Багажник забит!`, "warning");
                             continue;
                         }
                         gameState.inventory.wood++;
-                        addLogMessage("+1 Дрова", "system");
+                        addLogMessage("+1 Бензин", "system");
                     } else if (type === 'food') {
                         gameState.inventory.food++;
                         addLogMessage("+1 Консервы", "system");
@@ -4810,9 +5248,179 @@
             camera = null;
         }
         
+        function triggerMobileInteractionStart() {
+            // Check if near train/SUV to enter
+            if (playerGroup && trainGroup) {
+                let dist = playerGroup.position.distanceTo(trainGroup.position);
+                if (dist < 4.0) {
+                    playerGroup.userData.vx = 0;
+                    playerGroup.userData.vz = 0;
+                    gameActive = false;
+                    openStationMenu();
+                    return;
+                }
+            }
+            // Otherwise, hold space for harvesting
+            keys.Space = true;
+        }
+
+        function triggerMobileInteractionEnd() {
+            keys.Space = false;
+        }
+
+        function initMobileControls() {
+            isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
+            
+            if (!isMobileDevice) return;
+            
+            // Show mobile controls panel
+            document.getElementById('mobile-controls').style.display = 'block';
+            
+            // Move Joystick
+            const moveZone = document.getElementById('joystick-move-zone');
+            const moveOuter = document.getElementById('joystick-move-outer');
+            const moveKnob = document.getElementById('joystick-move-knob');
+            
+            let moveActive = false;
+            let moveStart = { x: 0, y: 0 };
+            
+            moveZone.addEventListener('touchstart', (e) => {
+                moveActive = true;
+                const touch = e.touches[0];
+                const rect = moveOuter.getBoundingClientRect();
+                moveStart.x = rect.left + rect.width / 2;
+                moveStart.y = rect.top + rect.height / 2;
+                e.preventDefault();
+            }, { passive: false });
+            
+            moveZone.addEventListener('touchmove', (e) => {
+                if (!moveActive) return;
+                const touch = e.touches[0];
+                let dx = touch.clientX - moveStart.x;
+                let dy = touch.clientY - moveStart.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                let maxDist = 30; // max knob travel
+                
+                if (dist > maxDist) {
+                    dx = (dx / dist) * maxDist;
+                    dy = (dy / dist) * maxDist;
+                }
+                
+                moveKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+                
+                joystickInput.x = dx / maxDist;
+                joystickInput.y = dy / maxDist;
+                e.preventDefault();
+            }, { passive: false });
+            
+            moveZone.addEventListener('touchend', (e) => {
+                moveActive = false;
+                moveKnob.style.transform = 'translate(0px, 0px)';
+                joystickInput.x = 0;
+                joystickInput.y = 0;
+                e.preventDefault();
+            }, { passive: false });
+            
+            // Shoot/Aim Joystick
+            const shootZone = document.getElementById('joystick-shoot-zone');
+            const shootOuter = document.getElementById('joystick-shoot-outer');
+            const shootKnob = document.getElementById('joystick-shoot-knob');
+            
+            let shootActive = false;
+            let shootStart = { x: 0, y: 0 };
+            
+            shootZone.addEventListener('touchstart', (e) => {
+                shootActive = true;
+                isShootingJoystickActive = true;
+                const touch = e.touches[0];
+                const rect = shootOuter.getBoundingClientRect();
+                shootStart.x = rect.left + rect.width / 2;
+                shootStart.y = rect.top + rect.height / 2;
+                e.preventDefault();
+            }, { passive: false });
+            
+            shootZone.addEventListener('touchmove', (e) => {
+                if (!shootActive) return;
+                const touch = e.touches[0];
+                let dx = touch.clientX - shootStart.x;
+                let dy = touch.clientY - shootStart.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                let maxDist = 30;
+                
+                if (dist > maxDist) {
+                    dx = (dx / dist) * maxDist;
+                    dy = (dy / dist) * maxDist;
+                }
+                
+                shootKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+                
+                joystickShootInput.x = dx / maxDist;
+                joystickShootInput.y = dy / maxDist;
+                
+                // Update player aiming direction immediately
+                if (playerGroup && gameActive && (dx !== 0 || dy !== 0)) {
+                    let lookAngle = Math.atan2(dx, dy);
+                    playerGroup.rotation.y = lookAngle;
+                    
+                    let aimDir = new THREE.Vector3(dx, 0, dy).normalize();
+                    worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
+                }
+                
+                e.preventDefault();
+            }, { passive: false });
+            
+            shootZone.addEventListener('touchend', (e) => {
+                shootActive = false;
+                isShootingJoystickActive = false;
+                shootKnob.style.transform = 'translate(0px, 0px)';
+                joystickShootInput.x = 0;
+                joystickShootInput.y = 0;
+                e.preventDefault();
+            }, { passive: false });
+
+            // Action Buttons
+            const btnSprint = document.getElementById('btn-mobile-sprint');
+            btnSprint.addEventListener('touchstart', (e) => {
+                keys.Shift = true;
+                e.preventDefault();
+            }, { passive: false });
+            btnSprint.addEventListener('touchend', (e) => {
+                keys.Shift = false;
+                e.preventDefault();
+            }, { passive: false });
+            
+            const btnInteract = document.getElementById('btn-mobile-interact');
+            btnInteract.addEventListener('touchstart', (e) => {
+                triggerMobileInteractionStart();
+                e.preventDefault();
+            }, { passive: false });
+            btnInteract.addEventListener('touchend', (e) => {
+                triggerMobileInteractionEnd();
+                e.preventDefault();
+            }, { passive: false });
+
+            // Support tap to shoot anywhere else on screen
+            window.addEventListener('touchstart', (e) => {
+                if (!gameActive || !playerGroup || gameState.hp <= 0) return;
+                
+                const target = e.target;
+                if (target.closest('.hud-element') || target.closest('#mobile-controls') || target.closest('.overlay') || target.closest('#station-menu-overlay')) {
+                    return;
+                }
+                
+                const touch = e.touches[0];
+                mouseCoords.x = (touch.clientX / window.innerWidth) * 2 - 1;
+                mouseCoords.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+                
+                // Trigger shoot
+                fireWeapon();
+            }, { passive: true });
+        }
+
         // Window load wrapper (redefined)
         window.onload = () => {
             updateMenuButtons();
+            initMobileControls();
             
             document.body.addEventListener('click', () => {
                 sound.init();

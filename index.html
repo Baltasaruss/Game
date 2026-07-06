@@ -4317,7 +4317,9 @@
             // 1. Spawning Player
             playerGroup = createRobloxCharacter(0x0284c7, 0xffdbac, 0x1e293b, false);
             playerGroup.position.set(0, 0, 0); // Center start
+            playerGroup.rotation.y = Math.PI;   // Face away from camera (back view) by default
             scene.add(playerGroup);
+            worldMousePoint.set(0, 0, -8.0);    // Aim North by default
             
             // Flashlight SpotLight for dark themes
             let flashlight = new THREE.SpotLight(0xffffff, loc.theme === 'tunnel' ? 8.0 : 2.0, 30.0, Math.PI / 7, 0.5, 1);
@@ -4789,32 +4791,32 @@
                 
                 let isMoving = (vx !== 0 || vz !== 0);
 
-                // 2. Aiming & Rotation (Mobile support: face direction of movement when left joystick is active and right joystick is idle)
+                // 2. Aiming & Rotation (Unified Mobile & PC)
                 if (isShootingJoystickActive && (joystickShootInput.x !== 0 || joystickShootInput.y !== 0)) {
-                    // Aim based on right joystick input
+                    // Mobile: aim based on right joystick input
                     let aimDir = new THREE.Vector3(joystickShootInput.x, 0, joystickShootInput.y).normalize();
                     let lookAngle = Math.atan2(joystickShootInput.x, joystickShootInput.y);
                     playerGroup.rotation.y = lookAngle;
                     worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
-                } else if (isMobileDevice) {
-                    // On mobile, face movement direction if moving and not aiming/shooting
-                    if (isMoving) {
-                        let lookAngle = Math.atan2(vx, vz);
-                        playerGroup.rotation.y = lookAngle;
-                        
-                        let aimDir = new THREE.Vector3(vx, 0, vz).normalize();
-                        worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
-                    }
-                } else {
-                    // Raycast mouse to look at ground plane (aiming on PC)
+                } else if (isMoving) {
+                    // Face movement direction while running (both PC and Mobile!)
+                    let lookAngle = Math.atan2(vx, vz);
+                    playerGroup.rotation.y = lookAngle;
+                    
+                    let aimDir = new THREE.Vector3(vx, 0, vz).normalize();
+                    worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
+                } else if (!isMobileDevice) {
+                    // PC: Only rotate to face the mouse if the mouse is far enough (aiming outward)
                     raycaster.setFromCamera(mouseCoords, camera);
                     let intersects = new THREE.Vector3();
                     raycaster.ray.intersectPlane(groundPlane, intersects);
-                    worldMousePoint.copy(intersects);
                     
-                    // Rotate player Group to face intersects point
-                    let lookAngle = Math.atan2(worldMousePoint.x - playerGroup.position.x, worldMousePoint.z - playerGroup.position.z);
-                    playerGroup.rotation.y = lookAngle;
+                    let distToMouse = intersects.distanceTo(playerGroup.position);
+                    if (distToMouse > 2.0) {
+                        worldMousePoint.copy(intersects);
+                        let lookAngle = Math.atan2(worldMousePoint.x - playerGroup.position.x, worldMousePoint.z - playerGroup.position.z);
+                        playerGroup.rotation.y = lookAngle;
+                    }
                 }
                 
                 // Draw 3D laser sight

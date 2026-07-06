@@ -3318,6 +3318,9 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.25;
+            renderer.outputEncoding = THREE.sRGBEncoding;
             
             // Append
             const container = document.getElementById('game-container');
@@ -3437,31 +3440,68 @@
                 ctx.fillRect(28, 28, 2, 2);
             });
             
-            // Define standard texturized materials
-            materials.playerSkin = new THREE.MeshLambertMaterial({ color: 0xffdbac });
-            materials.playerSkinTextured = new THREE.MeshLambertMaterial({ map: createPixelTexture(32, 32, '#ffdbac', 4) });
-            materials.playerSkinFace = new THREE.MeshLambertMaterial({ map: playerFaceTex });
-            materials.playerTorso = new THREE.MeshLambertMaterial({ map: playerTorsoTex });
-            materials.playerLegs = new THREE.MeshLambertMaterial({ map: createPixelTexture(32, 32, '#1e293b', 8) });
+            // Define standard texturized materials using PBR MeshStandardMaterial
+            // 9. Procedural Wood grain
+            let woodTex = createPixelTexture(16, 16, '#78350f', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#451a03'; // dark lines
+                ctx.fillRect(0, 3, 16, 2);
+                ctx.fillRect(0, 10, 16, 2);
+            });
+
+            // 10. Procedural Leaf pattern
+            let leafTex = createPixelTexture(16, 16, '#15803d', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#166534'; // darker green spots
+                ctx.fillRect(2, 2, 4, 4);
+                ctx.fillRect(10, 8, 4, 4);
+            });
+
+            // 11. Procedural Mutant skin
+            let mutantSkinTex = createPixelTexture(32, 32, '#581c87', 15, (ctx, w, h) => {
+                ctx.fillStyle = '#3b0764'; // very dark spots
+                ctx.fillRect(4, 4, 8, 8);
+                ctx.fillRect(18, 16, 8, 8);
+            });
+
+            // 12. Procedural Hazard barrel
+            let radBarrelTex = createPixelTexture(16, 16, '#ca8a04', 6, (ctx, w, h) => {
+                ctx.fillStyle = '#0f172a'; // black warning stripes
+                ctx.fillRect(0, 3, 16, 3);
+                ctx.fillRect(0, 10, 16, 3);
+            });
+
+            // 13. Procedural Boss metal
+            let bossMetalTex = createPixelTexture(32, 32, '#1e293b', 12, (ctx, w, h) => {
+                ctx.fillStyle = '#451a03'; // rust spots
+                ctx.fillRect(2, 6, 6, 6);
+                ctx.fillRect(20, 18, 8, 6);
+                ctx.strokeStyle = '#0f172a'; // borders
+                ctx.strokeRect(0.5, 0.5, 31, 31);
+            });
+
+            materials.playerSkin = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.7 });
+            materials.playerSkinTextured = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#ffdbac', 4), roughness: 0.7 });
+            materials.playerSkinFace = new THREE.MeshStandardMaterial({ map: playerFaceTex, roughness: 0.7 });
+            materials.playerTorso = new THREE.MeshStandardMaterial({ map: playerTorsoTex, roughness: 0.8 });
+            materials.playerLegs = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#1e293b', 8), roughness: 0.8 });
             
-            materials.zombieSkin = new THREE.MeshLambertMaterial({ map: createPixelTexture(32, 32, '#15803d', 6) });
-            materials.zombieSkinFace = new THREE.MeshLambertMaterial({ map: zombieFaceTex });
-            materials.zombieTorso = new THREE.MeshLambertMaterial({ map: zombieTorsoTex });
+            materials.zombieSkin = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#15803d', 6), roughness: 0.8 });
+            materials.zombieSkinFace = new THREE.MeshStandardMaterial({ map: zombieFaceTex, roughness: 0.8 });
+            materials.zombieTorso = new THREE.MeshStandardMaterial({ map: zombieTorsoTex, roughness: 0.85 });
             
-            materials.zombieFastSkin = new THREE.MeshLambertMaterial({ map: createPixelTexture(32, 32, '#ea580c', 8) });
-            materials.zombieFatTorso = new THREE.MeshLambertMaterial({ map: createPixelTexture(32, 32, '#4d7c0f', 12) });
+            materials.zombieFastSkin = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#ea580c', 8), roughness: 0.8 });
+            materials.zombieFatTorso = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#4d7c0f', 12), roughness: 0.85 });
             
-            materials.raiderArmor = new THREE.MeshLambertMaterial({ map: raiderTorsoTex });
-            materials.mutantBody = new THREE.MeshLambertMaterial({ color: 0x6b21a8 });
-            materials.bossMetal = new THREE.MeshLambertMaterial({ color: 0x111827 });
+            materials.raiderArmor = new THREE.MeshStandardMaterial({ map: raiderTorsoTex, roughness: 0.4, metalness: 0.6 });
+            materials.mutantBody = new THREE.MeshStandardMaterial({ map: mutantSkinTex, roughness: 0.9, metalness: 0.1 });
+            materials.bossMetal = new THREE.MeshStandardMaterial({ map: bossMetalTex, roughness: 0.35, metalness: 0.8 });
             materials.redGlow = new THREE.MeshBasicMaterial({ color: 0xef4444 });
-            materials.trainMetal = new THREE.MeshLambertMaterial({ map: trainMetalTex });
+            materials.trainMetal = new THREE.MeshStandardMaterial({ map: trainMetalTex, roughness: 0.35, metalness: 0.85 });
             materials.goldGlow = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
-            materials.wood = new THREE.MeshLambertMaterial({ color: 0x78350f });
-            materials.leaf = new THREE.MeshLambertMaterial({ color: 0x16a34a });
-            materials.scrap = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.4 });
-            materials.radBarrel = new THREE.MeshLambertMaterial({ color: 0xeab308 });
-            materials.wall = new THREE.MeshLambertMaterial({ map: wallTex });
+            materials.wood = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.9 });
+            materials.leaf = new THREE.MeshStandardMaterial({ map: leafTex, roughness: 0.95 });
+            materials.scrap = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.4, metalness: 0.8 });
+            materials.radBarrel = new THREE.MeshStandardMaterial({ map: radBarrelTex, roughness: 0.3, metalness: 0.6 });
+            materials.wall = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.7, metalness: 0.25 });
             
             // Listeners
             window.addEventListener('resize', onWindowResize);
@@ -5021,7 +5061,7 @@
         }
         
         function update3DEnemies(dt, time) {
-            let viewRange = 10.0;
+            let viewRange = 999.0; // Always active
             
             for (let e of enemies) {
                 let dist = e.position.distanceTo(playerGroup.position);
@@ -5030,8 +5070,10 @@
                 
                 // Walk limbs animations
                 if (e.userData.type.startsWith('zombie')) {
-                    if (dist < viewRange) {
+                    if (dist < 10.0) {
                         checkTutorial('enemy', '🧟 Опасность близко!', 'На вас бежит зомби! Выберите оружие на 1-3 и стреляйте.', '🧟');
+                    }
+                    if (dist < viewRange) {
                         
                         // Move straight to player
                         let stepX = Math.sin(angle) * e.userData.speed * dt;

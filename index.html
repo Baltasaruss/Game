@@ -3126,16 +3126,28 @@
                     if (!mesh) return;
                     mesh.traverse(child => {
                         if (child.isMesh && child.material) {
-                            if (!child.userData.originalColor) {
-                                child.userData.originalColor = child.material.color.clone();
-                            }
-                            child.material.color.setHex(color);
+                            let mats = Array.isArray(child.material) ? child.material : [child.material];
+                            mats.forEach((mat, idx) => {
+                                if (mat && mat.color) {
+                                    let key = `originalColor_${idx}`;
+                                    if (!child.userData[key]) {
+                                        child.userData[key] = mat.color.clone();
+                                    }
+                                    mat.color.setHex(color);
+                                }
+                            });
                         }
                     });
                     setTimeout(() => {
                         mesh.traverse(child => {
-                            if (child.isMesh && child.material && child.userData.originalColor) {
-                                child.material.color.copy(child.userData.originalColor);
+                            if (child.isMesh && child.material) {
+                                let mats = Array.isArray(child.material) ? child.material : [child.material];
+                                mats.forEach((mat, idx) => {
+                                    let key = `originalColor_${idx}`;
+                                    if (mat && mat.color && child.userData[key]) {
+                                        mat.color.copy(child.userData[key]);
+                                    }
+                                });
                             }
                         });
                     }, duration);
@@ -4461,9 +4473,11 @@
                                 // Hit enemies
                                 for (let j = enemies.length - 1; j >= 0; j--) {
                                     let e = enemies[j];
-                                    let dist = b.position.distanceTo(e.position);
+                                    let dx = b.position.x - e.position.x;
+                                    let dz = b.position.z - e.position.z;
+                                    let distXZ = Math.sqrt(dx * dx + dz * dz);
                                     let hitRadius = (e.userData.type === 'boss') ? 1.8 : 0.7;
-                                    if (dist < hitRadius) {
+                                    if (distXZ < hitRadius) {
                                         // Hit enemy!
                                         sound.playHit();
                                         spawnBoxSparks(b.position, 0xd90429, 6, 0.1); // blood sparks!
@@ -4484,8 +4498,10 @@
                                 }
                             } else {
                                 // Hit Player!
-                                let dist = b.position.distanceTo(playerGroup.position);
-                                if (dist < 0.65) {
+                                let dx = b.position.x - playerGroup.position.x;
+                                let dz = b.position.z - playerGroup.position.z;
+                                let distXZ = Math.sqrt(dx * dx + dz * dz);
+                                if (distXZ < 0.65) {
                                     collided = true;
                                     damagePlayer(b.userData.damage, "атаки рейдеров");
                                     spawnBoxSparks(b.position, 0xd90429, 6, 0.1);

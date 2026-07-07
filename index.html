@@ -2507,6 +2507,14 @@
 
         const sound = new SoundSynth();
         
+        // On-screen logger for runtime JS errors (greatly simplifies debugging on mobile and desktop)
+        window.onerror = function(message, source, lineno, colno, error) {
+            if (typeof addLogMessage === 'function') {
+                addLogMessage(`⚠️ Ошибка JS: ${message} (стр. ${lineno}:${colno})`, "danger");
+            }
+            return false;
+        };
+        
         // Bulletproof AudioContext resume on first user click or touch event
         const resumeAudioContext = () => {
             if (sound) {

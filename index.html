@@ -2809,7 +2809,7 @@
             },
             {
                 name: "Vehicle Tunnel",
-                description: "Abandoned blind tunnel under the hills. Pitch darkness reigns, your flashlight illuminates only a small area. Beware of agile mutants.",
+                description: "Abandoned blind tunnel under the hills. Pitch darkness reigns, your flashlight illuminates only a small area. Beware of rabid mutant hounds.",
                 type: "tunnel",
                 theme: "tunnel",
                 timeOfDay: "night",
@@ -3613,7 +3613,7 @@
                 radBadge.className = "loc-badge badge-low"; radBadge.innerText = "None";
                 matsText.innerText = "Scrap metal (Scrap), Ammo";
             } else if (loc.type === 'tunnel') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Extreme (Mutants in the dark)";
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Extreme (Hounds in the dark)";
                 radBadge.className = "loc-badge badge-med"; radBadge.innerText = "Weak background (0.5 rad/s)";
                 matsText.innerText = "Ammo, Scrap metal";
             } else if (loc.type === 'military') {
@@ -4585,11 +4585,14 @@
                 ctx.fillRect(10, 8, 4, 4);
             });
 
-            // 11. Procedural Mutant skin
-            let mutantSkinTex = createPixelTexture(32, 32, '#581c87', 15, (ctx, w, h) => {
-                ctx.fillStyle = '#3b0764'; // very dark spots
-                ctx.fillRect(4, 4, 8, 8);
-                ctx.fillRect(18, 16, 8, 8);
+            // 11. Procedural Mutant (Zombie Dog/Wolf) skin - decayed grey-brown fur with dark patches
+            let mutantSkinTex = createPixelTexture(32, 32, '#4b4843', 15, (ctx, w, h) => {
+                ctx.fillStyle = '#2d2b28'; // Dark fur patches
+                ctx.fillRect(4, 4, 12, 8);
+                ctx.fillRect(18, 12, 10, 10);
+                ctx.fillStyle = '#7c2d12'; // Decayed exposed red flesh
+                ctx.fillRect(2, 20, 6, 4);
+                ctx.fillRect(24, 4, 4, 6);
             });
 
             // 12. Procedural Hazard barrel
@@ -7210,17 +7213,91 @@
                 enemy.userData.hp = 110; enemy.userData.speed = 2.3; enemy.userData.dmg = 8;
                 enemy.userData.lastShot = 0;
             } else if (type === 'mutant') {
-                // Biomechanical spider
+                // Quadruped Zombie Dog / Mutant Hound
                 enemy = new THREE.Group();
-                let core = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.8, 1.0), materials.mutantBody);
-                core.position.y = 0.5;
-                core.castShadow = true;
-                enemy.add(core);
+                let scale = 1.0;
                 
-                // Red glowing eye blocks
-                let eye = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.15), materials.redGlow);
-                eye.position.set(0, 0.7, 0.5);
-                enemy.add(eye);
+                // Torso / Body (elongated)
+                let body = new THREE.Mesh(new THREE.BoxGeometry(0.5 * scale, 0.45 * scale, 1.1 * scale), materials.mutantBody);
+                body.position.y = 0.45 * scale;
+                body.castShadow = true;
+                body.receiveShadow = true;
+                enemy.add(body);
+                enemy.userData.torso = body;
+                
+                // 4 Legs (positioned, geometry translated so pivot points are at the joints)
+                let legFL = new THREE.Mesh(new THREE.BoxGeometry(0.12 * scale, 0.45 * scale, 0.12 * scale), materials.mutantBody);
+                legFL.position.set(0.18 * scale, 0.225 * scale, 0.35 * scale);
+                legFL.geometry.translate(0, -0.225 * scale, 0); // pivot at top joint
+                legFL.position.y += 0.225 * scale;
+                legFL.castShadow = true;
+                enemy.add(legFL);
+                enemy.userData.legFL = legFL;
+                
+                let legFR = new THREE.Mesh(new THREE.BoxGeometry(0.12 * scale, 0.45 * scale, 0.12 * scale), materials.mutantBody);
+                legFR.position.set(-0.18 * scale, 0.225 * scale, 0.35 * scale);
+                legFR.geometry.translate(0, -0.225 * scale, 0);
+                legFR.position.y += 0.225 * scale;
+                legFR.castShadow = true;
+                enemy.add(legFR);
+                enemy.userData.legFR = legFR;
+                
+                let legBL = new THREE.Mesh(new THREE.BoxGeometry(0.12 * scale, 0.45 * scale, 0.12 * scale), materials.mutantBody);
+                legBL.position.set(0.18 * scale, 0.225 * scale, -0.35 * scale);
+                legBL.geometry.translate(0, -0.225 * scale, 0);
+                legBL.position.y += 0.225 * scale;
+                legBL.castShadow = true;
+                enemy.add(legBL);
+                enemy.userData.legBL = legBL;
+                
+                let legBR = new THREE.Mesh(new THREE.BoxGeometry(0.12 * scale, 0.45 * scale, 0.12 * scale), materials.mutantBody);
+                legBR.position.set(-0.18 * scale, 0.225 * scale, -0.35 * scale);
+                legBR.geometry.translate(0, -0.225 * scale, 0);
+                legBR.position.y += 0.225 * scale;
+                legBR.castShadow = true;
+                enemy.add(legBR);
+                enemy.userData.legBR = legBR;
+                
+                // Head (Skull, snout, ears, glowing red eyes)
+                let head = new THREE.Group();
+                head.position.set(0, 0.72 * scale, 0.65 * scale);
+                
+                let skull = new THREE.Mesh(new THREE.BoxGeometry(0.35 * scale, 0.32 * scale, 0.4 * scale), materials.mutantBody);
+                skull.castShadow = true;
+                head.add(skull);
+                
+                let snout = new THREE.Mesh(new THREE.BoxGeometry(0.2 * scale, 0.16 * scale, 0.35 * scale), materials.mutantBody);
+                snout.position.set(0, -0.06 * scale, 0.3 * scale);
+                snout.castShadow = true;
+                head.add(snout);
+                
+                let earL = new THREE.Mesh(new THREE.BoxGeometry(0.08 * scale, 0.2 * scale, 0.08 * scale), materials.mutantBody);
+                earL.position.set(0.12 * scale, 0.2 * scale, -0.1 * scale);
+                earL.rotation.z = -0.15;
+                head.add(earL);
+                
+                let earR = new THREE.Mesh(new THREE.BoxGeometry(0.08 * scale, 0.2 * scale, 0.08 * scale), materials.mutantBody);
+                earR.position.set(-0.12 * scale, 0.2 * scale, -0.1 * scale);
+                earR.rotation.z = 0.15;
+                head.add(earR);
+                
+                let eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.08 * scale, 0.08 * scale, 0.08 * scale), materials.redGlow);
+                eyeL.position.set(0.12 * scale, 0.05 * scale, 0.18 * scale);
+                head.add(eyeL);
+                
+                let eyeR = new THREE.Mesh(new THREE.BoxGeometry(0.08 * scale, 0.08 * scale, 0.08 * scale), materials.redGlow);
+                eyeR.position.set(-0.12 * scale, 0.05 * scale, 0.18 * scale);
+                head.add(eyeR);
+                
+                enemy.add(head);
+                enemy.userData.head = head;
+                
+                // Tail
+                let tail = new THREE.Mesh(new THREE.BoxGeometry(0.1 * scale, 0.1 * scale, 0.45 * scale), materials.mutantBody);
+                tail.position.set(0, 0.5 * scale, -0.65 * scale);
+                tail.rotation.x = -0.4;
+                enemy.add(tail);
+                enemy.userData.tail = tail;
                 
                 enemy.userData.hp = 160; enemy.userData.speed = 3.0; enemy.userData.dmg = 12;
                 enemy.userData.leapCooldown = 0;
@@ -8363,13 +8440,13 @@
                 }
                 else if (e.userData.type === 'mutant') {
                     if (dist < detectDist + 3.0) {
-                        // Spider leap mechanic
+                        // Mutant Hound lunge mechanic
                         let now = Date.now();
                         if (dist < 4.5 && now > e.userData.leapCooldown + 5000) {
                             e.userData.leapCooldown = now;
                             // Leap force
                             e.userData.leapVelocity = new THREE.Vector3(Math.sin(angle)*8.0, 3.0, Math.cos(angle)*8.0);
-                            addLogMessage("👹 Mutant lunged at you!", "danger");
+                            addLogMessage("👹 Mutant Hound lunged at you!", "danger");
                         }
                         
                         if (e.userData.leapVelocity && e.userData.leapVelocity.lengthSq() > 0.1) {
@@ -8397,6 +8474,32 @@
                                 e.position.set(_scratchFinalPos.x, 0, _scratchFinalPos.z);
                             }
                         }
+
+                        // Quadruped animations
+                        let isLeaping = (e.userData.leapVelocity && e.userData.leapVelocity.lengthSq() > 0.1);
+                        let isMoving = !isLeaping && (dist > 0.95);
+                        if (isMoving) {
+                            let t = Date.now() * 0.015;
+                            if (e.userData.legFL) e.userData.legFL.rotation.x = Math.sin(t) * 0.5;
+                            if (e.userData.legFR) e.userData.legFR.rotation.x = -Math.sin(t) * 0.5;
+                            if (e.userData.legBL) e.userData.legBL.rotation.x = -Math.sin(t) * 0.5;
+                            if (e.userData.legBR) e.userData.legBR.rotation.x = Math.sin(t) * 0.5;
+                            if (e.userData.tail) e.userData.tail.rotation.y = Math.sin(t * 1.5) * 0.35;
+                        } else if (isLeaping) {
+                            // Dangling legs in mid-leap
+                            if (e.userData.legFL) e.userData.legFL.rotation.x = 0.25;
+                            if (e.userData.legFR) e.userData.legFR.rotation.x = 0.25;
+                            if (e.userData.legBL) e.userData.legBL.rotation.x = -0.25;
+                            if (e.userData.legBR) e.userData.legBR.rotation.x = -0.25;
+                            if (e.userData.tail) e.userData.tail.rotation.x = 0.4;
+                        } else {
+                            // Idle
+                            if (e.userData.legFL) e.userData.legFL.rotation.x = 0;
+                            if (e.userData.legFR) e.userData.legFR.rotation.x = 0;
+                            if (e.userData.legBL) e.userData.legBL.rotation.x = 0;
+                            if (e.userData.legBR) e.userData.legBR.rotation.x = 0;
+                            if (e.userData.tail) e.userData.tail.rotation.y = 0;
+                        }
                     }
                     
                     if (dist < 1.0) {
@@ -8405,9 +8508,9 @@
                             e.userData.lastAttack = now;
                             sound.playHit();
                             spawnBoxSparks(playerGroup.position, 0xd90429, 12, 0.12);
-                            damagePlayer(e.userData.dmg, "a mutant attack");
+                            damagePlayer(e.userData.dmg, "a mutant hound attack");
                             spawnBloodDecal(playerGroup.position.x, playerGroup.position.z);
-                            addLogMessage(`💥 A mutant hit you! Damage: ${e.userData.dmg} HP`, "danger");
+                            addLogMessage(`💥 A mutant hound bit you! Damage: ${e.userData.dmg} HP`, "danger");
                         }
                     }
                 }

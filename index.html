@@ -4345,7 +4345,6 @@
             
             let loc = LOCATIONS[gameState.currentLocationIndex];
             let N = loc.size;
-            let theme = loc.theme;
             
             // Restore player stats at Safe Station
             if (gameState.currentLocationIndex === 0) {
@@ -5078,6 +5077,7 @@
         // Spawn Level props, enemies, loot
         function populate3DLevel(N, loc) {
             let sizeRange = N * 1.8;
+            let theme = loc.theme;
             
             // 1. Spawning Player
             playerGroup = createRobloxCharacter(0x0284c7, 0xffdbac, 0x1e293b, false);

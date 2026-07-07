@@ -5439,14 +5439,8 @@
                 loot.add(core);
             }
             
-            // Floating text label - optimized to use pre-rendered shared SpriteMaterials
-            let labelMat = lootSpriteMaterials[type];
-            if (labelMat) {
-                let labelSprite = new THREE.Sprite(labelMat);
-                labelSprite.position.set(0, 0.65, 0);
-                labelSprite.scale.set(1.4, 0.35, 1);
-                loot.add(labelSprite);
-            }
+            // Apply scale 1.2x as requested
+            loot.scale.set(1.2, 1.2, 1.2);
  
             scene.add(loot);
             loot.updateMatrixWorld(true);
@@ -8172,11 +8166,25 @@
         }
         
         function update3DLootCollection(dt) {
+            let now = Date.now();
             for (let i = lootItems.length - 1; i >= 0; i--) {
                 let loot = lootItems[i];
                 // Rotate
                 loot.rotation.y += loot.userData.rotSpeed * 0.016;
-                loot.position.y = 0.4 + Math.sin(Date.now() * 0.005) * 0.15;
+                loot.position.y = 0.4 + Math.sin(now * 0.005) * 0.15;
+                
+                // Modulate emissive pulsing glow
+                let glowVal = 0.18 + Math.sin(now * 0.007 + (loot.userData.spawnTime % 100)) * 0.18; // pulse 0 to 0.36
+                loot.traverse(child => {
+                    if (child.isMesh && child.material) {
+                        let mats = Array.isArray(child.material) ? child.material : [child.material];
+                        mats.forEach(mat => {
+                            if (mat && mat.emissive) {
+                                mat.emissive.setRGB(glowVal, glowVal, glowVal);
+                            }
+                        });
+                    }
+                });
                 
                 let dist = playerGroup.position.distanceTo(loot.position);
                 let magnetRad = (gameState.runPerks && gameState.runPerks.magnetRadius !== undefined) ? gameState.runPerks.magnetRadius : 1.2;

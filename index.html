@@ -2280,167 +2280,76 @@
                 }
             }
 
-            // Shot
+            // Shot (Unified cohesive gunshot synthesizer)
             playShoot(type) {
                 this.init();
                 if (!this.ctx) return;
                 let t = this.ctx.currentTime;
-                // Small per-shot randomization so repeats don't sound robotic (~ +/-3%)
-                let r = 1 + (Math.random() * 0.06 - 0.03);
+                let r = 1 + (Math.random() * 0.06 - 0.03); // small pitch jitter
 
-                if (type === 'pistol') {
-                    // Mechanism click transient at t=0
-                    let clickLen = Math.floor(this.ctx.sampleRate * 0.004);
-                    let clickBuf = this.ctx.createBuffer(1, clickLen, this.ctx.sampleRate);
-                    let cd = clickBuf.getChannelData(0);
-                    for (let i = 0; i < clickLen; i++) cd[i] = (Math.random() * 2 - 1) * (1 - i / clickLen);
-                    let click = this.ctx.createBufferSource();
-                    click.buffer = clickBuf;
-                    let clickGain = this.ctx.createGain();
-                    clickGain.gain.setValueAtTime(0.28, t);
-                    clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.006);
-                    click.connect(clickGain);
-                    clickGain.connect(this.masterGain);
-                    click.start(t);
-                    click.stop(t + 0.006);
+                // Cohesive caliber-based noise duration
+                let noiseLen = 0.15;
+                if (type === 'pistol') noiseLen = 0.11;
+                if (type === 'rifle') noiseLen = 0.18;
+                if (type === 'shotgun') noiseLen = 0.28;
 
-                    // Sharp noise crack (highpass), very short
-                    let nLen = Math.floor(this.ctx.sampleRate * 0.05);
-                    let nBuf = this.ctx.createBuffer(1, nLen, this.ctx.sampleRate);
-                    let nd = nBuf.getChannelData(0);
-                    for (let i = 0; i < nLen; i++) nd[i] = Math.random() * 2 - 1;
-                    let noise = this.ctx.createBufferSource();
-                    noise.buffer = nBuf;
-                    let hp = this.ctx.createBiquadFilter();
-                    hp.type = 'highpass';
-                    hp.frequency.setValueAtTime(1000 * r, t);
-                    hp.Q.value = 0.7;
-                    let nGain = this.ctx.createGain();
-                    nGain.gain.setValueAtTime(0.32, t);
-                    nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
-                    noise.connect(hp);
-                    hp.connect(nGain);
-                    nGain.connect(this.masterGain);
-                    if (this.reverbSend) nGain.connect(this.reverbSend);
-                    noise.start(t);
-                    noise.stop(t + 0.05);
-
-                    // Fast downward pitch "body" 300 -> 50Hz
-                    let osc = this.ctx.createOscillator();
-                    let oGain = this.ctx.createGain();
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(300 * r, t);
-                    osc.frequency.exponentialRampToValueAtTime(50, t + 0.08);
-                    oGain.gain.setValueAtTime(0.26, t);
-                    oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
-                    osc.connect(oGain);
-                    oGain.connect(this.masterGain);
-                    if (this.reverbSend) oGain.connect(this.reverbSend);
-                    osc.start(t);
-                    osc.stop(t + 0.12);
+                let bufferSize = Math.floor(this.ctx.sampleRate * noiseLen);
+                let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                let data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * (1.0 - i / bufferSize);
                 }
-                else if (type === 'rifle') {
-                    // Tight noise burst through bandpass sweeping down (~70ms)
-                    let nLen = Math.floor(this.ctx.sampleRate * 0.07);
-                    let nBuf = this.ctx.createBuffer(1, nLen, this.ctx.sampleRate);
-                    let nd = nBuf.getChannelData(0);
-                    for (let i = 0; i < nLen; i++) nd[i] = Math.random() * 2 - 1;
-                    let noise = this.ctx.createBufferSource();
-                    noise.buffer = nBuf;
-                    let bp = this.ctx.createBiquadFilter();
-                    bp.type = 'bandpass';
-                    bp.Q.value = 1.2;
-                    bp.frequency.setValueAtTime(2200 * r, t);
-                    bp.frequency.exponentialRampToValueAtTime(600, t + 0.055);
-                    let nGain = this.ctx.createGain();
-                    nGain.gain.setValueAtTime(0.3, t);
-                    nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-                    noise.connect(bp);
-                    bp.connect(nGain);
-                    nGain.connect(this.masterGain);
-                    if (this.reverbSend) nGain.connect(this.reverbSend);
-                    noise.start(t);
-                    noise.stop(t + 0.07);
 
-                    // Short mechanical click transient
-                    let clickLen = Math.floor(this.ctx.sampleRate * 0.003);
-                    let clickBuf = this.ctx.createBuffer(1, clickLen, this.ctx.sampleRate);
-                    let cd = clickBuf.getChannelData(0);
-                    for (let i = 0; i < clickLen; i++) cd[i] = (Math.random() * 2 - 1) * (1 - i / clickLen);
-                    let click = this.ctx.createBufferSource();
-                    click.buffer = clickBuf;
-                    let clickGain = this.ctx.createGain();
-                    clickGain.gain.setValueAtTime(0.2, t);
-                    clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.004);
-                    click.connect(clickGain);
-                    clickGain.connect(this.masterGain);
-                    click.start(t);
-                    click.stop(t + 0.004);
+                let noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
 
-                    // Slight low thump for weight
-                    let osc = this.ctx.createOscillator();
-                    let oGain = this.ctx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(160 * r, t);
-                    osc.frequency.exponentialRampToValueAtTime(60, t + 0.05);
-                    oGain.gain.setValueAtTime(0.16, t);
-                    oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-                    osc.connect(oGain);
-                    oGain.connect(this.masterGain);
-                    osc.start(t);
-                    osc.stop(t + 0.07);
-                }
-                else if (type === 'shotgun') {
-                    // Broadband noise blast through lowpass, long tail (~250ms)
-                    let nLen = Math.floor(this.ctx.sampleRate * 0.25);
-                    let nBuf = this.ctx.createBuffer(1, nLen, this.ctx.sampleRate);
-                    let nd = nBuf.getChannelData(0);
-                    for (let i = 0; i < nLen; i++) nd[i] = Math.random() * 2 - 1;
-                    let noise = this.ctx.createBufferSource();
-                    noise.buffer = nBuf;
-                    let lp = this.ctx.createBiquadFilter();
-                    lp.type = 'lowpass';
-                    lp.frequency.setValueAtTime(3000 * r, t);
-                    lp.frequency.exponentialRampToValueAtTime(300, t + 0.2);
-                    lp.Q.value = 0.5;
-                    let nGain = this.ctx.createGain();
-                    nGain.gain.setValueAtTime(0.34, t);
-                    nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-                    noise.connect(lp);
-                    lp.connect(nGain);
-                    nGain.connect(this.masterGain);
-                    if (this.reverbSend) nGain.connect(this.reverbSend);
-                    noise.start(t);
-                    noise.stop(t + 0.25);
+                let lp = this.ctx.createBiquadFilter();
+                lp.type = 'lowpass';
+                let cutoff = 2400;
+                if (type === 'pistol') cutoff = 2000;
+                if (type === 'rifle') cutoff = 1600;
+                if (type === 'shotgun') cutoff = 1200;
+                lp.frequency.setValueAtTime(cutoff * r, t);
+                lp.frequency.exponentialRampToValueAtTime(100, t + noiseLen - 0.02);
 
-                    // Big low boom (sawtooth cluster)
-                    for (let i = 0; i < 2; i++) {
-                        let osc = this.ctx.createOscillator();
-                        let oGain = this.ctx.createGain();
-                        osc.type = 'sawtooth';
-                        osc.frequency.setValueAtTime((120 + i * 20) * r, t + i * 0.004);
-                        osc.frequency.exponentialRampToValueAtTime(35, t + 0.22);
-                        oGain.gain.setValueAtTime(0.3, t + i * 0.004);
-                        oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
-                        osc.connect(oGain);
-                        oGain.connect(this.masterGain);
-                        osc.start(t + i * 0.004);
-                        osc.stop(t + 0.25);
-                    }
+                let nGain = this.ctx.createGain();
+                let vol = 0.32;
+                if (type === 'pistol') vol = 0.26;
+                if (type === 'rifle') vol = 0.34;
+                if (type === 'shotgun') vol = 0.52;
+                nGain.gain.setValueAtTime(vol, t);
+                nGain.gain.exponentialRampToValueAtTime(0.001, t + noiseLen - 0.01);
 
-                    // Layered sub-bass sine for heavy feel
-                    let sub = this.ctx.createOscillator();
-                    let subGain = this.ctx.createGain();
-                    sub.type = 'sine';
-                    sub.frequency.setValueAtTime(60 * r, t);
-                    sub.frequency.exponentialRampToValueAtTime(40, t + 0.2);
-                    subGain.gain.setValueAtTime(0.32, t);
-                    subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-                    sub.connect(subGain);
-                    subGain.connect(this.masterGain);
-                    sub.start(t);
-                    sub.stop(t + 0.25);
-                }
+                noise.connect(lp);
+                lp.connect(nGain);
+                nGain.connect(this.masterGain);
+                if (this.reverbSend) nGain.connect(this.reverbSend);
+                noise.start(t);
+                noise.stop(t + noiseLen);
+
+                // Sweeping sine oscillator for heavy thump (cohesive caliber weight)
+                let osc = this.ctx.createOscillator();
+                let oGain = this.ctx.createGain();
+                osc.type = 'sine';
+
+                let startFreq = 200;
+                let endFreq = 45;
+                let oscLen = 0.12;
+                if (type === 'pistol') { startFreq = 240; endFreq = 50; oscLen = 0.09; }
+                if (type === 'rifle') { startFreq = 160; endFreq = 40; oscLen = 0.16; }
+                if (type === 'shotgun') { startFreq = 110; endFreq = 30; oscLen = 0.25; }
+
+                osc.frequency.setValueAtTime(startFreq * r, t);
+                osc.frequency.exponentialRampToValueAtTime(endFreq, t + oscLen - 0.02);
+
+                oGain.gain.setValueAtTime(vol * 0.9, t);
+                oGain.gain.exponentialRampToValueAtTime(0.001, t + oscLen - 0.01);
+
+                osc.connect(oGain);
+                oGain.connect(this.masterGain);
+                if (this.reverbSend) oGain.connect(this.reverbSend);
+                osc.start(t);
+                osc.stop(t + oscLen);
             }
 
             // Dodge-roll whoosh
@@ -2602,55 +2511,83 @@
                 this.init();
                 if (!this.ctx) return;
                 let t = this.ctx.currentTime;
-                let bufferSize = this.ctx.sampleRate * 0.04;
+                let r = 1.0 + (Math.random() * 0.15 - 0.075);
+                let bufferSize = this.ctx.sampleRate * 0.055;
                 let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                 let data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
+                    data[i] = (Math.random() * 2 - 1) * (1.0 - i / bufferSize);
                 }
                 let noise = this.ctx.createBufferSource();
                 noise.buffer = buffer;
                 
                 let filter = this.ctx.createBiquadFilter();
                 filter.type = 'bandpass';
-                filter.frequency.setValueAtTime(140, t);
+                filter.frequency.setValueAtTime(240 * r, t); // crunchy footsteps
+                filter.Q.value = 1.2;
                 
                 let gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.24, t); // Louder footsteps!
-                gain.gain.linearRampToValueAtTime(0.001, t + 0.035);
+                gain.gain.setValueAtTime(0.38, t); // highly audible footsteps
+                gain.gain.linearRampToValueAtTime(0.001, t + 0.05);
                 
                 noise.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.masterGain);
                 
                 noise.start(t);
-                noise.stop(t + 0.04);
+                noise.stop(t + 0.06);
             }
 
-            // Zombie growl sound
-            playZombieGrowl(volume = 0.1) {
+            // Zombie growl sound (Scary guttural frequency-modulated throat groans)
+            playZombieGrowl(volume = 0.4) {
                 this.init();
                 if (!this.ctx) return;
                 let t = this.ctx.currentTime;
-                let osc = this.ctx.createOscillator();
-                let gain = this.ctx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(70, t);
-                osc.frequency.linearRampToValueAtTime(40, t + 0.38);
+                
+                // Guttural low-frequency dual voice
+                let osc1 = this.ctx.createOscillator();
+                osc1.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(65 + Math.random() * 10, t);
+                osc1.frequency.linearRampToValueAtTime(35, t + 0.6);
+                
+                let osc2 = this.ctx.createOscillator();
+                osc2.type = 'sawtooth';
+                osc2.frequency.setValueAtTime(110 + Math.random() * 20, t);
+                osc2.frequency.linearRampToValueAtTime(45, t + 0.5);
+                
+                // Gurgling LFO frequency modulator
+                let lfo = this.ctx.createOscillator();
+                lfo.type = 'sine';
+                lfo.frequency.value = 16.0; // 16Hz throaty gargling rate
+                
+                let lfoGain = this.ctx.createGain();
+                lfoGain.gain.value = 25.0; // 25Hz depth
                 
                 let filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(280, t);
+                filter.frequency.setValueAtTime(350, t);
+                filter.frequency.exponentialRampToValueAtTime(120, t + 0.6);
                 
-                gain.gain.setValueAtTime(0.12 * volume, t);
-                gain.gain.linearRampToValueAtTime(0.001, t + 0.4);
+                let gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.35 * volume, t);
+                gain.gain.linearRampToValueAtTime(0.001, t + 0.6);
                 
-                osc.connect(filter);
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc1.frequency);
+                lfoGain.connect(osc2.frequency);
+                
+                osc1.connect(filter);
+                osc2.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.masterGain);
                 
-                osc.start(t);
-                osc.stop(t + 0.4);
+                lfo.start(t);
+                osc1.start(t);
+                osc2.start(t);
+                
+                lfo.stop(t + 0.6);
+                osc1.stop(t + 0.6);
+                osc2.stop(t + 0.6);
             }
 
             // Idling SUV engine rumble
@@ -2678,13 +2615,13 @@
                 osc.stop(t + 0.14);
             }
 
-            // Procedural background music beat (Dynamic techno arpeggiator with drums!)
+            // Procedural background music beat (Tense survival horror arpeggiator & heartbeat kick)
             playMusicBeat(step, freq) {
                 this.init();
                 if (!this.ctx) return;
                 let t = this.ctx.currentTime;
                 
-                // 1. Synth Bass (sawtooth arpeggiator)
+                // 1. Deep Sub-Bass Rumble (Low-pass sawtooth arpeggiator)
                 let osc = this.ctx.createOscillator();
                 let gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
@@ -2692,37 +2629,40 @@
                 
                 let filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(260, t);
+                filter.frequency.setValueAtTime(140, t); // Dark, heavy, low-frequency rumble
                 
-                gain.gain.setValueAtTime(0.24, t);
-                gain.gain.linearRampToValueAtTime(0.001, t + 0.13);
+                gain.gain.setValueAtTime(0.20, t);
+                gain.gain.linearRampToValueAtTime(0.001, t + 0.25);
                 
                 osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.masterGain);
                 osc.start(t);
-                osc.stop(t + 0.14);
+                osc.stop(t + 0.26);
                 
-                // 2. Kick Drum (fat bass punch on beats 0, 4, 8...)
-                if (step % 4 === 0) {
+                // 2. Heartbeat Kick (Double-thump organic kick on beats 0 and 1 of every 8 steps)
+                let isHeartbeat = (step % 8 === 0 || step % 8 === 1);
+                if (isHeartbeat) {
                     let kick = this.ctx.createOscillator();
                     let kickGain = this.ctx.createGain();
                     kick.type = 'sine';
-                    kick.frequency.setValueAtTime(140, t);
-                    kick.frequency.linearRampToValueAtTime(45, t + 0.11);
+                    kick.frequency.setValueAtTime(80, t);
+                    kick.frequency.linearRampToValueAtTime(30, t + 0.15);
                     
-                    kickGain.gain.setValueAtTime(0.65, t);
-                    kickGain.gain.linearRampToValueAtTime(0.001, t + 0.11);
+                    // Double thump volume velocity
+                    let vol = (step % 8 === 0) ? 0.45 : 0.28;
+                    kickGain.gain.setValueAtTime(vol, t);
+                    kickGain.gain.linearRampToValueAtTime(0.001, t + 0.15);
                     
                     kick.connect(kickGain);
                     kickGain.connect(this.masterGain);
                     kick.start(t);
-                    kick.stop(t + 0.12);
+                    kick.stop(t + 0.16);
                 }
                 
-                // 3. Snare Drum (snare crack on beats 2, 6, 10...)
-                if (step % 4 === 2) {
-                    let bufferSize = this.ctx.sampleRate * 0.07;
+                // 3. Spooky Wind Ambient noise (replaces techno snare on beat 4)
+                if (step % 8 === 4) {
+                    let bufferSize = this.ctx.sampleRate * 0.3; // longer wind release
                     let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                     let data = buffer.getChannelData(0);
                     for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
@@ -2730,44 +2670,20 @@
                     let noise = this.ctx.createBufferSource();
                     noise.buffer = buffer;
                     
-                    let snareFilter = this.ctx.createBiquadFilter();
-                    snareFilter.type = 'bandpass';
-                    snareFilter.frequency.setValueAtTime(1100, t);
+                    let band = this.ctx.createBiquadFilter();
+                    band.type = 'bandpass';
+                    band.frequency.setValueAtTime(600, t);
+                    band.Q.value = 0.5; // wide atmospheric sweep
                     
-                    let snareGain = this.ctx.createGain();
-                    snareGain.gain.setValueAtTime(0.28, t);
-                    snareGain.gain.linearRampToValueAtTime(0.001, t + 0.07);
+                    let windGain = this.ctx.createGain();
+                    windGain.gain.setValueAtTime(0.08, t);
+                    windGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
                     
-                    noise.connect(snareFilter);
-                    snareFilter.connect(snareGain);
-                    snareGain.connect(this.masterGain);
+                    noise.connect(band);
+                    band.connect(windGain);
+                    windGain.connect(this.masterGain);
                     noise.start(t);
-                    noise.stop(t + 0.08);
-                }
-                
-                // 4. Hi-Hat (crisp offbeat click on steps 1, 3, 5...)
-                if (step % 2 === 1) {
-                    let bufferSize = this.ctx.sampleRate * 0.02;
-                    let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                    let data = buffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-                    
-                    let hat = this.ctx.createBufferSource();
-                    hat.buffer = buffer;
-                    
-                    let hatFilter = this.ctx.createBiquadFilter();
-                    hatFilter.type = 'highpass';
-                    hatFilter.frequency.setValueAtTime(8500, t);
-                    
-                    let hatGain = this.ctx.createGain();
-                    hatGain.gain.setValueAtTime(0.045, t);
-                    hatGain.gain.linearRampToValueAtTime(0.001, t + 0.02);
-                    
-                    hat.connect(hatFilter);
-                    hatFilter.connect(hatGain);
-                    hatGain.connect(this.masterGain);
-                    hat.start(t);
-                    hat.stop(t + 0.025);
+                    noise.stop(t + 0.28);
                 }
             }
         }
@@ -3017,8 +2933,12 @@
             let skillMult = 1;
             if (type === 'shotgun') {
                 skillMult += gameState.skills.strength * 0.15;
+                if (gameState.runPerks.shotgunDmgMod) skillMult *= gameState.runPerks.shotgunDmgMod;
             } else if (type === 'rifle') {
                 skillMult += gameState.skills.agility * 0.10;
+                if (gameState.runPerks.rifleDmgMod) skillMult *= gameState.runPerks.rifleDmgMod;
+            } else if (type === 'pistol') {
+                if (gameState.runPerks.pistolDmgMod) skillMult *= gameState.runPerks.pistolDmgMod;
             }
             let perksDmg = (gameState.runPerks && gameState.runPerks.damageMod !== undefined) ? gameState.runPerks.damageMod : 1.0;
             return Math.round(baseDmg * upgMult * skillMult * perksDmg);
@@ -3424,16 +3344,16 @@
             updateHudVisuals();
         }
 
-        // Procedural background music controls
+        // Procedural background music controls (Atmospheric survival minor-third arpeggios)
         function startMusic() {
             if (bgmTimer) clearInterval(bgmTimer);
-            let notes = [55, 55, 65, 55, 73, 65, 82, 55]; // A1, A1, C2, A1, D2, C2, E2, A1 (low industrial bass)
+            let notes = [55, 55, 58, 58, 55, 55, 49, 49]; // A1, A1, Bb1, Bb1, A1, A1, G#1, G#1 (creepy drone pads)
             let step = 0;
             bgmTimer = setInterval(() => {
                 if (!gameActive || !scene) return;
                 sound.playMusicBeat(step, notes[step % notes.length]);
                 step++;
-            }, 145); // Hyper fast-paced, high-tension beat!
+            }, 280); // Mellow, atmospheric tempo for deep survival tension!
         }
         
         function stopMusic() {
@@ -3541,6 +3461,63 @@
                     name: '🌱 Regeneration',
                     desc: 'Gradually restores +1 HP every 2 sec',
                     apply: () => { gameState.runPerks.regenRate += 0.5; }
+                },
+                {
+                    id: 'critchance',
+                    name: '🎯 Sharpshooter',
+                    desc: '+15% critical hit chance for all weapons',
+                    apply: () => { gameState.runPerks.critChanceBonus = (gameState.runPerks.critChanceBonus || 0) + 0.15; }
+                },
+                {
+                    id: 'dashcooldown',
+                    name: '🌀 Swift Step',
+                    desc: 'Reduces dodge-roll cooldown by 35%',
+                    apply: () => { gameState.runPerks.dashCooldownMod = (gameState.runPerks.dashCooldownMod || 1.0) * 0.65; }
+                },
+                {
+                    id: 'bulletspeed',
+                    name: '🚀 Hypervelocity',
+                    desc: '+40% bullet travel speed & impact',
+                    apply: () => { gameState.runPerks.bulletSpeedMod = (gameState.runPerks.bulletSpeedMod || 1.0) * 1.4; }
+                },
+                {
+                    id: 'pistolmaster',
+                    name: '🔫 Gunslinger',
+                    desc: '+35% Pistol damage & +20% fire rate',
+                    apply: () => { 
+                        gameState.runPerks.pistolDmgMod = (gameState.runPerks.pistolDmgMod || 1.0) * 1.35; 
+                        gameState.runPerks.pistolRateMod = (gameState.runPerks.pistolRateMod || 1.0) * 0.8; 
+                    }
+                },
+                {
+                    id: 'riflemaster',
+                    name: '🎖️ Commando',
+                    desc: '+25% Assault Rifle damage & +40% accuracy',
+                    apply: () => { 
+                        gameState.runPerks.rifleDmgMod = (gameState.runPerks.rifleDmgMod || 1.0) * 1.25; 
+                        gameState.runPerks.rifleAccuracyMod = 0.6; 
+                    }
+                },
+                {
+                    id: 'shotgunmaster',
+                    name: '💥 Buckshot Rage',
+                    desc: '+30% Shotgun damage & +1 pellet per shot',
+                    apply: () => { 
+                        gameState.runPerks.shotgunDmgMod = (gameState.runPerks.shotgunDmgMod || 1.0) * 1.3; 
+                        gameState.runPerks.shotgunPellets = (gameState.runPerks.shotgunPellets || 0) + 1; 
+                    }
+                },
+                {
+                    id: 'scavenger',
+                    name: '🎒 Hoarder',
+                    desc: '+50% items & ammo from world loot piles',
+                    apply: () => { gameState.runPerks.lootDropMod = (gameState.runPerks.lootDropMod || 1.0) * 1.5; }
+                },
+                {
+                    id: 'piercing',
+                    name: '☠️ Piercing Rounds',
+                    desc: 'Your bullets pierce through 1 additional enemy',
+                    apply: () => { gameState.runPerks.piercingCount = (gameState.runPerks.piercingCount || 0) + 1; }
                 }
             ];
             
@@ -4457,6 +4434,27 @@
                 ctx.fillRect(6, 16, 20, 3);
             });
             
+            // 5b. Raider face (Gasmask - black rubber mask, orange glowing round visor lenses)
+            let raiderFaceTex = createPixelTexture(32, 32, '#1a1c1e', 4, (ctx, w, h) => {
+                ctx.fillStyle = '#0a0a0b'; // mask lines
+                ctx.fillRect(4, 18, 24, 10);
+                
+                // Orange visor lenses
+                ctx.fillStyle = '#ea580c';
+                ctx.beginPath();
+                ctx.arc(8, 12, 4.5, 0, Math.PI * 2);
+                ctx.arc(24, 12, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#ffedd5'; // specular highlight glint
+                ctx.fillRect(7, 10, 2, 2);
+                ctx.fillRect(23, 10, 2, 2);
+                
+                // Gas mask canister
+                ctx.fillStyle = '#374151';
+                ctx.fillRect(12, 17, 8, 9);
+            });
+            
             // 6. Brick wall textures (dirty concrete and faded caution stripes)
             let wallTex = createPixelTexture(32, 32, '#42454a', 8, (ctx, w, h) => {
                 ctx.fillStyle = '#8c732b'; // Faded caution yellow
@@ -4673,6 +4671,7 @@
             materials.zombieFatTorso = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#2e3a1f', 12), roughness: 0.85 });
             
             materials.raiderArmor = new THREE.MeshStandardMaterial({ map: raiderTorsoTex, roughness: 0.5, metalness: 0.5 });
+            materials.raiderSkinFace = new THREE.MeshStandardMaterial({ map: raiderFaceTex, roughness: 0.5 });
             materials.mutantBody = new THREE.MeshStandardMaterial({ map: mutantSkinTex, roughness: 0.9, metalness: 0.1 });
             materials.bossMetal = new THREE.MeshStandardMaterial({ map: bossMetalTex, roughness: 0.45, metalness: 0.75 });
             materials.redGlow = new THREE.MeshBasicMaterial({ color: 0xef4444 });
@@ -4957,10 +4956,10 @@
             if (isFat) scale = 1.6;
             
             // Materials definition based on type
-            let torsoMat = isEnemy ? (isFat ? materials.zombieSkin : materials.zombieTorso) : materials.playerTorso;
-            if (isEnemy && skinColor === 0x475569) torsoMat = materials.raiderArmor; // Raider
+            let isRaider = (isEnemy && legsColor === 0x475569);
+            let torsoMat = isEnemy ? (isFat ? materials.zombieSkin : (isRaider ? materials.raiderArmor : materials.zombieTorso)) : materials.playerTorso;
             
-            let skinMat = isEnemy ? (isFast ? materials.zombieFastSkin : materials.zombieSkin) : materials.playerSkinTextured;
+            let skinMat = (isEnemy && !isRaider) ? (isFast ? materials.zombieFastSkin : materials.zombieSkin) : materials.playerSkinTextured;
             
             let legsMat = materials.playerLegs;
             
@@ -4985,7 +4984,7 @@
             
             // Head (Box) with Face on Front Face only (Array of 6 materials)
             let headGeo = new THREE.BoxGeometry(0.55 * scale, 0.55 * scale, 0.55 * scale);
-            let faceMaterial = isEnemy ? materials.zombieSkinFace : materials.playerSkinFace;
+            let faceMaterial = isEnemy ? (isRaider ? materials.raiderSkinFace : materials.zombieSkinFace) : materials.playerSkinFace;
             let headSkinMaterial = skinMat;
             
             let headMaterials = [
@@ -5044,19 +5043,19 @@
                 let gunMat = new THREE.MeshLambertMaterial({ color: 0x1f2937 });
                 let gun = new THREE.Mesh(gunGeo, gunMat);
                 // Position gun at the hand level (bottom of arm, extending forward)
-                gun.position.set(0, -0.45 * scale, 0.3 * scale);
+                gun.position.set(0, -0.7 * scale, 0.05 * scale);
                 gun.rotation.x = Math.PI / 2.0; // Align gun to point forward along the arm
                 armR.add(gun); // Gun is child of Right Arm!
                 group.userData.gun = gun;
                 
                 // Set initial pointing forward
                 armR.rotation.x = -Math.PI / 2.0;
-            } else if (isEnemy && skinColor === 0x475569) {
+            } else if (isRaider) {
                 // Raider Gun (child of Right Arm as well)
                 let gunGeo = new THREE.BoxGeometry(0.12, 0.12, 0.85);
                 let gunMat = new THREE.MeshLambertMaterial({ color: 0x1f2937 });
                 let gun = new THREE.Mesh(gunGeo, gunMat);
-                gun.position.set(0, -0.45 * scale, 0.3 * scale);
+                gun.position.set(0, -0.7 * scale, 0.05 * scale);
                 gun.rotation.x = Math.PI / 2.0;
                 armR.add(gun);
                 
@@ -5189,7 +5188,11 @@
         function getWeaponCooldown(type) {
             let base = (type === 'pistol') ? 350 : (type === 'rifle') ? 140 : 850;
             let perksMod = (gameState.runPerks && gameState.runPerks.fireRateMod !== undefined) ? gameState.runPerks.fireRateMod : 1.0;
-            return base * (1 - gameState.skills.agility * 0.08) * perksMod;
+            let cooldown = base * (1 - gameState.skills.agility * 0.08) * perksMod;
+            if (type === 'pistol' && gameState.runPerks.pistolRateMod) {
+                cooldown *= gameState.runPerks.pistolRateMod;
+            }
+            return cooldown;
         }
 
         // Dodge-dash: a short, fast burst in the current movement (or facing) direction that
@@ -5215,7 +5218,8 @@
             dashDir.normalize();
 
             dashActiveUntil = now + DASH_DURATION;
-            dashReadyAt = now + DASH_COOLDOWN;
+            let cooldownMod = (gameState.runPerks && gameState.runPerks.dashCooldownMod) ? gameState.runPerks.dashCooldownMod : 1.0;
+            dashReadyAt = now + DASH_COOLDOWN * cooldownMod;
             screenShake = Math.min(1.2, screenShake + 0.18);
             if (sound.playDash) sound.playDash();
 
@@ -5286,15 +5290,19 @@
             }
             
             if (currentActiveWeapon === 'shotgun') {
-                // Shoot 5 spread pellets
-                for (let i = 0; i < 5; i++) {
-                    let spreadDir = bulletDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), (i - 2) * 0.09 + THREE.MathUtils.randFloat(-0.02, 0.02));
+                // Shoot spread pellets (plus any extra bonus from Buckshot Rage perk)
+                let pelletCount = 5 + (gameState.runPerks.shotgunPellets || 0);
+                let halfIndex = (pelletCount - 1) / 2;
+                for (let i = 0; i < pelletCount; i++) {
+                    let spreadDir = bulletDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), (i - halfIndex) * 0.09 + THREE.MathUtils.randFloat(-0.02, 0.02));
                     spawnBulletMesh(spawnPos, spreadDir, getWeaponDamage('shotgun'), 400);
                 }
             } else {
                 let spreadDir = bulletDir.clone();
                 if (currentActiveWeapon === 'rifle') {
-                    spreadDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.randFloat(-0.05, 0.05));
+                    // Commando perk reduces spread range by 40%
+                    let spreadRange = 0.05 * (gameState.runPerks.rifleAccuracyMod || 1.0);
+                    spreadDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.randFloat(-spreadRange, spreadRange));
                 }
                 spawnBulletMesh(spawnPos, spreadDir, getWeaponDamage(currentActiveWeapon), 800);
             }
@@ -5307,7 +5315,7 @@
             b.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(pos, pos.clone().add(dir), new THREE.Vector3(0, 1, 0)));
             scene.add(b);
             
-            b.userData.velocity = dir.clone().multiplyScalar(15.0);
+            b.userData.velocity = dir.clone().multiplyScalar(15.0 * (gameState.runPerks.bulletSpeedMod || 1.0));
             b.userData.damage = dmg;
             b.userData.spawnTime = Date.now();
             b.userData.lifeTime = lifeTimeMs;
@@ -5316,17 +5324,23 @@
             bullets.push(b);
         }
         
-        function spawnEnemyBullet(pos, dir, dmg) {
+        function spawnEnemyBullet(pos, dir, dmg, isAcid = false) {
             if (!scene) return; // Safety guard
-            let b = new THREE.Mesh(enemyBulletGeo, enemyBulletMat);
+            let b;
+            if (isAcid) {
+                b = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.22), new THREE.MeshBasicMaterial({ color: 0x84cc16 }));
+                b.userData.isAcid = true;
+            } else {
+                b = new THREE.Mesh(enemyBulletGeo, enemyBulletMat);
+            }
             b.position.copy(pos);
             b.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(pos, pos.clone().add(dir), new THREE.Vector3(0, 1, 0)));
             scene.add(b);
             
-            b.userData.velocity = dir.clone().multiplyScalar(10.0);
+            b.userData.velocity = dir.clone().multiplyScalar(isAcid ? 8.0 : 10.0);
             b.userData.damage = dmg;
             b.userData.spawnTime = Date.now();
-            b.userData.lifeTime = 900;
+            b.userData.lifeTime = isAcid ? 1200 : 900;
             b.userData.isEnemy = true;
             
             bullets.push(b);
@@ -6560,8 +6574,8 @@
                     if (found) {
                         // Mix in different enemy types for variety!
                         let finalType = eType;
-                        if (eType !== 'boss' && Math.random() < 0.25) {
-                            let choices = ['zombie', 'zombie_fast', 'zombie_fat'];
+                        if (eType !== 'boss' && Math.random() < 0.35) {
+                            let choices = ['zombie', 'zombie_fast', 'zombie_fat', 'zombie_slime', 'zombie_acid', 'zombie_bomber'];
                             if (loc.theme === 'city' || loc.theme === 'asphalt') {
                                 choices.push('raider');
                             }
@@ -6630,10 +6644,7 @@
                 scene.add(slab);
                 slab.updateMatrixWorld(true);
                 
-                // If it is thick/large enough, make it a minor physical obstacle!
-                if (size > 1.8) {
-                    colliders.push(new THREE.Box3().setFromObject(slab));
-                }
+                // Slabs are now walk-through visuals (no colliders) as requested
             }
             
             // Initial blood splatters on ground (old combat traces)
@@ -7131,6 +7142,39 @@
             colliders.push(bGroup.userData.box);
         }
         
+        function explodeBarrel(barrel) {
+            if (!scene) return;
+            sound.playDeath();
+            
+            // Spawn huge ring of green/yellow toxic sparks
+            spawnBoxSparks(barrel.position, 0x84cc16, 30, 0.3);
+            spawnBoxSparks(barrel.position, 0xeab308, 15, 0.2);
+            
+            // Damage player if nearby and not dashing (respects i-frames)
+            let pDist = playerGroup.position.distanceTo(barrel.position);
+            if (pDist < 4.0 && Date.now() > dashActiveUntil) {
+                let dmg = Math.round(45 * (1.0 - pDist / 4.0));
+                damagePlayer(dmg, "a barrel explosion");
+                addLogMessage(`💥 You caught in a toxic barrel blast! Damage: ${dmg} HP`, "danger");
+            }
+            
+            // Damage surrounding enemies
+            for (let e of enemies) {
+                let eDist = e.position.distanceTo(barrel.position);
+                if (eDist < 4.0) {
+                    let dmg = Math.round(65 * (1.0 - eDist / 4.0));
+                    e.userData.hp -= dmg;
+                    activeGameScene.flashSprite(e, 0xa3e635, 110);
+                    if (e.userData.hp <= 0) {
+                        killEnemy(e);
+                    }
+                    addLogMessage(`💥 Barrel blast dealt ${dmg} damage to enemy!`, "system");
+                }
+            }
+            
+            scene.remove(barrel);
+        }
+        
         function spawn3DEnemy(x, z, type) {
             if (!scene) return; // Safety guard
             let enemy;
@@ -7144,6 +7188,23 @@
             } else if (type === 'zombie_fat') {
                 enemy = createRobloxCharacter(0x3f491c, 0x4d7c0f, 0x1c1917, true, false, true);
                 enemy.userData.hp = 240; enemy.userData.speed = 1.3; enemy.userData.dmg = 15;
+            } else if (type === 'zombie_slime') {
+                enemy = createRobloxCharacter(0x84cc16, 0xa3e635, 0x4d7c0f, true);
+                enemy.scale.set(1.1, 0.7, 1.1); // Squashed slime look!
+                enemy.userData.hp = 120; enemy.userData.speed = 1.1; enemy.userData.dmg = 12;
+            } else if (type === 'zombie_acid') {
+                enemy = createRobloxCharacter(0xca8a04, 0xfacc15, 0x713f12, true);
+                enemy.userData.hp = 90; enemy.userData.speed = 1.8; enemy.userData.dmg = 6;
+                enemy.userData.lastSpit = 0;
+            } else if (type === 'zombie_bomber') {
+                enemy = createRobloxCharacter(0xd97706, 0xef4444, 0x1e293b, true, true); // Fast runner body
+                enemy.userData.hp = 50; enemy.userData.speed = 3.9; enemy.userData.dmg = 35; // high explosion damage!
+                
+                // Add a glowing red dynamite pack on their torso!
+                let pack = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.4, 0.25), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+                pack.position.set(0, 0.1, 0.22);
+                enemy.userData.torso.add(pack);
+                enemy.userData.bombPack = pack;
             } else if (type === 'raider') {
                 enemy = createRobloxCharacter(0x334155, 0xffdbac, 0x475569, true); // Raider camo
                 enemy.userData.hp = 110; enemy.userData.speed = 2.3; enemy.userData.dmg = 8;
@@ -7727,8 +7788,29 @@
                         }
                         
                         if (!collided) {
-                            // Check hit targets
-                            if (!b.userData.isEnemy) {
+                            // Check hit harvestables (barrels) first, common to all bullets
+                            let hitBarrel = false;
+                            for (let j = harvestables.length - 1; j >= 0; j--) {
+                                let h = harvestables[j];
+                                if (h.userData.type === 'barrel') {
+                                    let dx = b.position.x - h.position.x;
+                                    let dz = b.position.z - h.position.z;
+                                    let distXZ = Math.sqrt(dx * dx + dz * dz);
+                                    if (distXZ < 0.65) {
+                                        collided = true;
+                                        hitBarrel = true;
+                                        explodeBarrel(h);
+                                        harvestables.splice(j, 1);
+                                        let cIdx = colliders.indexOf(h.userData.box);
+                                        if (cIdx !== -1) colliders.splice(cIdx, 1);
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if (hitBarrel) {
+                                // Handled, skip further checks
+                            } else if (!b.userData.isEnemy) {
                                 // Hit enemies
                                 for (let j = enemies.length - 1; j >= 0; j--) {
                                     let e = enemies[j];
@@ -7737,8 +7819,9 @@
                                     let distXZ = Math.sqrt(dx * dx + dz * dz);
                                     let hitRadius = (e.userData.type === 'boss') ? 1.8 : 0.7;
                                     if (distXZ < hitRadius) {
-                                        // Hit enemy! Roll for a critical hit (chance scales with Agility).
-                                        let critChance = Math.min(0.5, 0.12 + gameState.skills.agility * 0.03);
+                                        // Hit enemy! Roll for a critical hit (chance scales with Agility and Sharpshooter perk).
+                                        let bonusCrit = (gameState.runPerks && gameState.runPerks.critChanceBonus) ? gameState.runPerks.critChanceBonus : 0;
+                                        let critChance = Math.min(0.75, 0.12 + gameState.skills.agility * 0.03 + bonusCrit);
                                         let isCrit = Math.random() < critChance;
                                         let dmg = isCrit ? Math.round(b.userData.damage * 2.2) : b.userData.damage;
 
@@ -7756,11 +7839,20 @@
                                         spawnBloodDecal(e.position.x, e.position.z);
                                         e.userData.hp -= dmg;
 
-
                                         // Flash enemy mesh
                                         activeGameScene.flashSprite(e, isCrit ? 0xfde047 : 0xff3333, isCrit ? 120 : 85);
 
-                                        collided = true;
+                                        // Piercing Rounds perk: allow bullets to pierce through enemies
+                                        let maxPierce = (gameState.runPerks && gameState.runPerks.piercingCount) ? gameState.runPerks.piercingCount : 0;
+                                        if (!b.userData.pierceCount) b.userData.pierceCount = 0;
+                                        
+                                        if (b.userData.pierceCount < maxPierce) {
+                                            b.userData.pierceCount++;
+                                            // Bullet keeps going, do not set collided = true
+                                        } else {
+                                            collided = true;
+                                        }
+                                        
                                         if (e.userData.hp <= 0) {
                                             killEnemy(e);
                                         }
@@ -7774,10 +7866,15 @@
                                 let distXZ = Math.sqrt(dx * dx + dz * dz);
                                 if (distXZ < 0.65) {
                                     collided = true;
-                                    damagePlayer(b.userData.damage, "a raider attack");
-                                    spawnBoxSparks(b.position, 0xd90429, 6, 0.1);
+                                    let isAcid = b.userData.isAcid;
+                                    let source = isAcid ? "acid spit" : (b.userData.isPlasma ? "plasma blast" : "a raider attack");
+                                    damagePlayer(b.userData.damage, source);
+                                    spawnBoxSparks(b.position, isAcid ? 0x84cc16 : 0xd90429, 6, 0.1);
                                     spawnBloodDecal(playerGroup.position.x, playerGroup.position.z);
-                                    addLogMessage(`⚠️ A raider hit you! Damage: ${b.userData.damage} HP`, "danger");
+                                    
+                                    let msg = isAcid ? `⚠️ Acid spit hit you! Damage: ${b.userData.damage} HP` : 
+                                              (b.userData.isPlasma ? `⚠️ Plasma blast hit you! Damage: ${b.userData.damage} HP` : `⚠️ A raider hit you! Damage: ${b.userData.damage} HP`);
+                                    addLogMessage(msg, "danger");
                                 }
                             }
                         }
@@ -8064,19 +8161,109 @@
                 e.rotation.y = angle;
                 
                 // Walk limbs animations
+                // Walk limbs animations
                 if (e.userData.type.startsWith('zombie')) {
                     if (dist < 10.0) {
                         checkTutorial('enemy', '🧟 Danger close!', 'A zombie is running at you! Select a weapon with 1-3 and shoot.', '🧟');
                     }
-                    if (true) {
-                        // Move straight to player
+                    
+                    // Bomber zombie explosion check
+                    if (e.userData.type === 'zombie_bomber') {
+                        // Flash dynamite pack
+                        let flash = (Math.floor(Date.now() / 150) % 2 === 0);
+                        if (e.userData.bombPack && e.userData.bombPack.material) {
+                            e.userData.bombPack.material.color.setHex(flash ? 0xffffff : 0xef4444);
+                        }
+                        
+                        if (dist < 1.3) {
+                            // EXPLODE!
+                            sound.playDeath();
+                            spawnBoxSparks(e.position, 0xf97316, 25, 0.25);
+                            spawnBoxSparks(e.position, 0xef4444, 25, 0.35);
+                            
+                            damagePlayer(e.userData.dmg, "a bomber zombie explosion");
+                            addLogMessage(`💥 A bomber zombie exploded! Damage: ${e.userData.dmg} HP`, "danger");
+                            
+                            // Damage surrounding enemies
+                            for (let other of enemies) {
+                                if (other !== e) {
+                                    let odist = other.position.distanceTo(e.position);
+                                    if (odist < 3.5) {
+                                        let odmg = Math.round(50 * (1.0 - odist / 3.5));
+                                        other.userData.hp -= odmg;
+                                        activeGameScene.flashSprite(other, 0xff3333, 90);
+                                        if (other.userData.hp <= 0) {
+                                            killEnemy(other);
+                                        }
+                                        addLogMessage(`Explosion damaged nearby monster for ${odmg} HP!`, "system");
+                                    }
+                                }
+                            }
+                            
+                            e.userData.hp = -999;
+                            killEnemy(e);
+                            continue;
+                        }
+                    }
+                    
+                    // Acid spitting zombie distance check
+                    let isAcidSpitter = (e.userData.type === 'zombie_acid');
+                    
+                    if (isAcidSpitter) {
+                        // Acid Spitter positioning (keep range)
+                        let walkDir = 0;
+                        if (dist > 11.0) walkDir = 1; // get closer
+                        else if (dist < 6.0) walkDir = -1; // back off
+                        
+                        if (walkDir !== 0) {
+                            let speed = e.userData.speed * walkDir;
+                            let nextX = e.position.x + Math.sin(angle) * speed * dt;
+                            let nextZ = e.position.z + Math.cos(angle) * speed * dt;
+                            
+                            // Collision check
+                            _scratchBoxMin.set(nextX - 0.35, 0.05, nextZ - 0.35);
+                            _scratchBoxMax.set(nextX + 0.35, 1.8, nextZ + 0.35);
+                            _scratchColBox.set(_scratchBoxMin, _scratchBoxMax);
+                            let collided = false;
+                            for (let col of colliders) {
+                                if (_scratchColBox.intersectsBox(col)) { collided = true; break; }
+                            }
+                            if (!collided) e.position.set(nextX, 0, nextZ);
+                            
+                            let t = Date.now() * 0.01;
+                            e.userData.legL.rotation.x = Math.sin(t) * 0.5;
+                            e.userData.legR.rotation.x = -Math.sin(t) * 0.5;
+                            e.userData.armL.rotation.x = -Math.PI / 3.0;
+                            e.userData.armR.rotation.x = -Math.PI / 3.0;
+                        } else {
+                            e.userData.legL.rotation.x = 0;
+                            e.userData.legR.rotation.x = 0;
+                            e.userData.armL.rotation.x = -Math.PI / 2.5;
+                            e.userData.armR.rotation.x = -Math.PI / 2.5;
+                        }
+                        
+                        let now = Date.now();
+                        if (now > e.userData.lastSpit + 1600 && dist < 13.0) {
+                            e.userData.lastSpit = now;
+                            let spitDir = playerGroup.position.clone().sub(e.position).normalize();
+                            spawnEnemyBullet(e.position.clone().add(new THREE.Vector3(0, 1.2, 0)), spitDir, 12, true);
+                            sound.playHit();
+                        }
+                    } else {
+                        // Standard / Fast / Fat / Slime / Bomber movement (directly towards player)
                         let stepX = Math.sin(angle) * e.userData.speed * dt;
                         let stepZ = Math.cos(angle) * e.userData.speed * dt;
                         
                         let nextX = e.position.x + stepX;
                         let nextZ = e.position.z + stepZ;
                         
-                        // Voxel collision sliding
+                        // Slime trail effect
+                        if (e.userData.type === 'zombie_slime' && Math.random() < 0.15) {
+                            let trailPos = e.position.clone();
+                            trailPos.y = 0.05;
+                            spawnBoxSparks(trailPos, 0x84cc16, 2, 0.15);
+                        }
+                        
                         _scratchBoxMin.set(nextX - 0.35, 0.05, nextZ - 0.35);
                         _scratchBoxMax.set(nextX + 0.35, 1.8, nextZ + 0.35);
                         _scratchColBox.set(_scratchBoxMin, _scratchBoxMax);
@@ -8085,7 +8272,6 @@
                             if (_scratchColBox.intersectsBox(col)) { collided = true; break; }
                         }
                         if (!collided) {
-                            // Prevent zombie overlapping player - maintain 0.8 units distance
                             let targetDist = 0.8;
                             _scratchNextPos.set(nextX, 0, nextZ);
                             if (_scratchNextPos.distanceTo(playerGroup.position) >= targetDist) {
@@ -8100,40 +8286,40 @@
                             }
                         }
                         
-                        // Positional zombie growls when chasing the player
-                        if (e.userData.type.startsWith('zombie') && e.userData.state === 'aggro') {
-                            if (!e.userData.lastGrowlTime || Date.now() > e.userData.lastGrowlTime + THREE.MathUtils.randFloat(4500, 9500)) {
-                                let vol = Math.max(0, 1.0 - dist / 15.0);
-                                if (vol > 0) sound.playZombieGrowl(vol);
-                                e.userData.lastGrowlTime = Date.now();
-                            }
-                        }
-                        
-                        // Separation between zombies to prevent them from merging into one box
-                        for (let k = 0; k < enemies.length; k++) {
-                            if (e !== enemies[k] && enemies[k].userData.type.startsWith('zombie')) {
-                                let edist = e.position.distanceTo(enemies[k].position);
-                                if (edist < 0.75) {
-                                    _scratchPushDir.copy(e.position).sub(enemies[k].position);
-                                    _scratchPushDir.y = 0;
-                                    if (_scratchPushDir.lengthSq() < 0.01) _scratchPushDir.set(Math.random()-0.5, 0, Math.random()-0.5);
-                                    _scratchPushDir.normalize().multiplyScalar(0.25 * dt); // push apart gently
-                                    e.position.add(_scratchPushDir);
-                                    enemies[k].position.sub(_scratchPushDir);
-                                }
-                            }
-                        }
-                        
                         // Swing limbs
                         let t = Date.now() * 0.012;
-                        e.userData.legL.rotation.x = Math.sin(t) * 0.65;
-                        e.userData.legR.rotation.x = -Math.sin(t) * 0.65;
-                        e.userData.armL.rotation.x = -Math.PI / 2.2;
-                        e.userData.armR.rotation.x = -Math.PI / 2.2;
+                        if (e.userData.legL) e.userData.legL.rotation.x = Math.sin(t) * 0.65;
+                        if (e.userData.legR) e.userData.legR.rotation.x = -Math.sin(t) * 0.65;
+                        if (e.userData.armL) e.userData.armL.rotation.x = -Math.PI / 2.2;
+                        if (e.userData.armR) e.userData.armR.rotation.x = -Math.PI / 2.2;
                     }
                     
-                    // Attack player
-                    if (dist < 1.0) {
+                    // Growls
+                    if (e.userData.state === 'aggro') {
+                        if (!e.userData.lastGrowlTime || Date.now() > e.userData.lastGrowlTime + THREE.MathUtils.randFloat(4500, 9500)) {
+                            let vol = Math.max(0, 1.0 - dist / 15.0);
+                            if (vol > 0) sound.playZombieGrowl(vol);
+                            e.userData.lastGrowlTime = Date.now();
+                        }
+                    }
+                    
+                    // Separation push
+                    for (let k = 0; k < enemies.length; k++) {
+                        if (e !== enemies[k] && enemies[k].userData.type.startsWith('zombie')) {
+                            let edist = e.position.distanceTo(enemies[k].position);
+                            if (edist < 0.75) {
+                                _scratchPushDir.copy(e.position).sub(enemies[k].position);
+                                _scratchPushDir.y = 0;
+                                if (_scratchPushDir.lengthSq() < 0.01) _scratchPushDir.set(Math.random()-0.5, 0, Math.random()-0.5);
+                                _scratchPushDir.normalize().multiplyScalar(0.25 * dt);
+                                e.position.add(_scratchPushDir);
+                                enemies[k].position.sub(_scratchPushDir);
+                            }
+                        }
+                    }
+                    
+                    // Attack player (melee only, exclude spitting acid)
+                    if (dist < 1.0 && !isAcidSpitter) {
                         let now = Date.now();
                         if (now > e.userData.lastAttack + 1200) {
                             e.userData.lastAttack = now;
@@ -8276,7 +8462,12 @@
                 if (dist < 1.2) {
                     // Pickup loot!
                     let type = loot.userData.type;
-                    let amount = 1;
+                    let mult = (gameState.runPerks && gameState.runPerks.lootDropMod) ? gameState.runPerks.lootDropMod : 1.0;
+                    let amount = Math.round(1 * mult);
+                    let ammoPistol = Math.round(20 * mult);
+                    let ammoRifle = Math.round(30 * mult);
+                    let ammoShotgun = Math.round(6 * mult);
+                    let filterAmt = Math.round(45 * mult);
                     
                     if (type === 'wood') {
                         let cap = getMaxWoodCapacity();
@@ -8284,28 +8475,28 @@
                             addLogMessage(`Trunk is full!`, "warning");
                             continue;
                         }
-                        gameState.inventory.wood++;
-                        addLogMessage("+1 Gasoline", "system");
+                        gameState.inventory.wood = Math.min(cap, gameState.inventory.wood + amount);
+                        addLogMessage(`+${amount} Gasoline`, "system");
                     } else if (type === 'food') {
-                        gameState.inventory.food++;
-                        addLogMessage("+1 Canned Food", "system");
+                        gameState.inventory.food += amount;
+                        addLogMessage(`+${amount} Canned Food`, "system");
                     } else if (type === 'water') {
-                        gameState.inventory.water++;
-                        addLogMessage("+1 Clean Water", "system");
+                        gameState.inventory.water += amount;
+                        addLogMessage(`+${amount} Clean Water`, "system");
                     } else if (type === 'ammo') {
-                        gameState.inventory.ammo_pistol += 20;
-                        gameState.inventory.ammo_rifle += 30;
-                        gameState.inventory.ammo_shotgun += 6;
-                        addLogMessage("+Ammo of all calibers!", "system");
+                        gameState.inventory.ammo_pistol += ammoPistol;
+                        gameState.inventory.ammo_rifle += ammoRifle;
+                        gameState.inventory.ammo_shotgun += ammoShotgun;
+                        addLogMessage(`+Ammo (P:${ammoPistol}, R:${ammoRifle}, S:${ammoShotgun})`, "system");
                     } else if (type === 'medkit') {
-                        gameState.inventory.medkit++;
-                        addLogMessage("+1 Military Medkit", "system");
+                        gameState.inventory.medkit += amount;
+                        addLogMessage(`+${amount} Military Medkit`, "system");
                     } else if (type === 'gasmask') {
-                        gameState.inventory.gasmask = Math.min(100, gameState.inventory.gasmask + 45);
-                        addLogMessage("+45% Filter gas mask", "system");
+                        gameState.inventory.gasmask = Math.min(100, gameState.inventory.gasmask + filterAmt);
+                        addLogMessage(`+${filterAmt}% Filter gas mask`, "system");
                     } else if (type === 'scrap') {
-                        gameState.inventory.scrap++;
-                        addLogMessage("+1 Scrap parts", "system");
+                        gameState.inventory.scrap += amount;
+                        addLogMessage(`+${amount} Scrap parts`, "system");
                     }
                     
                     sound.playCollect();

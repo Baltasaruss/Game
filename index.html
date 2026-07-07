@@ -2172,7 +2172,7 @@
             constructor() {
                 this.ctx = null;
                 this.masterGain = null;
-                this.volume = 0.4;
+                this.volume = 0.85;
             }
 
             init() {
@@ -2397,7 +2397,7 @@
                 filter.frequency.setValueAtTime(140, t);
                 
                 let gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.045, t);
+                gain.gain.setValueAtTime(0.24, t); // Louder footsteps!
                 gain.gain.linearRampToValueAtTime(0.001, t + 0.035);
                 
                 noise.connect(filter);
@@ -2459,48 +2459,96 @@
                 osc.stop(t + 0.14);
             }
 
-            // Процедурный такт фоновой музыки
-            playMusicBeat(freq) {
+            // Процедурный такт фоновой музыки (Динамичный техно-арпеджиатор с ударными!)
+            playMusicBeat(step, freq) {
                 this.init();
                 if (!this.ctx) return;
                 let t = this.ctx.currentTime;
                 
+                // 1. Synth Bass (sawtooth arpeggiator)
                 let osc = this.ctx.createOscillator();
                 let gain = this.ctx.createGain();
-                osc.type = 'triangle';
+                osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(freq, t);
                 
-                gain.gain.setValueAtTime(0.055, t);
-                gain.gain.linearRampToValueAtTime(0.001, t + 0.28);
+                let filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(260, t);
                 
-                osc.connect(gain);
+                gain.gain.setValueAtTime(0.24, t);
+                gain.gain.linearRampToValueAtTime(0.001, t + 0.13);
+                
+                osc.connect(filter);
+                filter.connect(gain);
                 gain.connect(this.masterGain);
                 osc.start(t);
-                osc.stop(t + 0.28);
+                osc.stop(t + 0.14);
                 
-                // Хай-хэты на фоне для ритма
-                if (Math.random() < 0.4) {
-                    let bufferSize = this.ctx.sampleRate * 0.015;
+                // 2. Kick Drum (fat bass punch on beats 0, 4, 8...)
+                if (step % 4 === 0) {
+                    let kick = this.ctx.createOscillator();
+                    let kickGain = this.ctx.createGain();
+                    kick.type = 'sine';
+                    kick.frequency.setValueAtTime(140, t);
+                    kick.frequency.linearRampToValueAtTime(45, t + 0.11);
+                    
+                    kickGain.gain.setValueAtTime(0.65, t);
+                    kickGain.gain.linearRampToValueAtTime(0.001, t + 0.11);
+                    
+                    kick.connect(kickGain);
+                    kickGain.connect(this.masterGain);
+                    kick.start(t);
+                    kick.stop(t + 0.12);
+                }
+                
+                // 3. Snare Drum (snare crack on beats 2, 6, 10...)
+                if (step % 4 === 2) {
+                    let bufferSize = this.ctx.sampleRate * 0.07;
                     let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                     let data = buffer.getChannelData(0);
                     for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
                     
-                    let src = this.ctx.createBufferSource();
-                    src.buffer = buffer;
+                    let noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
                     
-                    let hiFilter = this.ctx.createBiquadFilter();
-                    hiFilter.type = 'highpass';
-                    hiFilter.frequency.setValueAtTime(7500, t);
+                    let snareFilter = this.ctx.createBiquadFilter();
+                    snareFilter.type = 'bandpass';
+                    snareFilter.frequency.setValueAtTime(1100, t);
                     
-                    let hiGain = this.ctx.createGain();
-                    hiGain.gain.setValueAtTime(0.012, t);
-                    hiGain.gain.linearRampToValueAtTime(0.001, t + 0.015);
+                    let snareGain = this.ctx.createGain();
+                    snareGain.gain.setValueAtTime(0.28, t);
+                    snareGain.gain.linearRampToValueAtTime(0.001, t + 0.07);
                     
-                    src.connect(hiFilter);
-                    hiFilter.connect(hiGain);
-                    hiGain.connect(this.masterGain);
-                    src.start(t);
-                    src.stop(t + 0.015);
+                    noise.connect(snareFilter);
+                    snareFilter.connect(snareGain);
+                    snareGain.connect(this.masterGain);
+                    noise.start(t);
+                    noise.stop(t + 0.08);
+                }
+                
+                // 4. Hi-Hat (crisp offbeat click on steps 1, 3, 5...)
+                if (step % 2 === 1) {
+                    let bufferSize = this.ctx.sampleRate * 0.02;
+                    let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    let data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    
+                    let hat = this.ctx.createBufferSource();
+                    hat.buffer = buffer;
+                    
+                    let hatFilter = this.ctx.createBiquadFilter();
+                    hatFilter.type = 'highpass';
+                    hatFilter.frequency.setValueAtTime(8500, t);
+                    
+                    let hatGain = this.ctx.createGain();
+                    hatGain.gain.setValueAtTime(0.045, t);
+                    hatGain.gain.linearRampToValueAtTime(0.001, t + 0.02);
+                    
+                    hat.connect(hatFilter);
+                    hatFilter.connect(hatGain);
+                    hatGain.connect(this.masterGain);
+                    hat.start(t);
+                    hat.stop(t + 0.025);
                 }
             }
         }
@@ -3117,13 +3165,13 @@
         // Procedural background music controls
         function startMusic() {
             if (bgmTimer) clearInterval(bgmTimer);
-            let notes = [110, 110, 130, 110, 146, 130, 165, 110]; // cool dark post-apoc bassline
+            let notes = [55, 55, 65, 55, 73, 65, 82, 55]; // A1, A1, C2, A1, D2, C2, E2, A1 (low industrial bass)
             let step = 0;
             bgmTimer = setInterval(() => {
                 if (!gameActive || !scene) return;
-                sound.playMusicBeat(notes[step % notes.length]);
+                sound.playMusicBeat(step, notes[step % notes.length]);
                 step++;
-            }, 300); // 300ms per beat (~200 BPM)
+            }, 145); // Hyper fast-paced, high-tension beat!
         }
         
         function stopMusic() {
@@ -3136,11 +3184,11 @@
         // Spawn footprints flat on the ground
         function spawnFootprint(x, z, rotationY) {
             if (!scene) return;
-            let geo = new THREE.PlaneGeometry(0.18, 0.35);
+            let geo = new THREE.PlaneGeometry(0.24, 0.42); // slightly larger footprint
             let mat = new THREE.MeshBasicMaterial({
-                color: 0x1c1917, // dark stone grey
+                color: 0x06b6d4, // Glowing Cyberpunk Cyan!
                 transparent: true,
-                opacity: 0.45,
+                opacity: 0.75,
                 polygonOffset: true,
                 polygonOffsetFactor: -4,
                 polygonOffsetUnits: -4
@@ -6666,7 +6714,7 @@
 
             // Combo multiplier system
             let now = Date.now();
-            if (now - lastKillTime < 3200) { // 3.2 seconds window
+            if (now - lastKillTime < 6500) { // 6.5 seconds window (easier to chain combos!)
                 killCombo++;
                 if (killCombo >= 2) {
                     triggerComboEffect(killCombo);
@@ -7292,7 +7340,7 @@
                             footprints.splice(i, 1);
                         }
                     } else {
-                        fp.mesh.material.opacity = 0.45 * (1.0 - dist / 5.0);
+                        fp.mesh.material.opacity = 0.75 * (1.0 - dist / 5.0);
                     }
                 }
                 

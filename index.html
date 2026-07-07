@@ -2205,9 +2205,9 @@
                     let gain = this.ctx.createGain();
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(450, t);
-                    osc.frequency.exponentialRampToValueAtTime(60, t + 0.12);
+                    osc.frequency.linearRampToValueAtTime(60, t + 0.12);
                     gain.gain.setValueAtTime(0.3, t);
-                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+                    gain.gain.linearRampToValueAtTime(0.01, t + 0.12);
                     osc.connect(gain);
                     gain.connect(this.masterGain);
                     osc.start(t);
@@ -2230,7 +2230,7 @@
 
                     let gain = this.ctx.createGain();
                     gain.gain.setValueAtTime(0.35, t);
-                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+                    gain.gain.linearRampToValueAtTime(0.01, t + 0.08);
 
                     noise.connect(filter);
                     filter.connect(gain);
@@ -2246,9 +2246,9 @@
                         let gain = this.ctx.createGain();
                         osc.type = 'sawtooth';
                         osc.frequency.setValueAtTime(110 + i * 25, t + i * 0.005);
-                        osc.frequency.exponentialRampToValueAtTime(30, t + 0.25);
+                        osc.frequency.linearRampToValueAtTime(30, t + 0.25);
                         gain.gain.setValueAtTime(0.4, t + i * 0.005);
-                        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+                        gain.gain.linearRampToValueAtTime(0.01, t + 0.25);
                         osc.connect(gain);
                         gain.connect(this.masterGain);
                         osc.start(t + i * 0.005);
@@ -2286,7 +2286,7 @@
                 osc.frequency.setValueAtTime(320, t);
                 osc.frequency.setValueAtTime(640, t + 0.08);
                 gain.gain.setValueAtTime(0.15, t);
-                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+                gain.gain.linearRampToValueAtTime(0.01, t + 0.18);
                 osc.connect(gain);
                 gain.connect(this.masterGain);
                 osc.start(t);
@@ -2302,9 +2302,9 @@
                 let gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(80, t);
-                osc.frequency.exponentialRampToValueAtTime(20, t + 0.35);
+                osc.frequency.linearRampToValueAtTime(20, t + 0.35);
                 gain.gain.setValueAtTime(0.25, t);
-                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+                gain.gain.linearRampToValueAtTime(0.01, t + 0.35);
                 osc.connect(gain);
                 gain.connect(this.masterGain);
                 osc.start(t);
@@ -2331,7 +2331,7 @@
                 filter.frequency.setValueAtTime(180, t);
                 
                 gain.gain.setValueAtTime(0.25, t);
-                gain.gain.exponentialRampToValueAtTime(0.005, t + 0.3);
+                gain.gain.linearRampToValueAtTime(0.005, t + 0.3);
                 
                 osc.connect(filter);
                 filter.connect(gain);
@@ -2370,7 +2370,7 @@
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(f, t + idx * 0.06);
                     gain.gain.setValueAtTime(0.12, t + idx * 0.06);
-                    gain.gain.exponentialRampToValueAtTime(0.005, t + idx * 0.06 + 0.2);
+                    gain.gain.linearRampToValueAtTime(0.005, t + idx * 0.06 + 0.2);
                     osc.connect(gain);
                     gain.connect(this.masterGain);
                     osc.start(t + idx * 0.06);
@@ -2398,7 +2398,7 @@
                 
                 let gain = this.ctx.createGain();
                 gain.gain.setValueAtTime(0.045, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+                gain.gain.linearRampToValueAtTime(0.001, t + 0.035);
                 
                 noise.connect(filter);
                 filter.connect(gain);
@@ -2424,7 +2424,7 @@
                 filter.frequency.setValueAtTime(280, t);
                 
                 gain.gain.setValueAtTime(0.12 * volume, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+                gain.gain.linearRampToValueAtTime(0.001, t + 0.4);
                 
                 osc.connect(filter);
                 filter.connect(gain);
@@ -2449,7 +2449,7 @@
                 filter.frequency.setValueAtTime(90, t);
                 
                 gain.gain.setValueAtTime(0.08 * volume, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+                gain.gain.linearRampToValueAtTime(0.001, t + 0.14);
                 
                 osc.connect(filter);
                 filter.connect(gain);
@@ -2471,7 +2471,7 @@
                 osc.frequency.setValueAtTime(freq, t);
                 
                 gain.gain.setValueAtTime(0.055, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+                gain.gain.linearRampToValueAtTime(0.001, t + 0.28);
                 
                 osc.connect(gain);
                 gain.connect(this.masterGain);
@@ -2494,7 +2494,7 @@
                     
                     let hiGain = this.ctx.createGain();
                     hiGain.gain.setValueAtTime(0.012, t);
-                    hiGain.gain.exponentialRampToValueAtTime(0.001, t + 0.015);
+                    hiGain.gain.linearRampToValueAtTime(0.001, t + 0.015);
                     
                     src.connect(hiFilter);
                     hiFilter.connect(hiGain);
@@ -5034,6 +5034,9 @@
         function start3DGame() {
             gameActive = true;
             lastTime = Date.now();
+            
+            // On-screen diagnostic log to confirm the correct version of index.html is loaded
+            addLogMessage("🛠️ Движок 3D: активирован звук и следы!", "system");
             
             // Clear old scene items
             walls = [];

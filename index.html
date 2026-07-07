@@ -625,6 +625,33 @@
             border-radius: 4px;
         }
         
+        /* Round interactive button positioned centrally between the joysticks */
+        #btn-mobile-interact {
+            position: absolute !important;
+            bottom: 3.8rem !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 50px !important;
+            height: 50px !important;
+            border-radius: 50% !important;
+            background: rgba(15, 15, 20, 0.85) !important;
+            border: 2px solid rgba(255, 255, 255, 0.25) !important;
+            color: #fff !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.4rem !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6) !important;
+            z-index: 60 !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            transition: transform 0.1s ease, background 0.1s ease !important;
+        }
+        #btn-mobile-interact:active {
+            transform: translateX(-50%) scale(0.9) !important;
+            background: rgba(234, 88, 12, 0.9) !important; /* Orange active glow */
+        }
+        
         /* Locked weapon slots */
         .inv-slot.locked {
             opacity: 0.45 !important;
@@ -1699,24 +1726,13 @@
                 </div>
             </div>
 
-            <!-- Правые кнопки управления -->
-            <div id="mobile-action-buttons">
-                <!-- Кнопка Бега (Спринт) -->
-                <button id="btn-mobile-sprint" class="mobile-btn" style="display: none;">
-                    <span class="btn-icon">⚡</span>
-                    <span class="btn-lbl">Спринт</span>
-                </button>
-                <!-- Группа взаимодействия и стрельбы справа -->
-                <div style="display: flex; gap: 8px; pointer-events: none;">
-                    <button id="btn-mobile-interact" class="mobile-btn" style="pointer-events: auto;">
-                        <span class="btn-icon">⛽</span>
-                        <span class="btn-lbl">Сбор/Вход</span>
-                    </button>
-                    <button id="btn-mobile-fire" class="mobile-btn" style="display: none; pointer-events: auto;">
-                        <span class="btn-icon">🎯</span>
-                        <span class="btn-lbl">Огонь</span>
-                    </button>
-                </div>
+            <!-- Кнопка Взаимодействия (Круглая иконка по центру между стиками) -->
+            <button id="btn-mobile-interact" class="mobile-btn">⛽</button>
+
+            <!-- Скрытые старые элементы во избежание JS ошибок при поиске элементов в коде -->
+            <div id="mobile-action-buttons" style="display: none !important;">
+                <button id="btn-mobile-sprint"></button>
+                <button id="btn-mobile-fire"></button>
             </div>
             
             <!-- Правый джойстик (Стрельба и Прицеливание) -->
@@ -3403,6 +3419,7 @@
         
         // Timing
         let lastTime = 0;
+        let playerAnimProgress = 0; // Accumulator for smooth player walking/sprinting animations
         let lastFireTime = 0;
         // currentActiveWeapon объявлена глобально выше
         
@@ -6333,11 +6350,12 @@
                         playerGroup.position.z = nextZ;
                     }
                     
-                    // Animate leg swinging
-                    let animTime = Date.now() * 0.012 * (isSprinting ? 1.6 : 1.0);
-                    playerGroup.userData.legL.rotation.x = Math.sin(animTime) * 0.65;
-                    playerGroup.userData.legR.rotation.x = -Math.sin(animTime) * 0.65;
-                    playerGroup.userData.armL.rotation.x = -Math.sin(animTime) * 0.6;
+                    // Animate leg swinging using continuous accumulator to prevent jump glitches and crazy vibration
+                    let animSpeed = isSprinting ? 9.5 : 5.8; // Smooth, natural speeds (sprint is ~1.6x walk cycle speed)
+                    playerAnimProgress += animSpeed * dt;
+                    playerGroup.userData.legL.rotation.x = Math.sin(playerAnimProgress) * 0.65;
+                    playerGroup.userData.legR.rotation.x = -Math.sin(playerAnimProgress) * 0.65;
+                    playerGroup.userData.armL.rotation.x = -Math.sin(playerAnimProgress) * 0.6;
                     // Рука с оружием направлена вперед при ходьбе
                     playerGroup.userData.armR.rotation.x = -Math.PI / 2.0;
                     

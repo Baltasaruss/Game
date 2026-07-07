@@ -4348,6 +4348,16 @@
             group.add(torso);
             group.userData.torso = torso;
             
+            // Cyberpunk emissive back-stripe for player (glowing neon battery cell)
+            if (!isEnemy) {
+                let glowGeo = new THREE.BoxGeometry(0.12 * scale, 0.7 * scale, 0.08 * scale);
+                let glowMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 });
+                let glowStripe = new THREE.Mesh(glowGeo, glowMat);
+                glowStripe.position.set(0, 0.0, -0.21 * scale); // attach relative to torso center
+                torso.add(glowStripe); // attach as child of torso
+                group.userData.glowStripe = glowStripe;
+            }
+            
             // Head (Box) with Face on Front Face only (Array of 6 materials)
             let headGeo = new THREE.BoxGeometry(0.55 * scale, 0.55 * scale, 0.55 * scale);
             let faceMaterial = isEnemy ? materials.zombieSkinFace : materials.playerSkinFace;
@@ -5719,6 +5729,13 @@
             playerGroup = createRobloxCharacter(0x0284c7, 0xffdbac, 0x1e293b, false);
             playerGroup.position.set(0, 0, 0); // Center start
             playerGroup.rotation.y = Math.PI;   // Face away from camera (back view) by default
+            
+            // Soft auric glow around player so they never merge with dark ground textures
+            let playerAuraLight = new THREE.PointLight(0x06b6d4, 1.2, 3.8); // cyan light, intensity 1.2, range 3.8
+            playerAuraLight.position.set(0, 0.95, 0); // torso height
+            playerGroup.add(playerAuraLight);
+            playerGroup.userData.auraLight = playerAuraLight;
+            
             scene.add(playerGroup);
             worldMousePoint.set(0, 0, -8.0);    // Aim North by default
             
@@ -7023,6 +7040,17 @@
                 }
             }
             
+            // Animate player glowing cyberpunk aura and stripe pulsing
+            if (playerGroup && playerGroup.userData.auraLight) {
+                let pulse = 0.85 + Math.sin(Date.now() * 0.0035) * 0.25; // Gentle pulse
+                playerGroup.userData.auraLight.intensity = 1.0 * pulse;
+                
+                if (playerGroup.userData.glowStripe) {
+                    let glowVal = 0.6 + Math.sin(Date.now() * 0.0035) * 0.4;
+                    playerGroup.userData.glowStripe.material.color.setRGB(0.02 * glowVal, 0.7 * glowVal, 0.85 * glowVal);
+                }
+            }
+
             // 9. Camera and SunLight follow player (null-safe check to prevent crashes on death)
             if (playerGroup && camera) {
                 // Decay screen shake over time

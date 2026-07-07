@@ -1186,7 +1186,6 @@
             border: 2px solid rgba(255, 255, 255, 0.15);
             border-radius: 50%;
             position: relative;
-            backdrop-filter: blur(5px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
@@ -1199,7 +1198,7 @@
             top: 20px;
             left: 20px;
             box-shadow: 0 0 10px var(--primary-accent);
-            transition: transform 0.05s ease-out;
+            will-change: transform;
         }
 
         #joystick-shoot-zone {
@@ -1221,7 +1220,6 @@
             border: 2px solid rgba(255, 255, 255, 0.15);
             border-radius: 50%;
             position: relative;
-            backdrop-filter: blur(5px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
@@ -1234,7 +1232,7 @@
             top: 20px;
             left: 20px;
             box-shadow: 0 0 10px var(--danger-accent);
-            transition: transform 0.05s ease-out;
+            will-change: transform;
         }
 
         #mobile-action-buttons {
@@ -1261,7 +1259,6 @@
             justify-content: center;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
             cursor: pointer;
-            backdrop-filter: blur(5px);
             pointer-events: auto;
         }
 
@@ -4285,6 +4282,19 @@
         const _scratchBoxMin = new THREE.Vector3();
         const _scratchBoxMax = new THREE.Vector3();
         const _scratchColBox = new THREE.Box3();
+        
+        // Zero-allocation scratch vectors for hot paths
+        const _scratchAimDir = new THREE.Vector3();
+        const _scratchIntersects = new THREE.Vector3();
+        const _scratchGunOffset = new THREE.Vector3();
+        const _scratchLaserStart = new THREE.Vector3();
+        const _scratchMoveDir = new THREE.Vector3();
+        const _scratchFlashlightAim = new THREE.Vector3();
+        const _scratchSparkPos = new THREE.Vector3();
+        const _scratchDamageTextPos = new THREE.Vector3();
+        const _scratchNextPos = new THREE.Vector3();
+        const _scratchPushDir = new THREE.Vector3();
+        const _scratchFinalPos = new THREE.Vector3();
 
         // --- Dodge-dash state ---
         let dashActiveUntil = 0;      // Timestamp until which the player is dashing (i-frames active)
@@ -7448,35 +7458,32 @@
                 // 2. Aiming & Rotation (Unified Mobile & PC)
                 if (isMobileDevice) {
                     if (isShootingJoystickActive && (joystickShootInput.x !== 0 || joystickShootInput.y !== 0)) {
-                        let aimDir = new THREE.Vector3(joystickShootInput.x, 0, joystickShootInput.y).normalize();
+                        _scratchAimDir.set(joystickShootInput.x, 0, joystickShootInput.y).normalize();
                         let lookAngle = Math.atan2(joystickShootInput.x, joystickShootInput.y);
                         playerGroup.rotation.y = lookAngle;
-                        worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
+                        worldMousePoint.copy(playerGroup.position).addScaledVector(_scratchAimDir, 8.0);
                     } else if (isMoving) {
                         let lookAngle = Math.atan2(vx, vz);
                         playerGroup.rotation.y = lookAngle;
-                        let aimDir = new THREE.Vector3(vx, 0, vz).normalize();
-                        worldMousePoint.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(8.0)));
+                        _scratchAimDir.set(vx, 0, vz).normalize();
+                        worldMousePoint.copy(playerGroup.position).addScaledVector(_scratchAimDir, 8.0);
                     }
                 } else {
                     // PC: Always rotate to face the mouse, even when moving
                     raycaster.setFromCamera(mouseCoords, camera);
-                    let intersects = new THREE.Vector3();
-                    raycaster.ray.intersectPlane(groundPlane, intersects);
-                    
-                    worldMousePoint.copy(intersects);
+                    raycaster.ray.intersectPlane(groundPlane, _scratchIntersects);
+                    worldMousePoint.copy(_scratchIntersects);
                     let lookAngle = Math.atan2(worldMousePoint.x - playerGroup.position.x, worldMousePoint.z - playerGroup.position.z);
                     playerGroup.rotation.y = lookAngle;
                 }
                 
                 // Draw 3D laser sight
                 if (laserLine) {
-                    let gunOffset = new THREE.Vector3(0.4, 1.0, 0.5);
-                    gunOffset.applyQuaternion(playerGroup.quaternion);
-                    let laserStart = playerGroup.position.clone().add(gunOffset);
+                    _scratchGunOffset.set(0.4, 1.0, 0.5).applyQuaternion(playerGroup.quaternion);
+                    _scratchLaserStart.copy(playerGroup.position).add(_scratchGunOffset);
                     
                     let positions = laserLine.geometry.attributes.position.array;
-                    positions[0] = laserStart.x; positions[1] = laserStart.y; positions[2] = laserStart.z;
+                    positions[0] = _scratchLaserStart.x; positions[1] = _scratchLaserStart.y; positions[2] = _scratchLaserStart.z;
                     positions[3] = worldMousePoint.x; positions[4] = 0.1; positions[5] = worldMousePoint.z;
                     laserLine.geometry.attributes.position.needsUpdate = true;
                 }
@@ -7500,11 +7507,11 @@
                 }
                 
                 // Set moving velocity vector
-                let moveDir = new THREE.Vector3(vx, 0, vz);
-                if (moveDir.lengthSq() > 1) {
-                    moveDir.normalize();
+                _scratchMoveDir.set(vx, 0, vz);
+                if (_scratchMoveDir.lengthSq() > 1) {
+                    _scratchMoveDir.normalize();
                 }
-                moveDir.multiplyScalar(speed * dt);
+                _scratchMoveDir.multiplyScalar(speed * dt);
 
                 // Dodge-dash overrides normal movement: slide fast along the locked dash
                 // direction (collision-checked) and leave a cyan trail. i-frames handled in damagePlayer().
@@ -7516,20 +7523,21 @@
                     let nZ = playerGroup.position.z + dashDir.z * step;
                     if (!checkAABBCollision(playerGroup.position.x, nZ)) playerGroup.position.z = nZ;
                     if (Math.random() < 0.9) {
-                        spawnBoxSparks(new THREE.Vector3(playerGroup.position.x, 0.5, playerGroup.position.z), 0x22d3ee, 1, 0.06);
+                        _scratchSparkPos.set(playerGroup.position.x, 0.5, playerGroup.position.z);
+                        spawnBoxSparks(_scratchSparkPos, 0x22d3ee, 1, 0.06);
                     }
                 }
 
                 if (!isDashing && isMoving && !playerGroup.userData.isHarvesting) {
                     // Try X move
-                    let nextX = playerGroup.position.x + moveDir.x;
+                    let nextX = playerGroup.position.x + _scratchMoveDir.x;
                     let nextZ = playerGroup.position.z;
                     if (!checkAABBCollision(nextX, nextZ)) {
                         playerGroup.position.x = nextX;
                     }
                     // Try Z move
                     nextX = playerGroup.position.x;
-                    nextZ = playerGroup.position.z + moveDir.z;
+                    nextZ = playerGroup.position.z + _scratchMoveDir.z;
                     if (!checkAABBCollision(nextX, nextZ)) {
                         playerGroup.position.z = nextZ;
                     }
@@ -7555,7 +7563,8 @@
                     
                     // Spawn dust particles
                     if (Math.random() < 0.25) {
-                        spawnBoxSparks(new THREE.Vector3(playerGroup.position.x, 0.05, playerGroup.position.z), 0x71717a, 1, 0.08);
+                        _scratchSparkPos.set(playerGroup.position.x, 0.05, playerGroup.position.z);
+                        spawnBoxSparks(_scratchSparkPos, 0x71717a, 1, 0.08);
                     }
                 } else if (!playerGroup.userData.isHarvesting) {
                     // Reset limb rotations
@@ -7568,10 +7577,10 @@
                 
                 // Update Spotlight Target pos
                 if (playerGroup.userData.flashlightTarget) {
-                    let aimDir = worldMousePoint.clone().sub(playerGroup.position);
-                    aimDir.y = 0;
-                    aimDir.normalize();
-                    playerGroup.userData.flashlightTarget.position.copy(playerGroup.position.clone().add(aimDir.multiplyScalar(5.0)));
+                    _scratchFlashlightAim.copy(worldMousePoint).sub(playerGroup.position);
+                    _scratchFlashlightAim.y = 0;
+                    _scratchFlashlightAim.normalize();
+                    playerGroup.userData.flashlightTarget.position.copy(playerGroup.position).addScaledVector(_scratchFlashlightAim, 5.0);
                 }
 
                 // Auto-fire on mobile right joystick
@@ -7621,17 +7630,20 @@
                                         let isCrit = Math.random() < critChance;
                                         let dmg = isCrit ? Math.round(b.userData.damage * 2.2) : b.userData.damage;
 
+                                        _scratchDamageTextPos.copy(e.position);
+                                        if (isCrit) {
+                                            _scratchDamageTextPos.y += 1.7;
+                                            spawnDamageText(_scratchDamageTextPos, `${dmg}!`, false, true);
+                                        } else {
+                                            _scratchDamageTextPos.y += 1.5;
+                                            spawnDamageText(_scratchDamageTextPos, dmg);
+                                        }
+
                                         sound.playHit();
                                         spawnBoxSparks(b.position, isCrit ? 0xfacc15 : 0xd90429, isCrit ? 12 : 6, isCrit ? 0.16 : 0.1);
                                         spawnBloodDecal(e.position.x, e.position.z);
                                         e.userData.hp -= dmg;
 
-                                        // Damage indicator popup (crits render bigger + gold via a "!" label)
-                                        if (isCrit) {
-                                            spawnDamageText(e.position.clone().add(new THREE.Vector3(0, 1.7, 0)), `${dmg}!`, false, true);
-                                        } else {
-                                            spawnDamageText(e.position.clone().add(new THREE.Vector3(0, 1.5, 0)), dmg);
-                                        }
 
                                         // Flash enemy mesh
                                         activeGameScene.flashSprite(e, isCrit ? 0xfde047 : 0xff3333, isCrit ? 120 : 85);
@@ -7984,16 +7996,16 @@
                         if (!collided) {
                             // Prevent zombie overlapping player - maintain 0.8 units distance
                             let targetDist = 0.8;
-                            let nextPos = new THREE.Vector3(nextX, 0, nextZ);
-                            if (nextPos.distanceTo(playerGroup.position) >= targetDist) {
+                            _scratchNextPos.set(nextX, 0, nextZ);
+                            if (_scratchNextPos.distanceTo(playerGroup.position) >= targetDist) {
                                 e.position.set(nextX, 0, nextZ);
                             } else {
-                                let pushDir = e.position.clone().sub(playerGroup.position);
-                                pushDir.y = 0;
-                                if (pushDir.lengthSq() < 0.01) pushDir.set(1, 0, 0);
-                                pushDir.normalize().multiplyScalar(targetDist);
-                                let finalPos = playerGroup.position.clone().add(pushDir);
-                                e.position.set(finalPos.x, 0, finalPos.z);
+                                _scratchPushDir.copy(e.position).sub(playerGroup.position);
+                                _scratchPushDir.y = 0;
+                                if (_scratchPushDir.lengthSq() < 0.01) _scratchPushDir.set(1, 0, 0);
+                                _scratchPushDir.normalize().multiplyScalar(targetDist);
+                                _scratchFinalPos.copy(playerGroup.position).add(_scratchPushDir);
+                                e.position.set(_scratchFinalPos.x, 0, _scratchFinalPos.z);
                             }
                         }
                         
@@ -8011,12 +8023,12 @@
                             if (e !== enemies[k] && enemies[k].userData.type.startsWith('zombie')) {
                                 let edist = e.position.distanceTo(enemies[k].position);
                                 if (edist < 0.75) {
-                                    let push = e.position.clone().sub(enemies[k].position);
-                                    push.y = 0;
-                                    if (push.lengthSq() < 0.01) push.set(Math.random()-0.5, 0, Math.random()-0.5);
-                                    push.normalize().multiplyScalar(0.25 * dt); // push apart gently
-                                    e.position.add(push);
-                                    enemies[k].position.sub(push);
+                                    _scratchPushDir.copy(e.position).sub(enemies[k].position);
+                                    _scratchPushDir.y = 0;
+                                    if (_scratchPushDir.lengthSq() < 0.01) _scratchPushDir.set(Math.random()-0.5, 0, Math.random()-0.5);
+                                    _scratchPushDir.normalize().multiplyScalar(0.25 * dt); // push apart gently
+                                    e.position.add(_scratchPushDir);
+                                    enemies[k].position.sub(_scratchPushDir);
                                 }
                             }
                         }
@@ -8096,16 +8108,16 @@
                             let nextX = e.position.x + Math.sin(angle) * e.userData.speed * dt;
                             let nextZ = e.position.z + Math.cos(angle) * e.userData.speed * dt;
                             let targetDist = 0.8;
-                            let nextPos = new THREE.Vector3(nextX, 0, nextZ);
-                            if (nextPos.distanceTo(playerGroup.position) >= targetDist) {
+                            _scratchNextPos.set(nextX, 0, nextZ);
+                            if (_scratchNextPos.distanceTo(playerGroup.position) >= targetDist) {
                                 e.position.set(nextX, 0, nextZ);
                             } else {
-                                let pushDir = e.position.clone().sub(playerGroup.position);
-                                pushDir.y = 0;
-                                if (pushDir.lengthSq() < 0.01) pushDir.set(1, 0, 0);
-                                pushDir.normalize().multiplyScalar(targetDist);
-                                let finalPos = playerGroup.position.clone().add(pushDir);
-                                e.position.set(finalPos.x, 0, finalPos.z);
+                                _scratchPushDir.copy(e.position).sub(playerGroup.position);
+                                _scratchPushDir.y = 0;
+                                if (_scratchPushDir.lengthSq() < 0.01) _scratchPushDir.set(1, 0, 0);
+                                _scratchPushDir.normalize().multiplyScalar(targetDist);
+                                _scratchFinalPos.copy(playerGroup.position).add(_scratchPushDir);
+                                e.position.set(_scratchFinalPos.x, 0, _scratchFinalPos.z);
                             }
                         }
                     }

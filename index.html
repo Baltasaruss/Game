@@ -1751,18 +1751,29 @@
                 <p>• <strong>Quick slots below</strong> – Weapon select and healing.</p>
             </div>
             
-            <div style="margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 1.2rem;">
                 <label for="volume-range" style="font-weight: 600; display: block; margin-bottom: 6px;">🔊 Sound Volume:</label>
                 <input type="range" id="volume-range" min="0" max="1" step="0.05" value="0.4" style="width:100%; cursor: pointer;" oninput="changeVolume(this.value)">
             </div>
             
-            <div style="margin-bottom: 1.5rem;">
-                <label for="device-mode-select" style="font-weight: 600; display: block; margin-bottom: 6px;">📱 Device Mode / Performance:</label>
-                <select id="device-mode-select" style="width:100%; padding: 0.5rem; background: rgba(30, 30, 40, 0.9); color: #fff; border: 1px solid #3f3f46; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.85rem;" onchange="changeDeviceMode(this.value)">
-                    <option value="auto">Auto-Detect</option>
-                    <option value="mobile">Mobile / Tablet (Optimization Mode - No Shadows)</option>
-                    <option value="desktop">Desktop (Graphics Mode - Shadows, High Rain)</option>
-                </select>
+            <div style="margin-bottom: 1.2rem; display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label for="device-mode-select" style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.8rem;">🕹️ Controls Mode:</label>
+                    <select id="device-mode-select" style="width:100%; padding: 0.4rem; background: rgba(30, 30, 40, 0.9); color: #fff; border: 1px solid #3f3f46; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.75rem;" onchange="changeDeviceMode(this.value)">
+                        <option value="auto">Auto-Detect</option>
+                        <option value="mobile">Touch (Joysticks)</option>
+                        <option value="desktop">Keyboard & Mouse</option>
+                    </select>
+                </div>
+                
+                <div style="flex: 1;">
+                    <label for="graphics-quality-select" style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.8rem;">⚡ Graphics Quality:</label>
+                    <select id="graphics-quality-select" style="width:100%; padding: 0.4rem; background: rgba(30, 30, 40, 0.9); color: #fff; border: 1px solid #3f3f46; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.75rem;" onchange="changeGraphicsQuality(this.value)">
+                        <option value="high">High (Shadows, AA)</option>
+                        <option value="medium">Medium (No Shadows)</option>
+                        <option value="low">Low (No Rain, 1x Res)</option>
+                    </select>
+                </div>
             </div>
 
             <button class="menu-btn btn-danger" onclick="resetSaveData()" style="padding: 0.6rem; font-size: 0.9rem; margin-bottom: 1.5rem;">Reset Game Progress</button>
@@ -2792,7 +2803,13 @@
         function changeDeviceMode(value) {
             localStorage.setItem('game_device_mode', value);
             updateDeviceMode();
-            alert("Settings updated. The game will now reload to apply the selected device mode and optimization options.");
+            alert("Control settings updated. The game will now reload to apply changes.");
+            window.location.reload();
+        }
+
+        function changeGraphicsQuality(value) {
+            localStorage.setItem('game_graphics_quality', value);
+            alert("Graphics settings updated. The game will now reload to apply optimization changes.");
             window.location.reload();
         }
 
@@ -4167,6 +4184,7 @@
         
         let isMobileDevice = false;
         let rainCount = 1500; // Declare globally here to avoid TDZ (Temporal Dead Zone) issues
+        let graphicsQuality = 'high';
         
         function updateDeviceMode() {
             let mode = localStorage.getItem('game_device_mode') || 'auto';
@@ -4185,7 +4203,20 @@
             let select = document.getElementById('device-mode-select');
             if (select) select.value = mode;
             
-            rainCount = isMobileDevice ? 400 : 1500;
+            // Graphics Quality init
+            let defaultQuality = isMobileDevice ? 'medium' : 'high';
+            graphicsQuality = localStorage.getItem('game_graphics_quality') || defaultQuality;
+            let gSelect = document.getElementById('graphics-quality-select');
+            if (gSelect) gSelect.value = graphicsQuality;
+            
+            // Set rainCount based on quality
+            if (graphicsQuality === 'low') {
+                rainCount = 0;
+            } else if (graphicsQuality === 'medium') {
+                rainCount = 500;
+            } else {
+                rainCount = 1500;
+            }
         }
         
         updateDeviceMode();
@@ -4322,14 +4353,18 @@
             // Camera
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
             
-            // Renderer (Antialias disabled on mobile for massive GPU fill-rate boost!)
-            renderer = new THREE.WebGLRenderer({ antialias: !isMobileDevice });
-            // Clamp device pixel ratio: high-DPI/Retina screens otherwise render 3-4x the pixels for little
-            // visible gain. Mobile GPUs are fill-rate bound, so cap them tighter (1.5) than desktop (2).
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileDevice ? 1.5 : 2));
+            // Renderer (Antialias only enabled on High quality for performance boost)
+            let useAntialias = (graphicsQuality === 'high');
+            renderer = new THREE.WebGLRenderer({ antialias: useAntialias });
+            
+            // Clamp device pixel ratio based on graphics quality:
+            // High = up to 2.0x, Med = up to 1.4x, Low = up to 1.0x (standard resolution, huge fill-rate boost)
+            let pixelRatioLimit = (graphicsQuality === 'low') ? 1.0 : (graphicsQuality === 'medium' ? 1.4 : 2.0);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioLimit));
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // Dynamic shadows completely disabled on mobile (BasicShadowMap on PC for performance)
-            renderer.shadowMap.enabled = !isMobileDevice;
+            
+            // Dynamic shadows completely disabled on Low/Med, enabled on High
+            renderer.shadowMap.enabled = (graphicsQuality === 'high');
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.25;
@@ -4768,7 +4803,8 @@
                     let h = window.innerHeight;
                     camera.aspect = w / h;
                     camera.updateProjectionMatrix();
-                    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileDevice ? 1.5 : 2));
+                    let pixelRatioLimit = (graphicsQuality === 'low') ? 1.0 : (graphicsQuality === 'medium' ? 1.4 : 2.0);
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioLimit));
                     renderer.setSize(w, h);
                     
                     // Force redraw of dynamic elements that depend on layout size (like minimap)
@@ -5597,7 +5633,7 @@
             scene.fog.density = fogDensity;
 
             // Setup dynamic post-apoc rain effect if outdoor
-            if (!isIndoor) {
+            if (!isIndoor && rainCount > 0) {
                 let rainGeo = new THREE.BufferGeometry();
                 let positions = new Float32Array(rainCount * 6); // 2 vertices per line streak
                 

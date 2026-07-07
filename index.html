@@ -2228,6 +2228,28 @@
                     this.masterGain = this.ctx.createGain();
                     this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
                     this.masterGain.connect(this.ctx.destination);
+
+                    // Shared "outdoor ruins" reverb bus. Real gunfire is defined as much by the
+                    // environmental crack/slap-back off surrounding surfaces as by the muzzle report,
+                    // so weapon sounds send a portion of their signal here for a short decaying tail.
+                    // The impulse response is synthesized (no external files): exponentially-decaying
+                    // noise, slightly longer/darker in the left channel for a wide, diffuse feel.
+                    this.reverb = this.ctx.createConvolver();
+                    let irLen = Math.floor(this.ctx.sampleRate * 0.6);
+                    let ir = this.ctx.createBuffer(2, irLen, this.ctx.sampleRate);
+                    for (let ch = 0; ch < 2; ch++) {
+                        let d = ir.getChannelData(ch);
+                        let decay = ch === 0 ? 3.2 : 3.6;
+                        for (let i = 0; i < irLen; i++) {
+                            d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, decay);
+                        }
+                    }
+                    this.reverb.buffer = ir;
+                    // Return level: present enough to place shots in a space, low enough to stay punchy.
+                    this.reverbSend = this.ctx.createGain();
+                    this.reverbSend.gain.value = 0.32;
+                    this.reverbSend.connect(this.reverb);
+                    this.reverb.connect(this.masterGain);
                 }
                 if (this.ctx.state === 'suspended') {
                     this.ctx.resume();
@@ -2246,62 +2268,195 @@
                 this.init();
                 if (!this.ctx) return;
                 let t = this.ctx.currentTime;
+                // Small per-shot randomization so repeats don't sound robotic (~ +/-3%)
+                let r = 1 + (Math.random() * 0.06 - 0.03);
 
                 if (type === 'pistol') {
+                    // Mechanism click transient at t=0
+                    let clickLen = Math.floor(this.ctx.sampleRate * 0.004);
+                    let clickBuf = this.ctx.createBuffer(1, clickLen, this.ctx.sampleRate);
+                    let cd = clickBuf.getChannelData(0);
+                    for (let i = 0; i < clickLen; i++) cd[i] = (Math.random() * 2 - 1) * (1 - i / clickLen);
+                    let click = this.ctx.createBufferSource();
+                    click.buffer = clickBuf;
+                    let clickGain = this.ctx.createGain();
+                    clickGain.gain.setValueAtTime(0.28, t);
+                    clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.006);
+                    click.connect(clickGain);
+                    clickGain.connect(this.masterGain);
+                    click.start(t);
+                    click.stop(t + 0.006);
+
+                    // Sharp noise crack (highpass), very short
+                    let nLen = Math.floor(this.ctx.sampleRate * 0.05);
+                    let nBuf = this.ctx.createBuffer(1, nLen, this.ctx.sampleRate);
+                    let nd = nBuf.getChannelData(0);
+                    for (let i = 0; i < nLen; i++) nd[i] = Math.random() * 2 - 1;
+                    let noise = this.ctx.createBufferSource();
+                    noise.buffer = nBuf;
+                    let hp = this.ctx.createBiquadFilter();
+                    hp.type = 'highpass';
+                    hp.frequency.setValueAtTime(1000 * r, t);
+                    hp.Q.value = 0.7;
+                    let nGain = this.ctx.createGain();
+                    nGain.gain.setValueAtTime(0.32, t);
+                    nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+                    noise.connect(hp);
+                    hp.connect(nGain);
+                    nGain.connect(this.masterGain);
+                    if (this.reverbSend) nGain.connect(this.reverbSend);
+                    noise.start(t);
+                    noise.stop(t + 0.05);
+
+                    // Fast downward pitch "body" 300 -> 50Hz
                     let osc = this.ctx.createOscillator();
-                    let gain = this.ctx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(450, t);
-                    osc.frequency.linearRampToValueAtTime(60, t + 0.12);
-                    gain.gain.setValueAtTime(0.3, t);
-                    gain.gain.linearRampToValueAtTime(0.01, t + 0.12);
-                    osc.connect(gain);
-                    gain.connect(this.masterGain);
+                    let oGain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(300 * r, t);
+                    osc.frequency.exponentialRampToValueAtTime(50, t + 0.08);
+                    oGain.gain.setValueAtTime(0.26, t);
+                    oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+                    osc.connect(oGain);
+                    oGain.connect(this.masterGain);
+                    if (this.reverbSend) oGain.connect(this.reverbSend);
                     osc.start(t);
                     osc.stop(t + 0.12);
-                } 
+                }
                 else if (type === 'rifle') {
-                    // Rifle noise shot
-                    let bufferSize = this.ctx.sampleRate * 0.08;
-                    let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                    let data = buffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) {
-                        data[i] = Math.random() * 2 - 1;
-                    }
+                    // Tight noise burst through bandpass sweeping down (~70ms)
+                    let nLen = Math.floor(this.ctx.sampleRate * 0.07);
+                    let nBuf = this.ctx.createBuffer(1, nLen, this.ctx.sampleRate);
+                    let nd = nBuf.getChannelData(0);
+                    for (let i = 0; i < nLen; i++) nd[i] = Math.random() * 2 - 1;
                     let noise = this.ctx.createBufferSource();
-                    noise.buffer = buffer;
-
-                    let filter = this.ctx.createBiquadFilter();
-                    filter.type = 'bandpass';
-                    filter.frequency.setValueAtTime(800, t);
-
-                    let gain = this.ctx.createGain();
-                    gain.gain.setValueAtTime(0.35, t);
-                    gain.gain.linearRampToValueAtTime(0.01, t + 0.08);
-
-                    noise.connect(filter);
-                    filter.connect(gain);
-                    gain.connect(this.masterGain);
-
+                    noise.buffer = nBuf;
+                    let bp = this.ctx.createBiquadFilter();
+                    bp.type = 'bandpass';
+                    bp.Q.value = 1.2;
+                    bp.frequency.setValueAtTime(2200 * r, t);
+                    bp.frequency.exponentialRampToValueAtTime(600, t + 0.055);
+                    let nGain = this.ctx.createGain();
+                    nGain.gain.setValueAtTime(0.3, t);
+                    nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+                    noise.connect(bp);
+                    bp.connect(nGain);
+                    nGain.connect(this.masterGain);
+                    if (this.reverbSend) nGain.connect(this.reverbSend);
                     noise.start(t);
-                    noise.stop(t + 0.08);
-                } 
+                    noise.stop(t + 0.07);
+
+                    // Short mechanical click transient
+                    let clickLen = Math.floor(this.ctx.sampleRate * 0.003);
+                    let clickBuf = this.ctx.createBuffer(1, clickLen, this.ctx.sampleRate);
+                    let cd = clickBuf.getChannelData(0);
+                    for (let i = 0; i < clickLen; i++) cd[i] = (Math.random() * 2 - 1) * (1 - i / clickLen);
+                    let click = this.ctx.createBufferSource();
+                    click.buffer = clickBuf;
+                    let clickGain = this.ctx.createGain();
+                    clickGain.gain.setValueAtTime(0.2, t);
+                    clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.004);
+                    click.connect(clickGain);
+                    clickGain.connect(this.masterGain);
+                    click.start(t);
+                    click.stop(t + 0.004);
+
+                    // Slight low thump for weight
+                    let osc = this.ctx.createOscillator();
+                    let oGain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(160 * r, t);
+                    osc.frequency.exponentialRampToValueAtTime(60, t + 0.05);
+                    oGain.gain.setValueAtTime(0.16, t);
+                    oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+                    osc.connect(oGain);
+                    oGain.connect(this.masterGain);
+                    osc.start(t);
+                    osc.stop(t + 0.07);
+                }
                 else if (type === 'shotgun') {
-                    // Loud bass boom of shotgun (multiple frequencies)
-                    for (let i = 0; i < 3; i++) {
+                    // Broadband noise blast through lowpass, long tail (~250ms)
+                    let nLen = Math.floor(this.ctx.sampleRate * 0.25);
+                    let nBuf = this.ctx.createBuffer(1, nLen, this.ctx.sampleRate);
+                    let nd = nBuf.getChannelData(0);
+                    for (let i = 0; i < nLen; i++) nd[i] = Math.random() * 2 - 1;
+                    let noise = this.ctx.createBufferSource();
+                    noise.buffer = nBuf;
+                    let lp = this.ctx.createBiquadFilter();
+                    lp.type = 'lowpass';
+                    lp.frequency.setValueAtTime(3000 * r, t);
+                    lp.frequency.exponentialRampToValueAtTime(300, t + 0.2);
+                    lp.Q.value = 0.5;
+                    let nGain = this.ctx.createGain();
+                    nGain.gain.setValueAtTime(0.34, t);
+                    nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+                    noise.connect(lp);
+                    lp.connect(nGain);
+                    nGain.connect(this.masterGain);
+                    if (this.reverbSend) nGain.connect(this.reverbSend);
+                    noise.start(t);
+                    noise.stop(t + 0.25);
+
+                    // Big low boom (sawtooth cluster)
+                    for (let i = 0; i < 2; i++) {
                         let osc = this.ctx.createOscillator();
-                        let gain = this.ctx.createGain();
+                        let oGain = this.ctx.createGain();
                         osc.type = 'sawtooth';
-                        osc.frequency.setValueAtTime(110 + i * 25, t + i * 0.005);
-                        osc.frequency.linearRampToValueAtTime(30, t + 0.25);
-                        gain.gain.setValueAtTime(0.4, t + i * 0.005);
-                        gain.gain.linearRampToValueAtTime(0.01, t + 0.25);
-                        osc.connect(gain);
-                        gain.connect(this.masterGain);
-                        osc.start(t + i * 0.005);
+                        osc.frequency.setValueAtTime((120 + i * 20) * r, t + i * 0.004);
+                        osc.frequency.exponentialRampToValueAtTime(35, t + 0.22);
+                        oGain.gain.setValueAtTime(0.3, t + i * 0.004);
+                        oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+                        osc.connect(oGain);
+                        oGain.connect(this.masterGain);
+                        osc.start(t + i * 0.004);
                         osc.stop(t + 0.25);
                     }
+
+                    // Layered sub-bass sine for heavy feel
+                    let sub = this.ctx.createOscillator();
+                    let subGain = this.ctx.createGain();
+                    sub.type = 'sine';
+                    sub.frequency.setValueAtTime(60 * r, t);
+                    sub.frequency.exponentialRampToValueAtTime(40, t + 0.2);
+                    subGain.gain.setValueAtTime(0.32, t);
+                    subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+                    sub.connect(subGain);
+                    subGain.connect(this.masterGain);
+                    sub.start(t);
+                    sub.stop(t + 0.25);
                 }
+            }
+
+            // Dodge-roll whoosh
+            playDash() {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                let r = 1 + (Math.random() * 0.06 - 0.03);
+
+                let nLen = Math.floor(this.ctx.sampleRate * 0.18);
+                let nBuf = this.ctx.createBuffer(1, nLen, this.ctx.sampleRate);
+                let nd = nBuf.getChannelData(0);
+                for (let i = 0; i < nLen; i++) nd[i] = Math.random() * 2 - 1;
+                let noise = this.ctx.createBufferSource();
+                noise.buffer = nBuf;
+
+                let bp = this.ctx.createBiquadFilter();
+                bp.type = 'bandpass';
+                bp.Q.value = 1.0;
+                bp.frequency.setValueAtTime(400 * r, t);
+                bp.frequency.linearRampToValueAtTime(1600 * r, t + 0.09);
+                bp.frequency.linearRampToValueAtTime(500, t + 0.18);
+
+                let gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.001, t);
+                gain.gain.linearRampToValueAtTime(0.2, t + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+
+                noise.connect(bp);
+                bp.connect(gain);
+                gain.connect(this.masterGain);
+                noise.start(t);
+                noise.stop(t + 0.18);
             }
 
             // Hit on flesh/enemy
@@ -2987,6 +3142,12 @@
         }
 
         function damagePlayer(amount, sourceText="the environment") {
+            // Dodge-dash i-frames: while dashing, fully negate incoming combat damage
+            // (enemy attacks and explosions) but still take environmental ticks (hunger/thirst/radiation).
+            if (Date.now() < dashActiveUntil && (sourceText.includes("attack") || sourceText.includes("explosion"))) {
+                spawnDamageText(playerGroup.position.clone().add(new THREE.Vector3(0, 1.9, 0)), "DODGE", true);
+                return;
+            }
             if (gameState.hasArmor && sourceText.includes("attack")) {
                 // Armor vest cuts 30% damage from enemies
                 amount *= 0.7;
@@ -3193,13 +3354,22 @@
         // XP grant
         function gainXp(amount) {
             gameState.xp += amount;
-            let nextXp = gameState.level * 100;
             addLogMessage(`+${amount} XP`, "system");
-            
-            if (gameState.xp >= nextXp) {
+
+            // Loop (not a single if) so large one-shot gains - e.g. a 500 XP boss kill or a
+            // stacked combo bonus - can grant several levels at once instead of banking overflow.
+            let levelsGained = 0;
+            let nextXp = gameState.level * 100;
+            while (gameState.xp >= nextXp) {
                 gameState.xp -= nextXp;
                 gameState.level++;
                 gameState.skillPoints += 2;
+                levelsGained++;
+                nextXp = gameState.level * 100;
+            }
+
+            if (levelsGained > 0) {
+                pendingPerkChoices += levelsGained;
                 sound.playLevelUp();
                 addLogMessage(`🎉 LEVEL UP to ${gameState.level}!`, "system");
                 
@@ -3259,8 +3429,12 @@
 
         // Trigger Rogue-like Perk Card Choice Overlay (Vampire Survivors style!)
         function triggerPerkSelection() {
+            // Nothing owed, or a card set is already on screen -> do nothing (prevents
+            // stacked overlays when several levels are gained at once).
+            if (pendingPerkChoices <= 0) return;
+            if (document.getElementById('perk-overlay').style.display === 'flex') return;
             gamePaused = true;
-            
+
             // Safety guard: ensure runPerks is initialized
             if (!gameState.runPerks) {
                 gameState.runPerks = {
@@ -3343,10 +3517,16 @@
                 card.onclick = () => {
                     perk.apply();
                     document.getElementById('perk-overlay').style.display = 'none';
-                    gamePaused = false;
+                    pendingPerkChoices = Math.max(0, pendingPerkChoices - 1);
                     addLogMessage(`Upgrade obtained: ${perk.name}`, "system");
                     sound.playCollect();
                     updateHudVisuals();
+                    // More level-ups queued? show the next card set; otherwise resume play.
+                    if (pendingPerkChoices > 0) {
+                        setTimeout(triggerPerkSelection, 250);
+                    } else {
+                        gamePaused = false;
+                    }
                 };
                 container.appendChild(card);
             });
@@ -4006,6 +4186,7 @@
         let rainParticles = null;
         let rainCount = isMobileDevice ? 400 : 1500; // Optimized particle count for mobile screens
         let muzzleFlashLight = null;
+        let muzzleFlashTimer = null;  // Pending "turn muzzle flash off" timer (cleared on rapid fire)
         let bulletGeo = new THREE.BoxGeometry(0.12, 0.12, 0.4);
         let bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
         let enemyBulletGeo = new THREE.BoxGeometry(0.15, 0.15, 0.4);
@@ -4013,15 +4194,38 @@
         // Cached boss plasma geometry and material to prevent dynamic memory allocation
         let plasmaGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
         let plasmaMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+        // Reusable collision temporaries (avoid per-frame Box3/Vector3 allocations in hot paths)
+        let _tmpPlayerBox = new THREE.Box3();
+        let _tmpBulletBox = new THREE.Box3();
+        let _tmpBulletCenter = new THREE.Vector3();
+        let _tmpBulletSize = new THREE.Vector3(0.3, 0.3, 0.5); // approx bullet extents (fixed)
         
         // Timing
         let lastTime = 0;
         let bgmTimer = null;
         let footprints = [];
         let screenShake = 0;          // Cooldown camera kickback/shake intensity
+        // --- Reusable scratch objects for the render loop ---
+        // The animation loop and per-enemy AI run every frame (and per enemy), so allocating
+        // fresh THREE.Vector3 / Box3 instances there churns the garbage collector and causes
+        // visible frame hitches. These pre-allocated scratch objects are reused in place instead.
+        const _scratchCamPos = new THREE.Vector3();
+        const _scratchLookAt = new THREE.Vector3();
+        const _scratchBoxMin = new THREE.Vector3();
+        const _scratchBoxMax = new THREE.Vector3();
+        const _scratchColBox = new THREE.Box3();
+
+        // --- Dodge-dash state ---
+        let dashActiveUntil = 0;      // Timestamp until which the player is dashing (i-frames active)
+        let dashReadyAt = 0;          // Timestamp when dash comes off cooldown
+        let dashDir = new THREE.Vector3(); // Locked movement direction for the current dash
+        const DASH_DURATION = 180;    // ms of dash movement + invulnerability
+        const DASH_COOLDOWN = 1400;   // ms between dashes
+        const DASH_SPEED = 26.0;      // units/s burst speed during dash
         let gamePaused = false;       // Local pause flag for Perk card selection overlay
         let lastKillTime = 0;         // Timestamp of the last enemy killed (combo tracker)
         let killCombo = 0;            // Current kill combo multiplier
+        let pendingPerkChoices = 0;   // Queue of perk-card picks owed to the player (multi-level-up support)
         let playerAnimProgress = 0; // Accumulator for smooth player walking/sprinting animations
         let lastFireTime = 0;
         // currentActiveWeapon declared globally above
@@ -4080,6 +4284,9 @@
             
             // Renderer (Antialias disabled on mobile for massive GPU fill-rate boost!)
             renderer = new THREE.WebGLRenderer({ antialias: !isMobileDevice });
+            // Clamp device pixel ratio: high-DPI/Retina screens otherwise render 3-4x the pixels for little
+            // visible gain. Mobile GPUs are fill-rate bound, so cap them tighter (1.5) than desktop (2).
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileDevice ? 1.5 : 2));
             renderer.setSize(window.innerWidth, window.innerHeight);
             // Dynamic shadows completely disabled on mobile (BasicShadowMap on PC for performance)
             renderer.shadowMap.enabled = !isMobileDevice;
@@ -4436,6 +4643,8 @@
             window.addEventListener('mousedown', onMouseDown);
             window.addEventListener('mouseup', onMouseUp);
             window.addEventListener('blur', onWindowBlur);
+            // Suppress the browser context menu so right-click can be used for dodge-dash
+            window.addEventListener('contextmenu', onContextMenu);
             
             // Compatibility reference
             activeGameScene = {
@@ -4519,6 +4728,7 @@
                     let h = window.innerHeight;
                     camera.aspect = w / h;
                     camera.updateProjectionMatrix();
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileDevice ? 1.5 : 2));
                     renderer.setSize(w, h);
                     
                     // Force redraw of dynamic elements that depend on layout size (like minimap)
@@ -4558,7 +4768,10 @@
             if (e.key === '5') consumeItemFromSlot('water');
             if (e.key === '6') consumeItemFromSlot('medkit');
             if (e.key === '7') consumeItemFromSlot('gasmask');
-            
+
+            // Dodge-dash: Q key (also right-click on desktop, dedicated button on mobile).
+            if (e.key === 'q' || e.key === 'Q' || e.key === 'Ð¹' || e.key === 'Ð') tryDash();
+
             if (e.key === 'Escape' || e.key === 'Esc') {
                 gameActive = false;
                 document.getElementById('pause-overlay').style.display = 'flex';
@@ -4605,13 +4818,22 @@
                 if (gameActive && playerGroup && gameState.hp > 0) {
                     fireWeapon();
                 }
+            } else if (e.button === 2) {
+                // Right mouse button = dodge-dash
+                e.preventDefault();
+                tryDash();
             }
         }
-        
+
         function onMouseUp(e) {
             if (e.button === 0) {
                 keys.mouseDown = false;
             }
+        }
+
+        function onContextMenu(e) {
+            // Block the right-click menu during play so RMB maps to dodge-dash.
+            if (gameActive) e.preventDefault();
         }
         
         function onWindowBlur() {
@@ -4743,7 +4965,7 @@
         }
         
         // Spawn 3D text (floating damage)
-        function spawnDamageText(worldPos, amount, isHeal = false) {
+        function spawnDamageText(worldPos, amount, isHeal = false, isCrit = false) {
             if (!scene || !camera) return; // Safety guard
             let tempV = worldPos.clone();
             tempV.project(camera);
@@ -4757,14 +4979,19 @@
             div.style.left = `${x}px`;
             div.style.top = `${y}px`;
             div.style.transform = 'translate(-50%, -50%)';
-            div.style.color = isHeal ? '#22c55e' : '#f43f5e';
+            div.style.color = isCrit ? '#facc15' : (isHeal ? '#22c55e' : '#f43f5e');
             div.style.fontFamily = "'Press Start 2P', monospace";
-            div.style.fontSize = '12px';
+            div.style.fontSize = isCrit ? '18px' : '12px';
             div.style.fontWeight = 'bold';
-            div.style.textShadow = '2px 2px 0px #000';
+            div.style.textShadow = isCrit ? '2px 2px 0px #7c2d12, 0 0 8px #f59e0b' : '2px 2px 0px #000';
             div.style.pointerEvents = 'none';
             div.style.zIndex = '90';
-            div.innerText = isHeal ? `+${amount}` : `-${amount}`;
+            // Numeric amounts get a +/- prefix; text labels (e.g. "DODGE", "CRIT!") render as-is.
+            if (typeof amount === 'number') {
+                div.innerText = isHeal ? `+${amount}` : `-${amount}`;
+            } else {
+                div.innerText = amount;
+            }
             document.body.appendChild(div);
             
             let start = Date.now();
@@ -4862,7 +5089,38 @@
             let perksMod = (gameState.runPerks && gameState.runPerks.fireRateMod !== undefined) ? gameState.runPerks.fireRateMod : 1.0;
             return base * (1 - gameState.skills.agility * 0.08) * perksMod;
         }
-        
+
+        // Dodge-dash: a short, fast burst in the current movement (or facing) direction that
+        // grants brief invulnerability (i-frames). Modern twin-stick/roguelite staple for
+        // dodging melee lunges and raider/boss projectiles. Bound to Space / right-click / mobile button.
+        function tryDash() {
+            if (!scene || !playerGroup || !gameActive || gameState.hp <= 0) return;
+            let now = Date.now();
+            if (now < dashReadyAt) return; // still on cooldown
+
+            // Determine dash direction: current movement input, else current facing.
+            let vx = 0, vz = 0;
+            if (keys.W) vz -= 1;
+            if (keys.S) vz += 1;
+            if (keys.A) vx -= 1;
+            if (keys.D) vx += 1;
+            if (vx === 0 && vz === 0) { vx = joystickInput.x; vz = joystickInput.y; }
+            dashDir.set(vx, 0, vz);
+            if (dashDir.lengthSq() < 0.01) {
+                // No movement input: dash toward where the character faces.
+                dashDir.set(Math.sin(playerGroup.rotation.y), 0, Math.cos(playerGroup.rotation.y));
+            }
+            dashDir.normalize();
+
+            dashActiveUntil = now + DASH_DURATION;
+            dashReadyAt = now + DASH_COOLDOWN;
+            screenShake = Math.min(1.2, screenShake + 0.18);
+            if (sound.playDash) sound.playDash();
+
+            // Brief cyan afterimage puff at the start of the dash.
+            spawnBoxSparks(new THREE.Vector3(playerGroup.position.x, 0.6, playerGroup.position.z), 0x06b6d4, 8, 0.12);
+        }
+
         function fireWeapon() {
             if (!scene || !playerGroup) return; // Safety guard
             let now = Date.now();
@@ -4885,11 +5143,8 @@
                 }
                 gameState.inventory.ammo_shotgun--;
             } else {
-                if (gameState.inventory.ammo_pistol <= 0) {
-                    addLogMessage("Out of pistol ammo!", "danger");
-                    return;
-                }
-                gameState.inventory.ammo_pistol--;
+                // Pistol is the infinite fallback weapon, so the player can never be left
+                // fully defenseless. The HUD shows "infinity" for it to match this behavior.
             }
             
             lastFireTime = now;
@@ -4916,10 +5171,16 @@
             let spawnPos = playerGroup.position.clone().add(gunOffset);
             
             // Muzzle flash light (Toggle intensity on global light to prevent WebGL shader compilation freeze)
+            // Clear any pending off-timer first: during automatic rifle fire, overlapping
+            // timers from earlier shots would otherwise switch the shared light off mid-burst.
             if (muzzleFlashLight) {
                 muzzleFlashLight.position.copy(spawnPos);
                 muzzleFlashLight.intensity = 4.0;
-                setTimeout(() => { if (muzzleFlashLight) muzzleFlashLight.intensity = 0.0; }, 40);
+                if (muzzleFlashTimer) clearTimeout(muzzleFlashTimer);
+                muzzleFlashTimer = setTimeout(() => {
+                    if (muzzleFlashLight) muzzleFlashLight.intensity = 0.0;
+                    muzzleFlashTimer = null;
+                }, 40);
             }
             
             if (currentActiveWeapon === 'shotgun') {
@@ -7168,8 +7429,22 @@
                     moveDir.normalize();
                 }
                 moveDir.multiplyScalar(speed * dt);
-                
-                if (isMoving && !playerGroup.userData.isHarvesting) {
+
+                // Dodge-dash overrides normal movement: slide fast along the locked dash
+                // direction (collision-checked) and leave a cyan trail. i-frames handled in damagePlayer().
+                let isDashing = Date.now() < dashActiveUntil;
+                if (isDashing) {
+                    let step = DASH_SPEED * dt;
+                    let nX = playerGroup.position.x + dashDir.x * step;
+                    if (!checkAABBCollision(nX, playerGroup.position.z)) playerGroup.position.x = nX;
+                    let nZ = playerGroup.position.z + dashDir.z * step;
+                    if (!checkAABBCollision(playerGroup.position.x, nZ)) playerGroup.position.z = nZ;
+                    if (Math.random() < 0.9) {
+                        spawnBoxSparks(new THREE.Vector3(playerGroup.position.x, 0.5, playerGroup.position.z), 0x22d3ee, 1, 0.06);
+                    }
+                }
+
+                if (!isDashing && isMoving && !playerGroup.userData.isHarvesting) {
                     // Try X move
                     let nextX = playerGroup.position.x + moveDir.x;
                     let nextZ = playerGroup.position.z;
@@ -7244,10 +7519,11 @@
                     if (age > b.userData.lifeTime) {
                         collided = true;
                     } else {
-                        // Check collision with walls/train
-                        let bBox = new THREE.Box3().setFromObject(b);
+                        // Check collision with walls/train (cheap reused box; avoids per-frame setFromObject traversal)
+                        _tmpBulletCenter.copy(b.position);
+                        _tmpBulletBox.setFromCenterAndSize(_tmpBulletCenter, _tmpBulletSize);
                         for (let col of colliders) {
-                            if (bBox.intersectsBox(col)) {
+                            if (_tmpBulletBox.intersectsBox(col)) {
                                 collided = true;
                                 break;
                             }
@@ -7264,18 +7540,26 @@
                                     let distXZ = Math.sqrt(dx * dx + dz * dz);
                                     let hitRadius = (e.userData.type === 'boss') ? 1.8 : 0.7;
                                     if (distXZ < hitRadius) {
-                                        // Hit enemy!
+                                        // Hit enemy! Roll for a critical hit (chance scales with Agility).
+                                        let critChance = Math.min(0.5, 0.12 + gameState.skills.agility * 0.03);
+                                        let isCrit = Math.random() < critChance;
+                                        let dmg = isCrit ? Math.round(b.userData.damage * 2.2) : b.userData.damage;
+
                                         sound.playHit();
-                                        spawnBoxSparks(b.position, 0xd90429, 6, 0.1); // blood sparks!
+                                        spawnBoxSparks(b.position, isCrit ? 0xfacc15 : 0xd90429, isCrit ? 12 : 6, isCrit ? 0.16 : 0.1);
                                         spawnBloodDecal(e.position.x, e.position.z);
-                                        e.userData.hp -= b.userData.damage;
-                                        
-                                        // Damage indicator popup
-                                        spawnDamageText(e.position.clone().add(new THREE.Vector3(0, 1.5, 0)), b.userData.damage);
-                                        
+                                        e.userData.hp -= dmg;
+
+                                        // Damage indicator popup (crits render bigger + gold via a "!" label)
+                                        if (isCrit) {
+                                            spawnDamageText(e.position.clone().add(new THREE.Vector3(0, 1.7, 0)), `${dmg}!`, false, true);
+                                        } else {
+                                            spawnDamageText(e.position.clone().add(new THREE.Vector3(0, 1.5, 0)), dmg);
+                                        }
+
                                         // Flash enemy mesh
-                                        activeGameScene.flashSprite(e, 0xff3333, 85);
-                                        
+                                        activeGameScene.flashSprite(e, isCrit ? 0xfde047 : 0xff3333, isCrit ? 120 : 85);
+
                                         collided = true;
                                         if (e.userData.hp <= 0) {
                                             killEnemy(e);
@@ -7406,8 +7690,8 @@
                 let aspect = window.innerWidth / window.innerHeight;
                 let heightOffset = aspect < 1.0 ? 19.0 : 13.0;
                 let depthOffset = aspect < 1.0 ? 13.0 : 9.0;
-                let targetCamPos = new THREE.Vector3(playerGroup.position.x, playerGroup.position.y + heightOffset, playerGroup.position.z + depthOffset);
-                camera.position.lerp(targetCamPos, 0.08);
+                _scratchCamPos.set(playerGroup.position.x, playerGroup.position.y + heightOffset, playerGroup.position.z + depthOffset);
+                camera.position.lerp(_scratchCamPos, 0.08);
                 
                 // Apply dynamic screen shake offset directly to camera position
                 if (screenShake > 0) {
@@ -7416,8 +7700,9 @@
                     camera.position.z += (Math.random() - 0.5) * screenShake;
                 }
                 
-                camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 0.5, -0.5)));
-                
+                _scratchLookAt.copy(playerGroup.position); _scratchLookAt.y += 0.5; _scratchLookAt.z -= 0.5;
+                camera.lookAt(_scratchLookAt);
+
                 // Track sunLight position and shadow camera around the player (respecting dynamic sun offset)
                 if (sunLight) {
                     let offset = sunLight.userData.offset || new THREE.Vector3(15, 30, 10);
@@ -7498,13 +7783,11 @@
         }
         
         function checkAABBCollision(x, z) {
-            // Player Box size
-            let playerBox = new THREE.Box3(
-                new THREE.Vector3(x - 0.35, 0.05, z - 0.35),
-                new THREE.Vector3(x + 0.35, 1.85, z + 0.35)
-            );
+            // Player Box size (reuse a shared Box3; not re-entrant so a single temp is safe)
+            _tmpPlayerBox.min.set(x - 0.35, 0.05, z - 0.35);
+            _tmpPlayerBox.max.set(x + 0.35, 1.85, z + 0.35);
             for (let box of colliders) {
-                if (playerBox.intersectsBox(box)) return true;
+                if (_tmpPlayerBox.intersectsBox(box)) return true;
             }
             return false;
         }
@@ -7570,13 +7853,12 @@
                         let nextZ = e.position.z + stepZ;
                         
                         // Collision check
-                        let colBox = new THREE.Box3(
-                            new THREE.Vector3(nextX - 0.3, 0.05, nextZ - 0.3),
-                            new THREE.Vector3(nextX + 0.3, 1.8, nextZ + 0.3)
-                        );
+                        _scratchBoxMin.set(nextX - 0.3, 0.05, nextZ - 0.3);
+                        _scratchBoxMax.set(nextX + 0.3, 1.8, nextZ + 0.3);
+                        _scratchColBox.set(_scratchBoxMin, _scratchBoxMax);
                         let collided = false;
                         for (let col of colliders) {
-                            if (colBox.intersectsBox(col)) { collided = true; break; }
+                            if (_scratchColBox.intersectsBox(col)) { collided = true; break; }
                         }
                         if (collided) {
                             // Turn around & pick new waypoint immediately
@@ -7616,13 +7898,12 @@
                         let nextZ = e.position.z + stepZ;
                         
                         // Voxel collision sliding
-                        let colBox = new THREE.Box3(
-                            new THREE.Vector3(nextX - 0.35, 0.05, nextZ - 0.35),
-                            new THREE.Vector3(nextX + 0.35, 1.8, nextZ + 0.35)
-                        );
+                        _scratchBoxMin.set(nextX - 0.35, 0.05, nextZ - 0.35);
+                        _scratchBoxMax.set(nextX + 0.35, 1.8, nextZ + 0.35);
+                        _scratchColBox.set(_scratchBoxMin, _scratchBoxMax);
                         let collided = false;
                         for (let col of colliders) {
-                            if (colBox.intersectsBox(col)) { collided = true; break; }
+                            if (_scratchColBox.intersectsBox(col)) { collided = true; break; }
                         }
                         if (!collided) {
                             // Prevent zombie overlapping player - maintain 0.8 units distance
@@ -7716,7 +7997,7 @@
                     }
                 }
                 else if (e.userData.type === 'mutant') {
-                    if (dist < viewRange) {
+                    if (dist < detectDist + 3.0) {
                         // Spider leap mechanic
                         let now = Date.now();
                         if (dist < 4.5 && now > e.userData.leapCooldown + 5000) {
@@ -7890,6 +8171,7 @@
             window.removeEventListener('mousedown', onMouseDown);
             window.removeEventListener('mouseup', onMouseUp);
             window.removeEventListener('blur', onWindowBlur);
+            window.removeEventListener('contextmenu', onContextMenu);
             
             const container = document.getElementById('game-container');
             container.innerHTML = '';

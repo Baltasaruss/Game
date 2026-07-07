@@ -1283,7 +1283,7 @@
         }
 
         /* Media query for mobile devices (portrait and landscape) */
-        @media (max-width: 1024px), (max-height: 500px) {
+        @media (max-width: 1366px) and (pointer: coarse), (max-width: 1024px), (max-height: 500px) {
             /* Hide slot hotkeys on mobile */
             .inv-slot-key {
                 display: none;
@@ -1754,6 +1754,15 @@
             <div style="margin-bottom: 1.5rem;">
                 <label for="volume-range" style="font-weight: 600; display: block; margin-bottom: 6px;">🔊 Sound Volume:</label>
                 <input type="range" id="volume-range" min="0" max="1" step="0.05" value="0.4" style="width:100%; cursor: pointer;" oninput="changeVolume(this.value)">
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="device-mode-select" style="font-weight: 600; display: block; margin-bottom: 6px;">📱 Device Mode / Performance:</label>
+                <select id="device-mode-select" style="width:100%; padding: 0.5rem; background: rgba(30, 30, 40, 0.9); color: #fff; border: 1px solid #3f3f46; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.85rem;" onchange="changeDeviceMode(this.value)">
+                    <option value="auto">Auto-Detect</option>
+                    <option value="mobile">Mobile / Tablet (Optimization Mode - No Shadows)</option>
+                    <option value="desktop">Desktop (Graphics Mode - Shadows, High Rain)</option>
+                </select>
             </div>
 
             <button class="menu-btn btn-danger" onclick="resetSaveData()" style="padding: 0.6rem; font-size: 0.9rem; margin-bottom: 1.5rem;">Reset Game Progress</button>
@@ -2778,6 +2787,13 @@
 
         function changeVolume(value) {
             sound.setVolume(value);
+        }
+
+        function changeDeviceMode(value) {
+            localStorage.setItem('game_device_mode', value);
+            updateDeviceMode();
+            alert("Settings updated. The game will now reload to apply the selected device mode and optimization options.");
+            window.location.reload();
         }
 
         // =========================================================================
@@ -4149,7 +4165,31 @@
         let gameActive = false;
         let animationFrameId = null;
         
-        let isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
+        let isMobileDevice = false;
+        let rainCount = 1500; // Declare globally here to avoid TDZ (Temporal Dead Zone) issues
+        
+        function updateDeviceMode() {
+            let mode = localStorage.getItem('game_device_mode') || 'auto';
+            if (mode === 'mobile') {
+                isMobileDevice = true;
+            } else if (mode === 'desktop') {
+                isMobileDevice = false;
+            } else { // 'auto'
+                isMobileDevice = ('ontouchstart' in window) || 
+                                 (navigator.maxTouchPoints > 0) || 
+                                 (navigator.msMaxTouchPoints > 0) || 
+                                 (window.innerWidth < 800) || 
+                                 (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+            }
+            
+            let select = document.getElementById('device-mode-select');
+            if (select) select.value = mode;
+            
+            rainCount = isMobileDevice ? 400 : 1500;
+        }
+        
+        updateDeviceMode();
+        
         let joystickInput = { x: 0, y: 0 };
         let joystickShootInput = { x: 0, y: 0 };
         let isShootingJoystickActive = false;
@@ -4184,7 +4224,7 @@
         let worldMousePoint = new THREE.Vector3();
         let sunLight = null;
         let rainParticles = null;
-        let rainCount = isMobileDevice ? 400 : 1500; // Optimized particle count for mobile screens
+        rainCount = isMobileDevice ? 400 : 1500; // Optimized particle count for mobile screens
         let muzzleFlashLight = null;
         let muzzleFlashTimer = null;  // Pending "turn muzzle flash off" timer (cleared on rapid fire)
         let bulletGeo = new THREE.BoxGeometry(0.12, 0.12, 0.4);
@@ -8227,7 +8267,7 @@
         }
 
         function initMobileControls() {
-            isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
+            updateDeviceMode();
             
             if (!isMobileDevice) return;
             

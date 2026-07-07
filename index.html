@@ -2,13 +2,54 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Последний Внедорожник: Выживание в Апокалипсисе</title>
     <!-- Three.js 3D CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
+        /* Enforced Portrait orientation styles */
+        #orientation-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.98);
+            z-index: 999999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #f8fafc;
+            text-align: center;
+            font-family: 'Outfit', sans-serif;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        /* Screen Rotate animation */
+        @keyframes spin-rotate {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* Target mobile devices in landscape mode */
+        @media screen and (orientation: landscape) and (max-device-width: 932px) {
+            #orientation-overlay {
+                display: flex !important;
+            }
+        }
+
+        /* Prevent zoom/pinch-to-zoom on all touch interactions */
+        html, body {
+            touch-action: pan-x pan-y;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
         /* Стилизация интерфейса игры */
         :root {
             --bg-dark: #09090b;
@@ -1662,6 +1703,12 @@
     </style>
 </head>
 <body>
+    <!-- Portrait Orientation Enforcement Overlay -->
+    <div id="orientation-overlay">
+        <div style="font-size: 64px; margin-bottom: 24px; animation: spin-rotate 2s infinite linear;">📱</div>
+        <h2 style="color: var(--primary-accent); margin: 0 0 12px 0; font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Поверните устройство</h2>
+        <p style="color: var(--text-muted); margin: 0; font-size: 15px; max-width: 320px; line-height: 1.5; font-weight: 500;">Игра оптимизирована исключительно для вертикального (портретного) режима.</p>
+    </div>
     <div id="game-container"></div>
 
     <!-- ВЫБОР ПЕРКА (РОГАЛИК-МЕХАНИКА ТАЙМКИЛЛЕРА) -->
@@ -3908,6 +3955,17 @@
         
         let scene, camera, renderer;
         // activeGameScene объявлен выше в глобальном контексте
+        // Prevent pinch-to-zoom on mobile devices (multi-touch zoom prevention)
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+        });
+
         let gameActive = false;
         let animationFrameId = null;
         

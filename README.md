@@ -1,60 +1,60 @@
-# 🚗 Последний Внедорожник: Выживание в 3D Апокалипсисе
+# 🚗 The Last SUV: 3D Apocalypse Survival
 
-«Последний Внедорожник» — это атмосферный трехмерный браузерный шутер/выживание (3D Top-Down Shooter) с видом сверху в мире зомби-апокалипсиса. Игра разработана на чистом HTML5 с использованием библиотеки **Three.js** для рендеринга WebGL 3D-графики и **Web Audio API** для процедурной генерации звуковых эффектов.
+"The Last SUV" is an atmospheric 3D browser shooter/survival (3D Top-Down Shooter) with a top-down view in a zombie apocalypse world. The game is built with pure HTML5 using the **Three.js** library for WebGL 3D graphics rendering and the **Web Audio API** for procedural sound effect generation.
 
-Игра предлагает стилизованную низкополигональную графику (в эстетике Roblox-персонажей), динамическое освещение, тени, развитую систему выживания и крафта.
-
----
-
-## 🎮 Как играть прямо сейчас (GitHub Pages)
-
-Игра развернута и доступна через GitHub Pages!
-
-👉 **Ссылка на игру:** [https://baltasaruss.github.io/Game/](https://baltasaruss.github.io/Game/)
+The game features stylized low-poly graphics (in the aesthetic of Roblox characters), dynamic lighting, shadows, and a developed survival and crafting system.
 
 ---
 
-## 🕹️ Управление
+## 🎮 How to play right now (GitHub Pages)
 
-* **W, A, S, D** — Перемещение персонажа (полноценный стрейф во все стороны).
-* **Движение мыши** — Прицеливание (персонаж на ПК всегда смотрит в сторону курсора мыши).
-* **Левая кнопка мыши (ЛКМ)** — Стрельба.
-  - Пистолет и Дробовик требуют одиночных кликов.
-  - Автомат АК-74 поддерживает **автоматический огонь** (зажмите ЛКМ).
-* **Зажать Shift** — Бег (расходует шкалу Выносливости ⚡).
-* **Клавиши 1, 2, 3** — Выбор оружия:
-  - `1` — Пистолет 🔫 (высокая точность, патроны 9х18мм)
-  - `2` — Автомат АК-74 💥 (высокий темп стрельбы, автоматическая стрельба при зажатии)
-  - `3` — Дробовик МР-133 🔥 (мощный выстрел веером дроби на близкой дистанции)
-* **Клавиши 4, 5, 6, 7** — Использование предметов быстрого доступа:
-  - `4` — Съесть тушенку 🥫 (+35 сытости, +12 здоровья)
-  - `5` — Выпить чистую воду 🥤 (+45 жажды, с установленным фильтром на авто +75)
-  - `6` — Использовать Аптечку ➕ (+50–100 здоровья)
-  - `7` — Заменить фильтр противогаза 🎭 (быстрое крафтовое обновление для защиты от радиации)
-* **Пробел** (или зажатие кнопки на мобильном экране) — Добыча бензина из канистр ⛽ или лома из куч хлама ⚙️.
-* **Клавиша E** — Сесть во внедорожник (когда вы находитесь рядом с машиной).
-* **ESC** — Пауза.
+The game is deployed and accessible via GitHub Pages!
+
+👉 **Game link:** [https://baltasaruss.github.io/Game/](https://baltasaruss.github.io/Game/)
 
 ---
 
-## ⚙️ Особенности игры и механики
+## 🕹️ Controls
 
-1. **Жизненные показатели**: Следите за здоровьем (HP), голодом, жаждой и уровнем радиации (Rad ☢️).
-2. **Система радиации**: В зараженных зонах (например, в пригородах) радиация быстро растет. Заряд фильтра противогаза защищает вас, а при 100% облучении здоровье начинает стремительно падать.
-3. **Внедорожник с бронированным домом на колесах (RV) 🚗**: Ваша мобильная база.
-   - **Заправка**: Заливайте собранный бензин в бензобак, чтобы путешествовать дальше (1 канистра = +12 топлива).
-   - **Прокачка RV**: Улучшайте двигатель (снижает расход топлива), броню (защищает от грабителей в пути) и багажник (позволяет перевозить больше бензина).
-   - **Верстак**: Позволяет крафтить патроны, аптечки, бронежилеты (снижают урон на 30%), фильтры для воды и противогазов.
-4. **Прокачка персонажа**: Получайте опыт за убийство зомби и добычу ресурсов. Каждое повышение уровня дает очки навыков для распределения в меню персонажа (Сила, Ловкость, Выживание).
-5. **Интерактивные 3D NPC**: На локациях вам встретятся выжившие — сталкеры, греющиеся у костров, раненые с просьбами об аптечках или вооруженные часовые. У них есть динамические облачка диалогов, реагирующие на события.
-6. **Разнообразные локации**: 7 детализированных уровней от стартовой стоянки до секретного военного бункера «Омега» с финальным боссом — гигантским Сверхмутантом.
-7. **Автосохранение 💾**: Весь ваш прогресс автоматически записывается в LocalStorage при прибытии на новые безопасные стоянки.
+* **W, A, S, D** — Character movement (full strafe in all directions).
+* **Mouse movement** — Aiming (the character on PC always faces the mouse cursor).
+* **Left Mouse Button (LMB)** — Shooting.
+  - Pistol and Shotgun require single clicks.
+  - The AK-74 Assault Rifle supports **automatic fire** (hold LMB).
+* **Hold Shift** — Sprint (consumes Stamina ⚡).
+* **Keys 1, 2, 3** — Weapon selection:
+  - `1` — Pistol 🔫 (high accuracy, 9x18mm rounds)
+  - `2` — AK-74 Assault Rifle 💥 (high rate of fire, automatic fire when held)
+  - `3` — MP-133 Shotgun 🔥 (powerful buckshot spread at close range)
+* **Keys 4, 5, 6, 7** — Use quick-access items:
+  - `4` — Eat Canned Stew 🥫 (+35 hunger, +12 health)
+  - `5` — Drink Clean Water 🥤 (+45 thirst, with filter installed +75 auto)
+  - `6` — Use Medkit ➕ (+50–100 health)
+  - `7` — Replace Gas Mask Filter 🎭 (quick crafted refresh for radiation protection)
+* **Space** (or hold button on mobile screen) — Collect gasoline from canisters ⛽ or scrap from junk piles ⚙️.
+* **Key E** — Enter the SUV (when you are next to the vehicle).
+* **ESC** — Pause.
 
 ---
 
-## 🛠️ Технологический стек
+## ⚙️ Game Features and Mechanics
 
-* **Three.js** (WebGL 3D рендер, динамические SpotLight/PointLight источники света, мягкие тени, скелетная микро-анимация конечностей).
-* **Процедурная генерация 3D объектов**: Все модели (канистры бензина, бутылки воды, аптечки, ящики патронов, разбитые горящие автомобили, разрушенные здания с осколками оконных стекол, деревья и стены) генерируются программно с помощью геометрических примитивов Three.js без загрузки внешних тяжелых ассетов.
-* **InstancedMesh**: Оптимизированный рендеринг сетки земли с 4 случайными вариациями текстур для травы, песка и асфальта, убирающий эффект визуальной монотонности.
-* **Web Audio API**: Процедурный синтез звуков (выстрелы, взрывы, рычание зомби, гул мотора внедорожника и фоновый эмбиент).
+1. **Vital Stats**: Monitor health (HP), hunger, thirst, and radiation level (Rad ☢️).
+2. **Radiation System**: In contaminated zones (e.g., outskirts), radiation rises quickly. The gas mask filter charge protects you, and at 100% exposure, health begins to plummet.
+3. **Armored RV SUV 🚗**: Your mobile base.
+   - **Refueling**: Pour collected gasoline into the fuel tank to travel further (1 canister = +12 fuel).
+   - **RV Upgrades**: Upgrade the engine (reduces fuel consumption), armor (protects from raiders on the road), and trunk (allows carrying more gasoline).
+   - **Workbench**: Allows crafting ammo, medkits, body armor (reduces damage by 30%), water filters, and gas mask filters.
+4. **Character Progression**: Earn experience by killing zombies and collecting resources. Each level-up grants skill points to distribute in the character menu (Strength, Agility, Survival).
+5. **Interactive 3D NPCs**: You will encounter survivors at locations — stalkers warming by campfires, wounded ones asking for medkits, or armed sentries. They have dynamic dialogue bubbles that react to events.
+6. **Diverse Locations**: 7 detailed levels from the starting camp to the secret military bunker "Omega" with the final boss — a giant Super Mutant.
+7. **Auto-save 💾**: All your progress is automatically saved to LocalStorage upon arriving at new safe camps.
+
+---
+
+## 🛠️ Tech Stack
+
+* **Three.js** (WebGL 3D renderer, dynamic SpotLight/PointLight sources, soft shadows, skeletal micro-animation of limbs).
+* **Procedural 3D Object Generation**: All models (gasoline canisters, water bottles, medkits, ammo boxes, broken burning cars, ruined buildings with broken window glass, trees, and walls) are generated programmatically using Three.js geometry primitives without loading heavy external assets.
+* **InstancedMesh**: Optimized ground mesh rendering with 4 random texture variations for grass, sand, and asphalt, eliminating visual monotony.
+* **Web Audio API**: Procedural sound synthesis (gunshots, explosions, zombie growls, SUV engine hum, and ambient background).

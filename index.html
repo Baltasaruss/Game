@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Последний Внедорожник: Выживание в Апокалипсисе</title>
+    <title>Last SUV: Apocalypse Survival</title>
     <!-- Three.js 3D CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Google Fonts -->
@@ -50,16 +50,16 @@
             -webkit-user-select: none;
         }
 
-        /* Стилизация интерфейса игры */
+        /* Game interface styling */
         :root {
             --bg-dark: #09090b;
             --panel-bg: rgba(20, 20, 25, 0.85);
             --border-glow: rgba(163, 230, 53, 0.3);
-            --primary-accent: #a3e635; /* Зеленый лайм */
-            --danger-accent: #f43f5e; /* Малиново-красный */
-            --cyan-accent: #38bdf8; /* Сине-голубой */
-            --orange-accent: #f97316; /* Рыжий/дрова */
-            --gold-accent: #fbbf24; /* Золотой */
+            --primary-accent: #a3e635; /* Lime green */
+            --danger-accent: #f43f5e; /* Crimson red */
+            --cyan-accent: #38bdf8; /* Sky blue */
+            --orange-accent: #f97316; /* Orange/Fuel */
+            --gold-accent: #fbbf24; /* Gold */
             --text-main: #f4f4f5;
             --text-muted: #a1a1aa;
         }
@@ -88,7 +88,7 @@
             display: block;
         }
 
-        /* Общие панели */
+        /* Common panels */
         .overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -111,7 +111,7 @@
             text-align: center;
         }
 
-        /* Главное меню */
+        /* Main menu */
         #main-menu-overlay {
             display: flex;
         }
@@ -178,21 +178,21 @@
             box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
         }
 
-        /* HUD - Отображение параметров игрока во время игры */
+        /* HUD - In-game player stats display */
         #hud-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; /* Дает кликать сквозь HUD */
+            pointer-events: none; /* Allows clicking through HUD */
             z-index: 50;
             display: none;
             padding: 1.5rem;
         }
 
         .hud-element {
-            pointer-events: auto; /* Дает взаимодействовать с кнопками HUD */
+            pointer-events: auto; /* Allows interacting with HUD buttons */
         }
 
-        /* Левая верхняя панель - Показатели */
+        /* Top-left panel - Stats */
         .hud-stats-panel {
             position: absolute;
             top: 1.5rem;
@@ -251,15 +251,15 @@
         .bar-hp { background: var(--danger-accent); }
         .bar-hunger { background: var(--orange-accent); }
         .bar-thirst { background: var(--cyan-accent); }
-        .bar-stamina { background: #10b981; } /* Изумрудный */
+        .bar-stamina { background: #10b981; } /* Emerald */
         .bar-rad { background: var(--primary-accent); }
 
-        /* Временная панель радиации */
+        /* Temporary radiation panel */
         #rad-row {
             display: none;
         }
 
-        /* Индикатор уровня вверху по центру */
+        /* Level indicator top center */
         .hud-level-panel {
             position: absolute;
             top: 1.5rem;
@@ -296,7 +296,7 @@
             transition: width 0.2s ease-out;
         }
 
-        /* Правая верхняя панель - Оружие */
+        /* Top-right panel - Weapon */
         .hud-weapon-panel {
             position: absolute;
             top: 1.5rem;
@@ -331,7 +331,7 @@
             color: var(--primary-accent);
         }
 
-        /* Нижняя панель - Инвентарь ресурсов */
+        /* Bottom panel - Resource inventory */
         .hud-inventory-panel {
             position: absolute;
             bottom: 1.5rem;
@@ -391,7 +391,7 @@
             font-weight: bold;
         }
 
-        /* Индикатор дров и металлолома отдельно */
+        /* Fuel and scrap indicator */
         .hud-mats-panel {
             position: absolute;
             bottom: 1.5rem;
@@ -424,7 +424,7 @@
             padding-left: 10px;
         }
 
-        /* Мини-карта */
+        /* Minimap */
         .hud-minimap-panel {
             position: absolute;
             bottom: 1.5rem;
@@ -446,7 +446,7 @@
             display: block;
         }
 
-        /* Лог событий в игре */
+        /* In-game event log */
         #game-log {
             position: absolute;
             bottom: 7.5rem;
@@ -488,7 +488,7 @@
             to { opacity: 1; transform: translateX(0); }
         }
 
-        /* Верстак / Меню станции */
+        /* Workbench / Station menu */
         #station-menu-overlay {
             display: none;
         }
@@ -501,7 +501,7 @@
             overflow: hidden;
         }
 
-        /* Левая панель с табами */
+        /* Left panel with tabs */
         .station-sidebar {
             width: 220px;
             background: rgba(10, 10, 12, 0.9);
@@ -553,7 +553,7 @@
             font-size: 1.1rem;
         }
 
-        /* Правая панель с контентом */
+        /* Right panel with content */
         .station-content {
             flex-grow: 1;
             padding: 2rem;
@@ -588,7 +588,7 @@
             margin-bottom: 1.5rem;
         }
 
-        /* Вкладка Вылазки */
+        /* Sortie tab */
         .loc-details-box {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.04);
@@ -615,7 +615,7 @@
         .badge-med { background: rgba(249, 115, 22, 0.2); color: #f97316; }
         .badge-high { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
 
-        /* Вкладка Крафта */
+        /* Crafting tab */
         .craft-grid {
             display: grid;
             grid-template-cols: 1fr 1fr;
@@ -749,7 +749,7 @@
             cursor: not-allowed;
         }
 
-        /* Вкладка Паровоза */
+        /* Train tab */
         .train-boiler-box {
             background: rgba(249, 115, 22, 0.05);
             border: 1px solid rgba(249, 115, 22, 0.15);
@@ -818,7 +818,7 @@
             color: var(--text-muted);
         }
 
-        /* Вкладка Персонажа */
+        /* Character tab */
         .char-stats-container {
             display: grid;
             grid-template-cols: 1fr 1fr;
@@ -886,7 +886,7 @@
             background: var(--text-muted);
         }
 
-        /* Вкладка Карты Путей */
+        /* Route Map tab */
         .route-map-container {
             display: flex;
             flex-direction: column;
@@ -972,7 +972,7 @@
             cursor: not-allowed;
         }
 
-        /* Торговец и Диалог */
+        /* Trader and Dialog */
         .npc-box {
             display: flex;
             gap: 1.5rem;
@@ -1016,7 +1016,7 @@
             gap: 8px;
         }
 
-        /* Анимация переезда поезда */
+        /* Train travel animation */
         #travel-overlay {
             display: none;
             background: #050507;
@@ -1093,7 +1093,7 @@
             box-shadow: 0 0 10px var(--primary-accent);
         }
 
-        /* Интерактивное обучение (туториал) */
+        /* Interactive tutorial */
         #tutorial-overlay {
             display: none;
             z-index: 200;
@@ -1129,12 +1129,12 @@
             margin-bottom: 1.5rem;
         }
 
-        /* Меню паузы */
+        /* Pause menu */
         #pause-overlay {
             display: none;
         }
 
-        /* Победа и Поражение */
+        /* Victory and Defeat */
         #win-overlay, #gameover-overlay {
             display: none;
         }
@@ -1155,7 +1155,7 @@
             margin-bottom: 1rem;
         }
 
-        /* Мобильное управление */
+        /* Mobile controls */
         #mobile-controls {
             position: absolute;
             top: 0;
@@ -1282,7 +1282,7 @@
             font-weight: bold;
         }
 
-        /* Медиа-запрос для мобильных устройств (вертикальный и горизонтальный экраны) */
+        /* Media query for mobile devices (portrait and landscape) */
         @media (max-width: 1024px), (max-height: 500px) {
             /* Hide slot hotkeys on mobile */
             .inv-slot-key {
@@ -1492,7 +1492,7 @@
             }
         }
 
-        /* Специальные CSS правила для горизонтальной ориентации мобильных телефонов (широкий, но низкий экран) */
+        /* Special CSS rules for landscape mobile (wide but short screen) */
         @media (max-height: 500px) and (orientation: landscape) {
             .hud-stats-panel {
                 top: 0.25rem !important;
@@ -1506,7 +1506,7 @@
                 left: 200px !important;
                 bottom: auto !important;
                 display: flex !important;
-                flex-direction: row !important; /* Выстраиваем материалы в строчку */
+                flex-direction: row !important; /* Arrange materials in a row */
                 gap: 8px !important;
                 padding: 0.25rem 0.5rem !important;
                 font-size: 0.7rem !important;
@@ -1569,12 +1569,12 @@
                 font-size: 0.5rem !important;
             }
             
-            /* Сдвигаем кнопки и джойстики по краям, освобождая центр экрана */
+            /* Shift buttons and joysticks to edges, freeing screen center */
             #mobile-action-buttons {
                 bottom: 0.5rem !important;
                 left: 0 !important;
                 width: 100% !important;
-                padding: 0 7.5rem !important; /* Кнопки находятся прямо около джойстиков */
+                padding: 0 7.5rem !important; /* Buttons next to joysticks */
                 display: flex !important;
                 justify-content: space-between !important;
                 pointer-events: none !important;
@@ -1706,74 +1706,74 @@
     <!-- Portrait Orientation Enforcement Overlay -->
     <div id="orientation-overlay">
         <div style="font-size: 64px; margin-bottom: 24px; animation: spin-rotate 2s infinite linear;">📱</div>
-        <h2 style="color: var(--primary-accent); margin: 0 0 12px 0; font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Поверните устройство</h2>
-        <p style="color: var(--text-muted); margin: 0; font-size: 15px; max-width: 320px; line-height: 1.5; font-weight: 500;">Игра оптимизирована исключительно для вертикального (портретного) режима.</p>
+        <h2 style="color: var(--primary-accent); margin: 0 0 12px 0; font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Rotate Device</h2>
+        <p style="color: var(--text-muted); margin: 0; font-size: 15px; max-width: 320px; line-height: 1.5; font-weight: 500;">Game is optimized exclusively for portrait mode.</p>
     </div>
     <div id="game-container"></div>
 
-    <!-- ВЫБОР ПЕРКА (РОГАЛИК-МЕХАНИКА ТАЙМКИЛЛЕРА) -->
+    <!-- PERK SELECTION (ROGUELIKE TIMEKILLER MECHANIC) -->
     <div id="perk-overlay">
-        <h2 id="perk-title">ВЫБОР УЛУЧШЕНИЯ!</h2>
+        <h2 id="perk-title">CHOOSE UPGRADE!</h2>
         <div id="perk-cards-container"></div>
     </div>
 
-    <!-- КОМБО-ИНДИКАТОР -->
-    <div id="combo-popup">ДВОЙНОЕ УБИЙСТВО!</div>
+    <!-- COMBO INDICATOR -->
+    <div id="combo-popup">DOUBLE KILL!</div>
 
-    <!-- 1. ГЛАВНОЕ МЕНЮ -->
+    <!-- 1. MAIN MENU -->
     <div id="main-menu-overlay" class="overlay">
         <div class="glass-panel menu-content">
-            <h1 class="game-title">ПОСЛЕДНИЙ<br>ВНЕДОРОЖНИК</h1>
-            <p class="game-subtitle">Постапокалиптическое Выживание</p>
-            <button class="menu-btn" onclick="startNewGame()">Новая Игра</button>
-            <button class="menu-btn" id="continue-btn" onclick="loadSavedGame()" disabled>Продолжить</button>
-            <button class="menu-btn" onclick="openSettings()">Настройки и Справка</button>
+            <h1 class="game-title">LAST<br>SUV</h1>
+            <p class="game-subtitle">Post-Apocalyptic Survival</p>
+            <button class="menu-btn" onclick="startNewGame()">New Game</button>
+            <button class="menu-btn" id="continue-btn" onclick="loadSavedGame()" disabled>Continue</button>
+            <button class="menu-btn" onclick="openSettings()">Settings & Help</button>
         </div>
     </div>
 
-    <!-- 2. НАСТРОЙКИ И СПРАВКА -->
+    <!-- 2. SETTINGS & HELP -->
     <div id="settings-overlay" class="overlay" style="display:none;">
         <div class="glass-panel" style="width: 500px; text-align: left;">
-            <h2 class="tab-title" style="margin-bottom: 1rem; text-align: center; color: var(--primary-accent);">СПРАВКА И НАСТРОЙКИ</h2>
+            <h2 class="tab-title" style="margin-bottom: 1rem; text-align: center; color: var(--primary-accent);">HELP & SETTINGS</h2>
             <div style="font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 5px;">
-                <p><strong>🕹️ Управление (ПК):</strong></p>
-                <p>• <strong>W, A, S, D</strong> / <strong>Стрелочки</strong> – Передвижение.</p>
-                <p>• <strong>Мышь</strong> – Прицеливание, <strong>ЛКМ</strong> – Выстрел.</p>
-                <p>• <strong>Shift</strong> – Спринт, <strong>Пробел</strong> – Сбор бензина и хлама.</p>
-                <p>• <strong>E (или клик)</strong> – Войти во внедорожник (на стоянке).</p>
-                <p>• <strong>1, 2, 3</strong> – Смена оружия, <strong>4, 5, 6, 7</strong> – Предметы.</p>
-                <p><strong>📱 Управление (Мобильные):</strong></p>
-                <p>• <strong>Левый джойстик</strong> – Передвижение.</p>
-                <p>• <strong>Правый джойстик</strong> – Прицеливание и Автострельба.</p>
-                <p>• <strong>Одиночный тап по экрану</strong> – Выстрел в точку касания.</p>
-                <p>• <strong>Кнопка 🖐️</strong> – Сбор ресурсов / Войти во внедорожник.</p>
-                <p>• <strong>Кнопка ⚡</strong> – Включение спринта (бег).</p>
-                <p>• <strong>Быстрые слоты снизу</strong> – Выбор оружия и лечение.</p>
+                <p><strong>🕹️ Controls (PC):</strong></p>
+                <p>• <strong>W, A, S, D</strong> / <strong>Arrows</strong> – Movement.</p>
+                <p>• <strong>Mouse</strong> – Aiming, <strong>LMB</strong> – Shot.</p>
+                <p>• <strong>Shift</strong> – Sprint, <strong>Space</strong> – Collect gasoline and scrap.</p>
+                <p>• <strong>E (or click)</strong> – Enter SUV (at camp).</p>
+                <p>• <strong>1, 2, 3</strong> – Switch weapon, <strong>4, 5, 6, 7</strong> – Items.</p>
+                <p><strong>📱 Controls (Mobile):</strong></p>
+                <p>• <strong>Left joystick</strong> – Movement.</p>
+                <p>• <strong>Right joystick</strong> – Aiming and Auto-fire.</p>
+                <p>• <strong>Single tap on screen</strong> – Shoot at touch point.</p>
+                <p>• <strong>🖐️ Button</strong> – Collect resources / Enter SUV.</p>
+                <p>• <strong>⚡ Button</strong> – Toggle sprint (run).</p>
+                <p>• <strong>Quick slots below</strong> – Weapon select and healing.</p>
             </div>
             
             <div style="margin-bottom: 1.5rem;">
-                <label for="volume-range" style="font-weight: 600; display: block; margin-bottom: 6px;">🔊 Громкость звуков:</label>
+                <label for="volume-range" style="font-weight: 600; display: block; margin-bottom: 6px;">🔊 Sound Volume:</label>
                 <input type="range" id="volume-range" min="0" max="1" step="0.05" value="0.4" style="width:100%; cursor: pointer;" oninput="changeVolume(this.value)">
             </div>
 
-            <button class="menu-btn btn-danger" onclick="resetSaveData()" style="padding: 0.6rem; font-size: 0.9rem; margin-bottom: 1.5rem;">Сбросить прогресс игры</button>
-            <button class="menu-btn" onclick="closeSettings()" style="padding: 0.8rem;">Закрыть</button>
+            <button class="menu-btn btn-danger" onclick="resetSaveData()" style="padding: 0.6rem; font-size: 0.9rem; margin-bottom: 1.5rem;">Reset Game Progress</button>
+            <button class="menu-btn" onclick="closeSettings()" style="padding: 0.8rem;">Close</button>
         </div>
     </div>
 
-    <!-- 3. ТУТОРИАЛ (ИНТЕРАКТИВНЫЕ ПОДСКАЗКИ) -->
+    <!-- 3. TUTORIAL (INTERACTIVE HINTS) -->
     <div id="tutorial-overlay" class="overlay">
         <div class="glass-panel tutorial-box">
             <div class="tutorial-icon" id="tutorial-icon">💡</div>
-            <h3 class="tutorial-title" id="tutorial-title">Обучение</h3>
-            <p class="tutorial-text" id="tutorial-text">Текст подсказки здесь...</p>
-            <button class="menu-btn" onclick="closeTutorialPopup()" style="padding: 0.6rem; font-size: 0.9rem; margin: 0;">Понятно</button>
+            <h3 class="tutorial-title" id="tutorial-title">Tutorial</h3>
+            <p class="tutorial-text" id="tutorial-text">Hint text here...</p>
+            <button class="menu-btn" onclick="closeTutorialPopup()" style="padding: 0.6rem; font-size: 0.9rem; margin: 0;">Got it</button>
         </div>
     </div>
 
-    <!-- 4. HUD (ИНТЕРФЕЙС ИГРЫ) -->
+    <!-- 4. HUD (GAME INTERFACE) -->
     <div id="hud-container">
-        <!-- Показатели (левый верх) -->
+        <!-- Stats (top left) -->
         <div class="hud-stats-panel hud-element">
             <div class="stat-row">
                 <span class="stat-icon">❤️</span>
@@ -1795,41 +1795,41 @@
                 <span class="stat-icon">⭐</span>
                 <span class="stat-value" id="hud-lvl">1:0/100</span>
             </div>
-            <!-- Радиация (появляется только в зараженной зоне) -->
+            <!-- Radiation (appears only in contaminated zone) -->
             <div class="stat-row" id="rad-row" style="display: none;">
                 <span class="stat-icon">☢️</span>
                 <span class="stat-value" id="hud-rad-txt">0%</span>
             </div>
         </div>
 
-        <!-- Уровень перенесен в блок показателей -->
+        <!-- Level moved to stats block -->
 
-        <!-- Оружие (правый верх) -->
+        <!-- Weapon (top right) -->
         <div class="hud-weapon-panel hud-element">
             <span id="hud-wpn-icon" style="font-size: 1.2rem;">🔫</span>
             <span class="weapon-ammo" id="hud-wpn-ammo" style="font-family: 'Press Start 2P', monospace; font-size: 0.75rem; font-weight: bold; color: #f1f5f9; text-shadow: 1px 1px 0px #000;">45 / ∞</span>
         </div>
 
-        <!-- Журнал логов (левый низ) -->
+        <!-- Log journal (bottom left) -->
         <div id="game-log"></div>
 
-        <!-- Дрова и Металлолом (левый низ выше лога) -->
+        <!-- Fuel and Scrap (bottom left above log) -->
         <div class="hud-mats-panel hud-element" style="display: none;">
             <div class="mat-item">
-                <span class="mat-icon">⛽</span> Бензин:
+                <span class="mat-icon">⛽</span> Gasoline:
                 <span class="mat-amount" id="hud-wood">5 / 30</span>
             </div>
             <div class="mat-item">
-                <span class="mat-icon">⚙️</span> Хлам:
+                <span class="mat-icon">⚙️</span> Scrap:
                 <span class="mat-amount" id="hud-scrap">2</span>
             </div>
             <div class="mat-item">
-                <span class="mat-icon">🎭</span> Противогаз:
+                <span class="mat-icon">🎭</span> Gas Mask:
                 <span class="mat-amount" id="hud-gasmask">50%</span>
             </div>
         </div>
 
-        <!-- Быстрый инвентарь (центр низ) -->
+        <!-- Quick inventory (bottom center) -->
         <div class="hud-inventory-panel hud-element">
             <div class="inv-slot active" id="slot-wpn-1" onclick="selectWeaponFromSlot(1)">
                 <span class="inv-slot-key">1</span>
@@ -1839,44 +1839,44 @@
             <div class="inv-slot" id="slot-wpn-2" onclick="selectWeaponFromSlot(2)">
                 <span class="inv-slot-key">2</span>
                 <span class="inv-slot-icon">💥</span>
-                <span class="inv-slot-amount" id="slot-wpn-2-txt">блокирован</span>
+                <span class="inv-slot-amount" id="slot-wpn-2-txt">locked</span>
             </div>
             <div class="inv-slot" id="slot-wpn-3" onclick="selectWeaponFromSlot(3)">
                 <span class="inv-slot-key">3</span>
                 <span class="inv-slot-icon">🔥</span>
-                <span class="inv-slot-amount" id="slot-wpn-3-txt">блокирован</span>
+                <span class="inv-slot-amount" id="slot-wpn-3-txt">locked</span>
             </div>
-            <!-- Еда -->
+            <!-- Food -->
             <div class="inv-slot" onclick="consumeItemFromSlot('food')">
                 <span class="inv-slot-key">4</span>
                 <span class="inv-slot-icon">🥫</span>
                 <span class="inv-slot-amount" id="slot-food-txt">x3</span>
             </div>
-            <!-- Вода -->
+            <!-- Water -->
             <div class="inv-slot" onclick="consumeItemFromSlot('water')">
                 <span class="inv-slot-key">5</span>
                 <span class="inv-slot-icon">🥤</span>
                 <span class="inv-slot-amount" id="slot-water-txt">x3</span>
             </div>
-            <!-- Аптечка -->
+            <!-- Medkit -->
             <div class="inv-slot" onclick="consumeItemFromSlot('medkit')">
                 <span class="inv-slot-key">6</span>
                 <span class="inv-slot-icon">➕</span>
                 <span class="inv-slot-amount" id="slot-medkit-txt">x1</span>
             </div>
-            <!-- Фильтр -->
+            <!-- Filter -->
             <div class="inv-slot" onclick="consumeItemFromSlot('gasmask')">
                 <span class="inv-slot-key">7</span>
                 <span class="inv-slot-icon">🎭</span>
                 <span class="inv-slot-amount" id="slot-gasmask-txt">x0</span>
             </div>
-            <!-- Бензин (Перенесен во внутренний инвентарь) -->
+            <!-- Gasoline (Moved to internal inventory) -->
             <div class="inv-slot" style="cursor: default;" id="slot-wood-parent">
                 <span class="inv-slot-key" style="display: none;">8</span>
                 <span class="inv-slot-icon">⛽</span>
                 <span class="inv-slot-amount" id="slot-wood-txt">x0</span>
             </div>
-            <!-- Хлам (Перенесен во внутренний инвентарь) -->
+            <!-- Scrap (Moved to internal inventory) -->
             <div class="inv-slot" style="cursor: default;" id="slot-scrap-parent">
                 <span class="inv-slot-key" style="display: none;">9</span>
                 <span class="inv-slot-icon">⚙️</span>
@@ -1884,25 +1884,25 @@
             </div>
         </div>
 
-        <!-- Виртуальный джойстик и кнопки для мобильных устройств -->
+        <!-- Virtual joystick and buttons for mobile -->
         <div id="mobile-controls" class="hud-element">
-            <!-- Левый джойстик (Передвижение) -->
+            <!-- Left joystick (Movement) -->
             <div id="joystick-move-zone">
                 <div id="joystick-move-outer">
                     <div id="joystick-move-knob"></div>
                 </div>
             </div>
 
-            <!-- Кнопка Взаимодействия (Круглая иконка по центру между стиками) -->
+            <!-- Interact button (Round icon centered between sticks) -->
             <button id="btn-mobile-interact" class="mobile-btn">🖐️</button>
 
-            <!-- Скрытые старые элементы во избежание JS ошибок при поиске элементов в коде -->
+            <!-- Hidden old elements to avoid JS errors -->
             <div id="mobile-action-buttons" style="display: none !important;">
                 <button id="btn-mobile-sprint"></button>
                 <button id="btn-mobile-fire"></button>
             </div>
             
-            <!-- Правый джойстик (Стрельба и Прицеливание) -->
+            <!-- Right joystick (Shooting and Aiming) -->
             <div id="joystick-shoot-zone">
                 <div id="joystick-shoot-outer">
                     <div id="joystick-shoot-knob"></div>
@@ -1910,170 +1910,170 @@
             </div>
         </div>
 
-        <!-- Мини-карта (правый низ) -->
+        <!-- Minimap (bottom right) -->
         <div class="hud-minimap-panel hud-element">
             <canvas id="minimap-canvas" width="100" height="100"></canvas>
         </div>
     </div>
 
-    <!-- 5. МЕНЮ СТАНЦИИ (ПАРОВОЗ, КРАФТ, УЛУЧШЕНИЯ) -->
+    <!-- 5. STATION MENU (VEHICLE, CRAFTING, UPGRADES) -->
     <div id="station-menu-overlay" class="overlay">
         <div class="glass-panel station-box">
             <!-- Sidebar -->
             <div class="station-sidebar">
-                <h3 id="sidebar-station-title">СТОЯНКА</h3>
+                <h3 id="sidebar-station-title">CAMP</h3>
                 <button class="tab-btn active" onclick="switchStationTab('location')">
-                    <span class="tab-btn-icon">🌍</span>Локация
+                    <span class="tab-btn-icon">🌍</span>Location
                 </button>
                 <button class="tab-btn" onclick="switchStationTab('crafting')">
-                    <span class="tab-btn-icon">⚒️</span>Верстак
+                    <span class="tab-btn-icon">⚒️</span>Workbench
                 </button>
                 <button class="tab-btn" onclick="switchStationTab('locomotive')">
-                    <span class="tab-btn-icon">🚙</span>Внедорожник
+                    <span class="tab-btn-icon">🚙</span>SUV
                 </button>
                 <button class="tab-btn" onclick="switchStationTab('survivor')">
-                    <span class="tab-btn-icon">👤</span>Персонаж
+                    <span class="tab-btn-icon">👤</span>Character
                 </button>
                 <button class="tab-btn" onclick="switchStationTab('route-map')">
-                    <span class="tab-btn-icon">🗺️</span>Карта путей
+                    <span class="tab-btn-icon">🗺️</span>Route Map
                 </button>
-                <!-- Динамические вкладки, если на станции есть торговец или квестодатель -->
+                <!-- Dynamic tabs if station has trader or questgiver -->
                 <button class="tab-btn" id="tab-trader" style="display:none;" onclick="switchStationTab('trade')">
-                    <span class="tab-btn-icon">⚖️</span>Торговец
+                    <span class="tab-btn-icon">⚖️</span>Trader
                 </button>
                 <button class="tab-btn" id="tab-dialog" style="display:none;" onclick="switchStationTab('dialog')">
-                    <span class="tab-btn-icon">💬</span>Выживший
+                    <span class="tab-btn-icon">💬</span>Survivor
                 </button>
             </div>
 
             <!-- Content Area -->
             <div class="station-content">
-                <!-- 5.A Вкладка Локации -->
+                <!-- 5.A Location Tab -->
                 <div class="tab-panel active" id="panel-location">
-                    <h2 class="tab-title" id="panel-loc-title">Стартовая стоянка</h2>
-                    <p class="tab-desc" id="panel-loc-desc">Безопасное место. Здесь вы нашли заброшенный внедорожник. Соберите бензин и подготовьтесь к пути.</p>
+                    <h2 class="tab-title" id="panel-loc-title">Camp Dawn</h2>
+                    <p class="tab-desc" id="panel-loc-desc">Safe place. You found an abandoned SUV here. Gather gasoline and prepare for the journey.</p>
                     
                     <div class="loc-details-box">
                         <div class="loc-info-row">
-                            <span>Угроза:</span>
-                            <span class="loc-badge badge-low" id="panel-loc-threat">Минимальная</span>
+                            <span>Threat:</span>
+                            <span class="loc-badge badge-low" id="panel-loc-threat">Minimal</span>
                         </div>
                         <div class="loc-info-row">
-                            <span>Радиация:</span>
-                            <span class="loc-badge badge-low" id="panel-loc-rad">Отсутствует</span>
+                            <span>Radiation:</span>
+                            <span class="loc-badge badge-low" id="panel-loc-rad">None</span>
                         </div>
                         <div class="loc-info-row">
-                            <span>Основные ресурсы:</span>
-                            <span style="font-weight: 600;" id="panel-loc-mats">Бензин, Ягоды</span>
+                            <span>Main resources:</span>
+                            <span style="font-weight: 600;" id="panel-loc-mats">Gasoline, Berries</span>
                         </div>
                     </div>
 
-                    <button class="menu-btn" style="margin-top: auto; margin-bottom: 0;" onclick="enterTacticalMap()">Выйти из машины (Исследовать)</button>
+                    <button class="menu-btn" style="margin-top: auto; margin-bottom: 0;" onclick="enterTacticalMap()">Exit Vehicle (Explore)</button>
                 </div>
 
-                <!-- 5.B Вкладка Крафта -->
+                <!-- 5.B Crafting tab -->
                 <div class="tab-panel" id="panel-crafting">
-                    <h2 class="tab-title">Верстак Крафта</h2>
-                    <p class="tab-desc">Используйте собранный металлолом и ресурсы для создания предметов.</p>
+                    <h2 class="tab-title">Crafting Workbench</h2>
+                    <p class="tab-desc">Use collected scrap and resources to craft items.</p>
                     
                     <div class="craft-grid" id="craft-items-list">
-                        <!-- Сюда вставляется крафт через JS -->
+                        <!-- Craft items injected via JS -->
                     </div>
                 </div>
 
-                <!-- 5.C Вкладка Внедорожника -->
+                <!-- 5.C SUV Tab -->
                 <div class="tab-panel" id="panel-locomotive">
-                    <h2 class="tab-title">Управление Внедорожником</h2>
-                    <p class="tab-desc">Следите за бензобаком и улучшайте детали внедорожника для выживания на пустошах.</p>
+                    <h2 class="tab-title">SUV Management</h2>
+                    <p class="tab-desc">Monitor the fuel tank and upgrade SUV parts to survive the wastelands.</p>
                     
                     <div class="train-boiler-box">
                         <div class="boiler-title">
-                            <span>⛽ Запас бензина в баке:</span>
+                            <span>⛽ Fuel in tank:</span>
                             <span id="boiler-fuel-txt">50 / 100</span>
                         </div>
                         <div class="boiler-gauge">
                             <div class="boiler-bar" id="boiler-fuel-fill" style="width: 50%;"></div>
                         </div>
-                        <button class="craft-btn" onclick="addFuelToBoiler()" id="boiler-refuel-btn" style="padding: 6px 12px; width: 100%;">Залить бензин (+12 к баку за 1 канистру)</button>
+                        <button class="craft-btn" onclick="addFuelToBoiler()" id="boiler-refuel-btn" style="padding: 6px 12px; width: 100%;">Add gasoline (+12 per canister)</button>
                     </div>
 
                     <div class="train-upgrade-list">
-                        <!-- Двигатель -->
+                        <!-- Engine -->
                         <div class="train-upgrade-row">
                             <div class="upg-info">
-                                <span class="upg-name" id="upg-engine-name">Модернизация Двигателя (Ур. 0)</span>
-                                <span class="upg-desc">-15% расход топлива при переезде</span>
+                                <span class="upg-name" id="upg-engine-name">Engine Upgrade (Lv. 0)</span>
+                                <span class="upg-desc">-15% fuel consumption when traveling</span>
                             </div>
-                            <button class="craft-btn" id="upg-engine-btn" onclick="upgradeTrain('engine')">Улучшить (⚙️5)</button>
+                            <button class="craft-btn" id="upg-engine-btn" onclick="upgradeTrain('engine')">Upgrade (⚙️5)</button>
                         </div>
-                        <!-- Броня -->
+                        <!-- Armor -->
                         <div class="train-upgrade-row">
                             <div class="upg-info">
-                                <span class="upg-name" id="upg-armor-name">Усиление Брони (Ур. 0)</span>
-                                <span class="upg-desc">Снижает урон и кражи при рейдах рейдеров</span>
+                                <span class="upg-name" id="upg-armor-name">Armor Reinforcement (Lv. 0)</span>
+                                <span class="upg-desc">Reduces damage and theft during raider raids</span>
                             </div>
-                            <button class="craft-btn" id="upg-armor-btn" onclick="upgradeTrain('armor')">Улучшить (⚙️6)</button>
+                            <button class="craft-btn" id="upg-armor-btn" onclick="upgradeTrain('armor')">Upgrade (⚙️6)</button>
                         </div>
-                        <!-- Склад -->
+                        <!-- Storage -->
                         <div class="train-upgrade-row">
                             <div class="upg-info">
-                                <span class="upg-name" id="upg-storage-name">Расширение Багажника (Ур. 0)</span>
-                                <span class="upg-desc">Увеличивает вместимость бензина (сейчас макс: 30)</span>
+                                <span class="upg-name" id="upg-storage-name">Trunk Expansion (Lv. 0)</span>
+                                <span class="upg-desc">Increases gasoline capacity (current max: 30)</span>
                             </div>
-                            <button class="craft-btn" id="upg-storage-btn" onclick="upgradeTrain('storage')">Улучшить (⚙️4)</button>
+                            <button class="craft-btn" id="upg-storage-btn" onclick="upgradeTrain('storage')">Upgrade (⚙️4)</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 5.D Вкладка Персонажа -->
+                <!-- 5.D Character tab -->
                 <div class="tab-panel" id="panel-survivor">
-                    <h2 class="tab-title">Умения и Статистика</h2>
-                    <p class="tab-desc">Распределяйте очки навыков, полученные при повышении уровня.</p>
+                    <h2 class="tab-title">Skills & Statistics</h2>
+                    <p class="tab-desc">Distribute skill points earned on level up.</p>
                     
                     <div class="char-stats-container">
                         <div class="char-stat-card">
-                            <h3 style="color: var(--gold-accent); margin-bottom: 8px;">Статус</h3>
-                            <p style="margin-bottom: 4px;">Текущий уровень: <strong id="char-lvl">1</strong></p>
-                            <p style="margin-bottom: 4px;">Опыт (XP): <strong id="char-xp">0 / 100</strong></p>
-                            <p>Очки навыков: <strong style="color: var(--primary-accent);" id="char-points">0</strong></p>
+                            <h3 style="color: var(--gold-accent); margin-bottom: 8px;">Status</h3>
+                            <p style="margin-bottom: 4px;">Current level: <strong id="char-lvl">1</strong></p>
+                            <p style="margin-bottom: 4px;">Experience (XP): <strong id="char-xp">0 / 100</strong></p>
+                            <p>Skill points: <strong style="color: var(--primary-accent);" id="char-points">0</strong></p>
                         </div>
                         <div class="char-stat-card">
-                            <h3 style="color: var(--cyan-accent); margin-bottom: 8px;">Показатели</h3>
-                            <p style="margin-bottom: 4px;">Макс Здоровье: <span id="char-max-hp">100</span> HP</p>
-                            <p style="margin-bottom: 4px;">Макс Выносливость: <span id="char-max-stamina">100</span></p>
-                            <p>Урон оружия: <span id="char-dmg-mult">+0%</span></p>
+                            <h3 style="color: var(--cyan-accent); margin-bottom: 8px;">Stats</h3>
+                            <p style="margin-bottom: 4px;">Max Health: <span id="char-max-hp">100</span> HP</p>
+                            <p style="margin-bottom: 4px;">Max Stamina: <span id="char-max-stamina">100</span></p>
+                            <p>Weapon damage: <span id="char-dmg-mult">+0%</span></p>
                         </div>
                     </div>
 
-                    <h3 style="margin-bottom: 8px;">Ветки Выживания</h3>
+                    <h3 style="margin-bottom: 8px;">Survival Branches</h3>
                     <div class="skills-list">
-                        <!-- Сила -->
+                        <!-- Strength -->
                         <div class="skill-row">
                             <div>
-                                <span class="skill-name">Сила (Качает здоровье, вместимость и дробовики)</span>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">+15 макс. здоровья, +15% урона дробовиков за очко</div>
+                                <span class="skill-name">Strength (Increases health, capacity and shotguns)</span>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">+15 max health, +15% shotgun damage per point</div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <span class="skill-lvl" id="skill-strength-lvl">0 / 5</span>
                                 <button class="skill-plus-btn" onclick="addSkillPoint('strength')">+</button>
                             </div>
                         </div>
-                        <!-- Ловкость -->
+                        <!-- Agility -->
                         <div class="skill-row">
                             <div>
-                                <span class="skill-name">Ловкость (Качает скорость, перезарядку и автоматы)</span>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">+10% скорости бега, +10% скорострельности автоматов за очко</div>
+                                <span class="skill-name">Agility (Increases speed, reload and rifles)</span>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">+10% run speed, +10% rifle fire rate per point</div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <span class="skill-lvl" id="skill-agility-lvl">0 / 5</span>
                                 <button class="skill-plus-btn" onclick="addSkillPoint('agility')">+</button>
                             </div>
                         </div>
-                        <!-- Выживание -->
+                        <!-- Survival -->
                         <div class="skill-row">
                             <div>
-                                <span class="skill-name">Выживание (Качает медленный голод и фильтры)</span>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">-15% скорость голода/жажды, +20% прочность брони/противогаза за очко</div>
+                                <span class="skill-name">Survival (Slows hunger and improves filters)</span>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">-15% hunger/thirst rate, +20% armor/gas mask durability per point</div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <span class="skill-lvl" id="skill-survival-lvl">0 / 5</span>
@@ -2083,45 +2083,45 @@
                     </div>
                 </div>
 
-                <!-- 5.E Вкладка Карты Путей -->
+                <!-- 5.E Route Map tab -->
                 <div class="tab-panel" id="panel-route-map">
-                    <h2 class="tab-title">Карта Железных Дорог</h2>
-                    <p class="tab-desc">Переезжайте на следующие станции. Конечная цель — Горный бункер.</p>
+                    <h2 class="tab-title">Railway Map</h2>
+                    <p class="tab-desc">Travel to next stations. Final destination — Mountain Bunker.</p>
                     
                     <div class="route-map-container" id="route-stations-list">
-                        <!-- Загружается через JS -->
+                        <!-- Loaded via JS -->
                     </div>
                 </div>
 
-                <!-- 5.F Вкладка Торговца (Динамическая) -->
+                <!-- 5.F Trader Tab (Dynamic) -->
                 <div class="tab-panel" id="panel-trade">
-                    <h2 class="tab-title">Торговая Лавка</h2>
-                    <p class="tab-desc">Обменяйте излишки ресурсов на полезные припасы.</p>
+                    <h2 class="tab-title">Trade Shop</h2>
+                    <p class="tab-desc">Trade excess resources for useful supplies.</p>
                     
                     <div class="npc-box">
                         <div class="npc-avatar">🧓</div>
                         <div class="npc-dialog-side">
-                            <div class="npc-name" id="trader-name">Сидорович</div>
-                            <div class="npc-text" id="trader-dialog-txt">«Заходи, не бойся. У меня есть отличные патроны и аптечки. Принимаю бензин и хлам.»</div>
+                            <div class="npc-name" id="trader-name">Sidorovich</div>
+                            <div class="npc-text" id="trader-dialog-txt">«Come in, don't be afraid. I have excellent ammo and medkits. I accept gasoline and scrap.»</div>
                             <div class="npc-actions" id="trader-actions-list">
-                                <!-- Список сделок через JS -->
+                                <!-- Deal list via JS -->
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 5.G Вкладка Квеста (Динамическая) -->
+                <!-- 5.G Quest Tab (Dynamic) -->
                 <div class="tab-panel" id="panel-dialog">
-                    <h2 class="tab-title">Встреча на Стоянке</h2>
-                    <p class="tab-desc">Взаимодействие с выжившими.</p>
+                    <h2 class="tab-title">Encounter at Camp</h2>
+                    <p class="tab-desc">Interaction with survivors.</p>
                     
                     <div class="npc-box">
                         <div class="npc-avatar">🤕</div>
                         <div class="npc-dialog-side">
-                            <div class="npc-name" id="npc-name">Раненый Выживший</div>
-                            <div class="npc-text" id="npc-dialog-txt">«Помоги мне... Меня покусали зомби, мне срочно нужна аптечка. Я отдам все свои металлы!»</div>
+                            <div class="npc-name" id="npc-name">Wounded Survivor</div>
+                            <div class="npc-text" id="npc-dialog-txt">«Help me... Zombies bit me, I urgently need a medkit. I'll give you all my scrap!»</div>
                             <div class="npc-actions" id="npc-dialog-actions">
-                                <!-- Кнопки действий -->
+                                <!-- Action buttons -->
                             </div>
                         </div>
                     </div>
@@ -2130,57 +2130,57 @@
         </div>
     </div>
 
-    <!-- 6. ЭКРАН ПЕРЕЕЗДА (АНИМАЦИЯ ВНЕДОРОЖНИКА) -->
+    <!-- 6. TRAVEL SCREEN (SUV ANIMATION) -->
     <div id="travel-overlay" class="overlay">
         <div class="travel-track-visual">
             <div class="travel-track-sleepers"></div>
             <div class="travel-train-icon">🚙</div>
         </div>
-        <div class="travel-status" id="travel-status-txt">Внедорожник отправляется в путь...</div>
-        <div class="travel-subtext" id="travel-subtext-txt">На следующей стоянке нас ждут новые опасности и припасы.</div>
+        <div class="travel-status" id="travel-status-txt">SUV heading out...</div>
+        <div class="travel-subtext" id="travel-subtext-txt">New dangers and supplies await at the next camp.</div>
         <div class="travel-progress-bar">
             <div class="travel-progress-fill" id="travel-progress-fill"></div>
         </div>
     </div>
 
-    <!-- 7. ЭКРАН ПОРАЖЕНИЯ (GAME OVER) -->
+    <!-- 7. DEFEAT SCREEN (GAME OVER) -->
     <div id="gameover-overlay" class="overlay">
         <div class="glass-panel" style="width: 450px;">
-            <h1 class="gameover-title">ВЫ ПОГИБЛИ</h1>
-            <p style="margin-bottom: 2rem; color: var(--text-muted); line-height: 1.4;">Выжившие не смогли добраться до бункера. Ваше путешествие оборвалось в пустошах...</p>
-            <button class="menu-btn" onclick="loadSavedGame()" id="gameover-retry-btn">Загрузить сохранение</button>
-            <button class="menu-btn btn-danger" onclick="goToMainMenu()">Главное Меню</button>
+            <h1 class="gameover-title">YOU DIED</h1>
+            <p style="margin-bottom: 2rem; color: var(--text-muted); line-height: 1.4;">The survivors couldn't reach the bunker. Your journey was cut short in the wastelands...</p>
+            <button class="menu-btn" onclick="loadSavedGame()" id="gameover-retry-btn">Load Save</button>
+            <button class="menu-btn btn-danger" onclick="goToMainMenu()">Main Menu</button>
         </div>
     </div>
 
-    <!-- 8. ЭКРАН ПОБЕДЫ (WIN) -->
+    <!-- 8. VICTORY SCREEN (WIN) -->
     <div id="win-overlay" class="overlay">
         <div class="glass-panel" style="width: 500px;">
-            <h1 class="win-title">БУНКЕР ДОСТИГНУТ!</h1>
-            <p style="color: var(--primary-accent); font-weight: bold; margin-bottom: 1rem; font-size: 1.2rem;">ПОБЕДА!</p>
+            <h1 class="win-title">BUNKER REACHED!</h1>
+            <p style="color: var(--primary-accent); font-weight: bold; margin-bottom: 1rem; font-size: 1.2rem;">VICTORY!</p>
             <p style="margin-bottom: 2rem; color: var(--text-muted); line-height: 1.5; text-align: left;">
-                Вы победили гигантского Сверхмутанта в Бункере «Омега» и открыли гермозатвор. 
-                Ваши выжившие и внедорожник в безопасности под надежной защитой горных укреплений. 
-                Человечество получило новый шанс на спасение!
+                You defeated the giant Super Mutant in Omega Bunker and opened the airlock. 
+                Your survivors and SUV are safe under the reliable protection of mountain fortifications. 
+                Humanity has a new chance at salvation!
             </p>
-            <button class="menu-btn" onclick="goToMainMenu()">В Главное Меню</button>
+            <button class="menu-btn" onclick="goToMainMenu()">To Main Menu</button>
         </div>
     </div>
 
-    <!-- 9. МЕНЮ ПАУЗЫ (ESC) -->
+    <!-- 9. PAUSE MENU (ESC) -->
     <div id="pause-overlay" class="overlay">
         <div class="glass-panel menu-content">
-            <h2 class="game-title" style="color: var(--primary-accent); text-shadow: 0 0 10px rgba(163,230,53,0.5);">ИГРА ПАУЗА</h2>
-            <p class="game-subtitle" style="margin-bottom: 2rem;">Вылазка приостановлена</p>
-            <button class="menu-btn" onclick="resumeGameFromPause()">Продолжить бой</button>
-            <button class="menu-btn" onclick="retreatToTrain()">Отступить во внедорожник (Потеря 20% бензина/хлама)</button>
-            <button class="menu-btn btn-danger" onclick="goToMainMenu()">Выйти в меню</button>
+            <h2 class="game-title" style="color: var(--primary-accent); text-shadow: 0 0 10px rgba(163,230,53,0.5);">GAME PAUSED</h2>
+            <p class="game-subtitle" style="margin-bottom: 2rem;">Sortie suspended</p>
+            <button class="menu-btn" onclick="resumeGameFromPause()">Resume Fight</button>
+            <button class="menu-btn" onclick="retreatToTrain()">Retreat to SUV (Lose 20% gas/scrap)</button>
+            <button class="menu-btn btn-danger" onclick="goToMainMenu()">Exit to Menu</button>
         </div>
     </div>
 
-    <!-- Звуковой синтезатор Web Audio API & Логика игры -->
+    <!-- Web Audio API Synthesizer & Game Logic -->
     <script>
-        // Глобальный перехватчик ошибок для вывода на экран при сбоях
+        // Global error handler for screen output
         window.onerror = function(msg, url, line, col, error) {
             let errDiv = document.getElementById('debug-error-banner');
             if (!errDiv) {
@@ -2202,18 +2202,18 @@
                 errDiv.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3)';
                 document.body.appendChild(errDiv);
             }
-            errDiv.innerHTML = `<h3>🚨 Ошибка JavaScript в игре:</h3><p><b>Сообщение:</b> ${msg}</p><p><b>Файл:</b> ${url}</p><p><b>Строка:</b> ${line}, <b>Колонка:</b> ${col}</p><p><b>Стек вызовов:</b> ${error ? error.stack : 'N/A'}</p>`;
+            errDiv.innerHTML = `<h3>🚨 JavaScript Error in game:</h3><p><b>Message:</b> ${msg}</p><p><b>File:</b> ${url}</p><p><b>Line:</b> ${line}, <b>Column:</b> ${col}</p><p><b>Call stack:</b> ${error ? error.stack : 'N/A'}</p>`;
             return false;
         };
 
-        // Декларируем дизайн диалы по правилам tasteskill
+        // Declare design dials per tasteskill rules
         // DESIGN_VARIANCE: 8
         // MOTION_INTENSITY: 7
         // VISUAL_DENSITY: 6
         console.log("Design Read: Top-down postapoc tactical survival shooter with retro pixel canvas textures, custom browser audio synthesiser, and full responsive HTML layout.");
 
         // =========================================================================
-        // 1. ВЕБ АУДИО СИНТЕЗАТОР ЗВУКОВ (БЕЗ ВНЕШНИХ ФАЙЛОВ)
+        // 1. WEB AUDIO SOUND SYNTHESIZER (NO EXTERNAL FILES)
         // =========================================================================
         class SoundSynth {
             constructor() {
@@ -2241,7 +2241,7 @@
                 }
             }
 
-            // Выстрел
+            // Shot
             playShoot(type) {
                 this.init();
                 if (!this.ctx) return;
@@ -2261,7 +2261,7 @@
                     osc.stop(t + 0.12);
                 } 
                 else if (type === 'rifle') {
-                    // Шумовой выстрел автомата
+                    // Rifle noise shot
                     let bufferSize = this.ctx.sampleRate * 0.08;
                     let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                     let data = buffer.getChannelData(0);
@@ -2287,7 +2287,7 @@
                     noise.stop(t + 0.08);
                 } 
                 else if (type === 'shotgun') {
-                    // Громкий басовый бум дробовика (несколько частот)
+                    // Loud bass boom of shotgun (multiple frequencies)
                     for (let i = 0; i < 3; i++) {
                         let osc = this.ctx.createOscillator();
                         let gain = this.ctx.createGain();
@@ -2304,7 +2304,7 @@
                 }
             }
 
-            // Попадание по плоти / врагу
+            // Hit on flesh/enemy
             playHit() {
                 this.init();
                 if (!this.ctx) return;
@@ -2322,7 +2322,7 @@
                 osc.stop(t + 0.06);
             }
 
-            // Сбор ресурса
+            // Resource collection
             playCollect() {
                 this.init();
                 if (!this.ctx) return;
@@ -2340,7 +2340,7 @@
                 osc.stop(t + 0.18);
             }
 
-            // Смерть врага
+            // Enemy death
             playDeath() {
                 this.init();
                 if (!this.ctx) return;
@@ -2358,7 +2358,7 @@
                 osc.stop(t + 0.35);
             }
 
-            // Звук движения внедорожника (урчание мотора)
+            // SUV driving sound (engine rumble)
             playChug() {
                 this.init();
                 if (!this.ctx) return;
@@ -2388,7 +2388,7 @@
                 osc.stop(t + 0.3);
             }
 
-            // Треск счетчика Гейгера (Радиация)
+            // Geiger counter crackle (Radiation)
             playRadWarning() {
                 this.init();
                 if (!this.ctx) return;
@@ -2405,7 +2405,7 @@
                 osc.stop(t + 0.02);
             }
 
-            // Повышение уровня
+            // Level up
             playLevelUp() {
                 this.init();
                 if (!this.ctx) return;
@@ -2425,7 +2425,7 @@
                 });
             }
 
-            // Звук шагов
+            // Footstep sound
             playStep() {
                 this.init();
                 if (!this.ctx) return;
@@ -2455,7 +2455,7 @@
                 noise.stop(t + 0.04);
             }
 
-            // Звук урчания/рыка зомби
+            // Zombie growl sound
             playZombieGrowl(volume = 0.1) {
                 this.init();
                 if (!this.ctx) return;
@@ -2481,7 +2481,7 @@
                 osc.stop(t + 0.4);
             }
 
-            // Урчание заведенного джипа на холостых
+            // Idling SUV engine rumble
             playEngineIdle(volume = 0.05) {
                 this.init();
                 if (!this.ctx) return;
@@ -2506,7 +2506,7 @@
                 osc.stop(t + 0.14);
             }
 
-            // Процедурный такт фоновой музыки (Динамичный техно-арпеджиатор с ударными!)
+            // Procedural background music beat (Dynamic techno arpeggiator with drums!)
             playMusicBeat(step, freq) {
                 this.init();
                 if (!this.ctx) return;
@@ -2605,7 +2605,7 @@
         // On-screen logger for runtime JS errors (greatly simplifies debugging on mobile and desktop)
         window.onerror = function(message, source, lineno, colno, error) {
             if (typeof addLogMessage === 'function') {
-                addLogMessage(`⚠️ Ошибка JS: ${message} (стр. ${lineno}:${colno})`, "danger");
+                addLogMessage(`⚠️ JS Error: ${message} (line ${lineno}:${colno})`, "danger");
             }
             return false;
         };
@@ -2626,29 +2626,29 @@
         }
 
         // =========================================================================
-        // 2. ДАННЫЕ О ЛОКАЦИЯХ И ИГРОВОМ СОСТОЯНИИ
+        // 2. LOCATION DATA AND GAME STATE
         // =========================================================================
         const LOCATIONS = [
             {
-                name: "Стоянка «Рассвет»",
-                description: "Безопасная точка. Здесь вы нашли заброшенный внедорожник. Соберите базовые припасы и бензин, чтобы начать движение.",
+                name: "Camp Dawn",
+                description: "Safe zone. You found an abandoned SUV here. Gather basic supplies and gasoline to start moving.",
                 type: "station",
                 theme: "grass",
                 timeOfDay: "evening",
-                size: 32, // размер сетки 32x32
+                size: 32, // 32x32 grid size
                 radiation: 0,
                 fuelCost: 0,
                 npc: { 
-                    name: "Дед Степан", 
-                    text: "Здорово, малец! Внедорожник-то на ходу, да бензобаку бензин нужен. Пойди в лес вон на восток, найди бензин (подходи к бензоколонкам и собирай на Пробел). Нам надо заправить бак!",
+                    name: "Grandpa Stepan", 
+                    text: "Hey, kid! SUV runs, but needs fuel. Head east into the woods, find gasoline (approach canisters and collect with Space). We need to fill up!",
                     questItem: null
                 },
                 enemies: { zombie: 2, zombie_fast: 0, zombie_fat: 0, raider: 0, mutant: 0 },
                 resources: { wood: 8, food: 3, water: 3, scrap: 4, ammo: 25, medkit: 1, gasmask: 0 }
             },
             {
-                name: "Тихий Лес",
-                description: "Густой хвойный лес. Здесь осталось огромное количество канистр с бензином и диких ягод, но в чащах прячутся восставшие мертвецы.",
+                name: "Quiet Forest",
+                description: "Dense coniferous forest. Tons of gasoline canisters and wild berries remain here, but the undead lurk in the thickets.",
                 type: "forest",
                 theme: "grass",
                 timeOfDay: "twilight",
@@ -2660,21 +2660,21 @@
                 resources: { wood: 24, food: 6, water: 3, scrap: 6, ammo: 30, medkit: 2, gasmask: 1 }
             },
             {
-                name: "Зараженный Город",
-                description: "Разрушенный радиационный пригород. Радиация смертельна без фильтров противогаза! Но в руинах полно ценных армейских медикаментов.",
+                name: "Contaminated City",
+                description: "Ruined radioactive suburb. Radiation is lethal without gas mask filters! But the ruins are full of valuable military medical supplies.",
                 type: "city",
                 theme: "city",
                 timeOfDay: "night",
                 size: 45,
-                radiation: 1.5, // Сила радиации в секунду
+                radiation: 1.5, // Radiation strength per second
                 fuelCost: 25,
                 npc: null,
                 enemies: { zombie: 14, zombie_fast: 8, zombie_fat: 4, raider: 0, mutant: 0 },
                 resources: { wood: 4, food: 5, water: 4, scrap: 15, ammo: 50, medkit: 6, gasmask: 3 }
             },
             {
-                name: "Ржавая Пустошь",
-                description: "Бесплодная каменистая равнина, контролируемая бандами рейдеров. Они хорошо вооружены и нападают без предупреждения.",
+                name: "Rusty Wasteland",
+                description: "Barren rocky plain controlled by raider gangs. They are well-armed and attack without warning.",
                 type: "wasteland",
                 theme: "sand",
                 timeOfDay: "twilight",
@@ -2682,8 +2682,8 @@
                 radiation: 0,
                 fuelCost: 30,
                 npc: {
-                    name: "Раненый Торговец",
-                    text: "Кхе-кхе... Рейдеры зажали меня. Дай мне Аптечку, и я поделюсь ценным металлоломом для твоих чертежей!",
+                    name: "Wounded Trader",
+                    text: "Cough... Raiders cornered me. Give me a Medkit and I'll share valuable scrap for your blueprints!",
                     questItem: "medkit",
                     rewardScrap: 18,
                     rewardXp: 150
@@ -2692,8 +2692,8 @@
                 resources: { wood: 5, food: 4, water: 4, scrap: 20, ammo: 40, medkit: 3, gasmask: 1 }
             },
             {
-                name: "Автомобильный Туннель",
-                description: "Заброшенный глухой туннель под холмами. Царит кромешная тьма, ваш фонарик освещает лишь малую зону. Остерегайтесь проворных мутантов.",
+                name: "Vehicle Tunnel",
+                description: "Abandoned blind tunnel under the hills. Pitch darkness reigns, your flashlight illuminates only a small area. Beware of agile mutants.",
                 type: "tunnel",
                 theme: "tunnel",
                 timeOfDay: "night",
@@ -2705,8 +2705,8 @@
                 resources: { wood: 2, food: 3, water: 3, scrap: 14, ammo: 60, medkit: 5, gasmask: 2 }
             },
             {
-                name: "Военный Блокпост",
-                description: "Укрепленный аванпост бывшей регулярной армии. Сейчас захвачен бандами наемников. Тяжелый бой, но здесь лежат ящики с лучшим снаряжением.",
+                name: "Military Checkpoint",
+                description: "Fortified outpost of the former regular army. Now captured by mercenary gangs. Heavy combat, but crates with the best gear lie here.",
                 type: "military",
                 theme: "asphalt",
                 timeOfDay: "night",
@@ -2718,8 +2718,8 @@
                 resources: { wood: 2, food: 7, water: 7, scrap: 22, ammo: 80, medkit: 6, gasmask: 3 }
             },
             {
-                name: "Бункер «Омега»",
-                description: "Финальное укрытие человечества в горах. Ворота заблокированы системой управления лаборатории, которую охраняет гигантский Сверхмутант.",
+                name: "Omega Bunker",
+                description: "Humanity's final mountain refuge. The gate is locked by the lab control system, guarded by a giant Super Mutant.",
                 type: "bunker",
                 theme: "bunker",
                 timeOfDay: "night",
@@ -2732,28 +2732,28 @@
             }
         ];
 
-        // Глобальный объект состояния
+        // Global state object
         let gameState = {
             currentLocationIndex: 0,
             
-            // Жизненные показатели
+            // Vital stats
             hp: 100,
             hunger: 100,
             thirst: 100,
             stamina: 100,
             radiation: 0,
             
-            // Развитие
+            // Progression
             level: 1,
             xp: 0,
             skillPoints: 0,
             skills: {
-                strength: 0,  // +15 HP, +15% урон дробовика, +лимит дерева
-                agility: 0,   // +10% скорость бега, +10% темп стрельбы автомата, +15 стамина
-                survival: 0   // -15% трата еды/воды, +20% прочность фильтра/брони
+                strength: 0,  // +15 HP, +15% shotgun damage, +fuel capacity
+                agility: 0,   // +10% run speed, +10% rifle fire rate, +15 stamina
+                survival: 0   // -15% food/water drain, +20% filter/armor durability
             },
             
-            // Ресурсы в инвентаре
+            // Inventory resources
             inventory: {
                 wood: 5,
                 scrap: 2,
@@ -2763,7 +2763,7 @@
                 food: 3,
                 water: 3,
                 medkit: 1,
-                gasmask: 50 // Заряд фильтра в процентах (0-100)
+                gasmask: 50 // Filter charge percentage (0-100)
             },
             
             // Rogue-like perks collected during the run
@@ -2777,15 +2777,15 @@
                 regenRate: 0.0
             },
             
-            // Улучшения поезда
+            // SUV upgrades
             trainUpgrades: {
-                engine: 0,   // Уровень 0-3
-                armor: 0,    // Уровень 0-3
-                storage: 0   // Уровень 0-3
+                engine: 0,   // Level 0-3
+                armor: 0,    // Level 0-3
+                storage: 0   // Level 0-3
             },
-            trainFuel: 40,   // Топливо в бензобаке внедорожника
+            trainFuel: 40,   // Fuel in SUV tank
             
-            // Экипировка и улучшения
+            // Equipment and upgrades
             hasArmor: false,
             weaponUpgrades: {
                 pistol: 0,
@@ -2794,11 +2794,11 @@
             },
             waterFilter: false,
             
-            // Квестовые состояния
+            // Quest states
             questMedkitDelivered: false
         };
 
-        // Максимальные ограничения на основе прокачки
+        // Maximum limits based on upgrades
         function getMaxHp() {
             return 100 + gameState.skills.strength * 15;
         }
@@ -2812,7 +2812,7 @@
         }
 
         function getWeaponDamage(type) {
-            let baseDmg = (type === 'pistol') ? 22 : (type === 'rifle') ? 16 : 14; // 14 на одну дробинку (всего 5)
+            let baseDmg = (type === 'pistol') ? 22 : (type === 'rifle') ? 16 : 14; // 14 per pellet (5 total)
             let upgMult = 1 + (gameState.weaponUpgrades[type] || 0) * 0.25;
             let skillMult = 1;
             if (type === 'shotgun') {
@@ -2825,7 +2825,7 @@
         }
 
         // =========================================================================
-        // 3. СОХРАНЕНИЕ / ЗАГРУЗКА ЧЕРЕЗ LOCALSTORAGE
+        // 3. SAVE / LOAD VIA LOCALSTORAGE
         // =========================================================================
         function saveGameData() {
             localStorage.setItem('last_train_save', JSON.stringify(gameState));
@@ -2837,12 +2837,12 @@
             if (raw) {
                 try {
                     gameState = JSON.parse(raw);
-                    // Валидация на целостность структуры
+                    // Validation for structural integrity
                     if (!gameState.skills) gameState.skills = { strength:0, agility:0, survival:0 };
                     if (!gameState.trainUpgrades) gameState.trainUpgrades = { engine:0, armor:0, storage:0 };
                     if (!gameState.weaponUpgrades) gameState.weaponUpgrades = { pistol:0, rifle:0, shotgun:0 };
                     
-                    // Инициализация перков при загрузке старого сохранения
+                    // Perk init on old save load
                     if (!gameState.runPerks) {
                         gameState.runPerks = {
                             fireRateMod: 1.0,
@@ -2856,16 +2856,16 @@
                     }
                     return true;
                 } catch(e) {
-                    console.error("Ошибка чтения сохранения", e);
+                    console.error("Save read error", e);
                 }
             }
             return false;
         }
 
         function resetSaveData() {
-            if (confirm("Вы уверены, что хотите полностью стереть текущий прогресс игры?")) {
+            if (confirm("Are you sure you want to completely erase current game progress?")) {
                 localStorage.removeItem('last_train_save');
-                alert("Сохранение удалено.");
+                alert("Save deleted.");
                 location.reload();
             }
         }
@@ -2876,7 +2876,7 @@
         }
 
         // =========================================================================
-        // 4. НАСТРОЙКИ И ТУТОРИАЛЫ
+        // 4. SETTINGS AND TUTORIALS
         // =========================================================================
         let tutorialFlags = {
             movement: false,
@@ -2919,53 +2919,53 @@
         }
 
         // =========================================================================
-        // 5. РАСХОД ЖИЗНЕННЫХ ПОКАЗАТЕЛЕЙ (ВРЕМЯ В ПОХОДЕ)
+        // 5. VITAL STAT DRAIN (TIME ON SORTIE)
         // =========================================================================
         function updateLifeStats(deltaSeconds, isMoving, isSprinting) {
-            let survivalMod = 1 - gameState.skills.survival * 0.15; // Навык снижает трату
+            let survivalMod = 1 - gameState.skills.survival * 0.15; // Skill reduces drain
             
-            // Расход голода и жажды
+            // Hunger and thirst drain
             let hungerRate = (isSprinting ? 0.12 : isMoving ? 0.07 : 0.04) * survivalMod;
             let thirstRate = (isSprinting ? 0.15 : isMoving ? 0.09 : 0.05) * survivalMod;
             
             gameState.hunger = Math.max(0, gameState.hunger - hungerRate * deltaSeconds);
             gameState.thirst = Math.max(0, gameState.thirst - thirstRate * deltaSeconds);
             
-            // Радиация на уровне
+            // Level radiation
             let loc = LOCATIONS[gameState.currentLocationIndex];
             let inRadZone = false;
             
-            // Проверка близости к радиоактивным бочкам в тактической сцене
+            // Check proximity to radioactive barrels in tactical scene
             if (activeGameScene && activeGameScene.scene.isActive()) {
                 inRadZone = activeGameScene.checkRadProximity(120);
             }
             
             let radIntensity = loc.radiation;
             if (inRadZone) {
-                radIntensity += 2.0; // Бочки добавляют радиацию
+                radIntensity += 2.0; // Barrels add radiation
             }
 
             if (radIntensity > 0) {
                 document.getElementById('rad-row').style.display = 'flex';
-                // Если есть противогаз
+                // If gas mask present
                 if (gameState.inventory.gasmask > 0) {
-                    // Тратим заряд противогаза
+                    // Drain gas mask charge
                     let filterDepletion = 1.2 * radIntensity * (1 - gameState.skills.survival * 0.15);
                     gameState.inventory.gasmask = Math.max(0, gameState.inventory.gasmask - filterDepletion * deltaSeconds);
                 } else {
-                    // Копим радиацию
+                    // Accumulate radiation
                     gameState.radiation = Math.min(100, gameState.radiation + radIntensity * 1.5 * deltaSeconds);
-                    checkTutorial('rad', '☢️ Опасная Радиация!', 'Вы находитесь в радиоактивной зоне без фильтра противогаза! Здоровье начнет быстро падать, когда шкала радиации заполнится. Срочно скрафтите Фильтр на верстаке внедорожника.', '☢️');
+                    checkTutorial('rad', '☢️ Dangerous Radiation!', 'You are in a radioactive zone without a gas mask filter! Health will drop rapidly when the radiation bar fills up. Quickly craft a Filter at the SUV workbench.', '☢️');
                 }
             } else {
-                // Вне зоны радиация медленно спадает
+                // Radiation slowly decays outside zone
                 gameState.radiation = Math.max(0, gameState.radiation - 0.4 * deltaSeconds);
                 if (gameState.radiation === 0) {
                     document.getElementById('rad-row').style.display = 'none';
                 }
             }
 
-            // Нанесение урона от критических состояний
+            // Damage from critical conditions
             let damageFromStats = 0;
             if (gameState.hunger <= 0) damageFromStats += 1.0;
             if (gameState.thirst <= 0) damageFromStats += 1.5;
@@ -2975,9 +2975,9 @@
             }
 
             if (damageFromStats > 0) {
-                damagePlayer(damageFromStats * deltaSeconds, "голода и жажды");
+                damagePlayer(damageFromStats * deltaSeconds, "hunger and thirst");
             } else {
-                // Если нет дебаффов голода/радиации, работает регенерация здоровья от перков
+                // If no hunger/radiation debuffs, perk health regen works
                 if (gameState.runPerks && gameState.runPerks.regenRate > 0 && gameState.hp < getMaxHp()) {
                     gameState.hp = Math.min(getMaxHp(), gameState.hp + gameState.runPerks.regenRate * deltaSeconds);
                 }
@@ -2986,23 +2986,23 @@
             updateHudVisuals();
         }
 
-        function damagePlayer(amount, sourceText="окружающей среды") {
-            if (gameState.hasArmor && sourceText.includes("атаки")) {
-                // Бронежилет срезает 30% урона от врагов
+        function damagePlayer(amount, sourceText="the environment") {
+            if (gameState.hasArmor && sourceText.includes("attack")) {
+                // Armor vest cuts 30% damage from enemies
                 amount *= 0.7;
             }
-            // Срезание урона от перков (например, Бронеплита)
-            if (gameState.runPerks && gameState.runPerks.damageReduction !== undefined && sourceText.includes("атаки")) {
+            // Damage reduction from perks (e.g. Armor Plate)
+            if (gameState.runPerks && gameState.runPerks.damageReduction !== undefined && sourceText.includes("attack")) {
                 amount *= (1 - gameState.runPerks.damageReduction);
             }
             
             gameState.hp = Math.max(0, gameState.hp - amount);
             
-            // Сочные спецэффекты попадания по игроку (только при существенном уроне или ударах врагов)
+            // Juicy player hit effects (only on significant damage)
             if (gameActive && !scene) {
                 // 2D Phaser scene
                 if (activeGameScene && activeGameScene.scene.isActive()) {
-                    let isTick = sourceText.includes("голода") || sourceText.includes("радиации") || sourceText.includes("окружающей");
+                    let isTick = sourceText.includes("hunger") || sourceText.includes("radiation") || sourceText.includes("environment");
                     if (!isTick) {
                         activeGameScene.cameras.main.shake(150, 0.012);
                         activeGameScene.flashSprite(activeGameScene.player, 0xff3333, 100);
@@ -3015,7 +3015,7 @@
                 }
             } else if (gameActive && scene) {
                 // 3D Three.js scene screen shake!
-                let isTick = sourceText.includes("голода") || sourceText.includes("радиации") || sourceText.includes("окружающей");
+                let isTick = sourceText.includes("hunger") || sourceText.includes("radiation") || sourceText.includes("environment");
                 if (!isTick) {
                     screenShake = Math.min(1.5, screenShake + amount * 0.08 + 0.35);
                 }
@@ -3027,7 +3027,7 @@
         }
 
         // =========================================================================
-        // 6. HUD ОБНОВЛЕНИЕ
+        // 6. HUD UPDATE
         // =========================================================================
         function updateHudVisuals() {
             let maxHp = getMaxHp();
@@ -3042,38 +3042,38 @@
             let nextXp = gameState.level * 100;
             document.getElementById('hud-lvl').innerText = `${gameState.level}:${gameState.xp}/${nextXp}`;
             
-            // Расходники
+            // Consumables
             document.getElementById('slot-food-txt').innerText = `x${gameState.inventory.food}`;
             document.getElementById('slot-water-txt').innerText = `x${gameState.inventory.water}`;
             document.getElementById('slot-medkit-txt').innerText = `x${gameState.inventory.medkit}`;
             
-            // Показываем заряд фильтра в процентах прямо в слоте инвентаря
+            // Show filter charge % directly in inventory slot
             document.getElementById('slot-gasmask-txt').innerText = `${Math.round(gameState.inventory.gasmask)}%`;
 
-            // Обновляем слоты бензина и хлама
+            // Update gasoline and scrap slots
             document.getElementById('slot-wood-txt').innerText = `${gameState.inventory.wood}/${getMaxWoodCapacity()}`;
             document.getElementById('slot-scrap-txt').innerText = `x${gameState.inventory.scrap}`;
 
-            // Оружие
+            // Weapon
             updateWeaponHud();
         }
 
         let currentActiveWeapon = 'pistol'; // 'pistol', 'rifle', 'shotgun'
         
         function updateWeaponHud() {
-            let name = 'Пистолет';
+            let name = 'Pistol';
             let icon = '🔫';
             let ammo = `${gameState.inventory.ammo_pistol} / ∞`;
             if (currentActiveWeapon === 'rifle') {
-                name = 'Автомат';
+                name = 'Assault Rifle';
                 icon = '💥';
                 ammo = `${gameState.inventory.ammo_rifle}`;
             } else if (currentActiveWeapon === 'shotgun') {
-                name = 'Дробовик';
+                name = 'Shotgun';
                 icon = '🔥';
                 ammo = `${gameState.inventory.ammo_shotgun}`;
             }
-            // Показываем уровень улучшения на значке оружия
+            // Show weapon upgrade level on icon
             let lvlSuffix = gameState.weaponUpgrades[currentActiveWeapon] > 0 ? ` +${gameState.weaponUpgrades[currentActiveWeapon]}` : '';
             document.getElementById('hud-wpn-icon').innerText = icon + lvlSuffix;
             document.getElementById('hud-wpn-ammo').innerText = ammo;
@@ -3081,35 +3081,35 @@
             let isRifleUnlocked = gameState.inventory.ammo_rifle > 0 || gameState.weaponUpgrades.rifle > 0;
             let isShotgunUnlocked = gameState.inventory.ammo_shotgun > 0 || gameState.weaponUpgrades.shotgun > 0;
 
-            // Подсвечиваем активный слот
+            // Highlight active slot
             document.getElementById('slot-wpn-1').classList.toggle('active', currentActiveWeapon === 'pistol');
             document.getElementById('slot-wpn-2').classList.toggle('active', currentActiveWeapon === 'rifle');
             document.getElementById('slot-wpn-3').classList.toggle('active', currentActiveWeapon === 'shotgun');
 
-            // Блокируем с помощью класса locked для неактивного серого цвета
+            // Block via locked class for inactive grey
             document.getElementById('slot-wpn-2').classList.toggle('locked', !isRifleUnlocked);
             document.getElementById('slot-wpn-3').classList.toggle('locked', !isShotgunUnlocked);
 
-            document.getElementById('slot-wpn-2-txt').innerText = isRifleUnlocked ? 'АК-74' : '🔒';
-            document.getElementById('slot-wpn-3-txt').innerText = isShotgunUnlocked ? 'МР-133' : '🔒';
+            document.getElementById('slot-wpn-2-txt').innerText = isRifleUnlocked ? 'AK-74' : '🔒';
+            document.getElementById('slot-wpn-3-txt').innerText = isShotgunUnlocked ? 'MP-133' : '🔒';
         }
 
         function selectWeaponFromSlot(num) {
             if (num === 1) {
                 currentActiveWeapon = 'pistol';
             } else if (num === 2) {
-                // Проверяем, есть ли патроны или куплено ли улучшение
+                // Check ammo or upgrade purchased
                 if (gameState.inventory.ammo_rifle > 0 || gameState.weaponUpgrades.rifle > 0) {
                     currentActiveWeapon = 'rifle';
                 } else {
-                    addLogMessage("У вас нет патронов для автомата или чертежа!", "warning");
+                    addLogMessage("You have no assault rifle ammo or blueprint!", "warning");
                     return;
                 }
             } else if (num === 3) {
                 if (gameState.inventory.ammo_shotgun > 0 || gameState.weaponUpgrades.shotgun > 0) {
                     currentActiveWeapon = 'shotgun';
                 } else {
-                    addLogMessage("У вас нет дроби для дробовика или чертежа!", "warning");
+                    addLogMessage("You have no shotgun shells or blueprint!", "warning");
                     return;
                 }
             }
@@ -3119,7 +3119,7 @@
             updateWeaponHud();
         }
 
-        // Быстрое использование еды/воды/аптечек на кнопки 4, 5, 6, 7
+        // Quick consume food/water/medkits on keys 4-7
         function consumeItemFromSlot(type) {
             if (type === 'food') {
                 if (gameState.inventory.food > 0) {
@@ -3127,9 +3127,9 @@
                     gameState.hunger = Math.min(100, gameState.hunger + 35);
                     gameState.hp = Math.min(getMaxHp(), gameState.hp + 12);
                     sound.playCollect();
-                    addLogMessage("🥫 Съедена тушенка (+35 сытости, +12 здоровья)", "system");
+                    addLogMessage("🥫 Canned stew eaten (+35 hunger, +12 health)", "system");
                 } else {
-                    addLogMessage("Нет еды!", "danger");
+                    addLogMessage("No food!", "danger");
                 }
             } else if (type === 'water') {
                 if (gameState.inventory.water > 0) {
@@ -3137,9 +3137,9 @@
                     let restore = gameState.waterFilter ? 75 : 45;
                     gameState.thirst = Math.min(100, gameState.thirst + restore);
                     sound.playCollect();
-                    addLogMessage(`🥤 Выпита чистая вода (+${restore} жажды)`, "system");
+                    addLogMessage(`🥤 Drank clean water (+${restore} thirst)`, "system");
                 } else {
-                    addLogMessage("Нет чистой воды!", "danger");
+                    addLogMessage("No clean water!", "danger");
                 }
             } else if (type === 'medkit') {
                 if (gameState.inventory.medkit > 0) {
@@ -3147,35 +3147,35 @@
                     let heal = 50 + gameState.skills.survival * 10;
                     gameState.hp = Math.min(getMaxHp(), gameState.hp + heal);
                     sound.playCollect();
-                    addLogMessage(`➕ Использована аптечка (+${heal} здоровья)`, "system");
+                    addLogMessage(`➕ Used medkit (+${heal} health)`, "system");
                 } else {
-                    addLogMessage("Нет аптечек!", "danger");
+                    addLogMessage("No medkits!", "danger");
                 }
             } else if (type === 'gasmask') {
-                // Зарядка фильтра
+                // Filter charging
                 if (gameState.inventory.gasmask < 100) {
-                    // Используем бензин и хлам, если крафтим на лету, либо просто кнопку фильтра.
-                    // У нас по логике 7 клавиша перезаряжает фильтр из ресурсов (крафтит на ходу за 2 хлама + 1 бензин)
+                    // Use gas and scrap for on-the-fly crafting, or just filter button.
+                    // Key 7 recharges filter from resources (crafts on the fly for 2 scrap + 1 gasoline)
                     if (gameState.inventory.scrap >= 2 && gameState.inventory.wood >= 1) {
                         gameState.inventory.scrap -= 2;
                         gameState.inventory.wood -= 1;
                         gameState.inventory.gasmask = 100;
                         sound.playCollect();
-                        addLogMessage("🎭 Фильтр противогаза заменен! Заряд 100%", "system");
+                        addLogMessage("🎭 Gas mask filter replaced! Charge 100%", "system");
                     } else {
-                        addLogMessage("Недостаточно ресурсов (нужно: 2 Хлама, 1 Бензин)", "danger");
+                        addLogMessage("Not enough resources (need: 2 Scrap, 1 Gasoline)", "danger");
                     }
                 } else {
-                    addLogMessage("Противогаз полностью заряжен!", "warning");
+                    addLogMessage("Gas mask fully charged!", "warning");
                 }
             }
             updateHudVisuals();
-            // Обновляем верстак, если он открыт
+            // Update workbench if open
             updateCraftingTab();
             updateTrainTab();
         }
 
-        // Журнал событий
+        // Event log
         function addLogMessage(text, style="") {
             let log = document.getElementById('game-log');
             let msg = document.createElement('div');
@@ -3183,14 +3183,14 @@
             msg.innerText = text;
             log.appendChild(msg);
             
-            // Удаляем старые сообщения через 4 секунды
+            // Remove old messages after 4 seconds
             setTimeout(() => {
                 msg.style.opacity = 0;
                 setTimeout(() => msg.remove(), 300);
             }, 4000);
         }
 
-        // Начисление XP
+        // XP grant
         function gainXp(amount) {
             gameState.xp += amount;
             let nextXp = gameState.level * 100;
@@ -3201,7 +3201,7 @@
                 gameState.level++;
                 gameState.skillPoints += 2;
                 sound.playLevelUp();
-                addLogMessage(`🎉 УРОВЕНЬ ПОВЫШЕН до ${gameState.level}!`, "system");
+                addLogMessage(`🎉 LEVEL UP to ${gameState.level}!`, "system");
                 
                 // Trigger modern timekiller rogue-like perk card selection
                 triggerPerkSelection();
@@ -3277,50 +3277,50 @@
             let availablePerks = [
                 {
                     id: 'firerate',
-                    name: '💥 Свинцовый шторм',
-                    desc: '+20% к скорострельности всего оружия',
+                    name: '💥 Lead Storm',
+                    desc: '+20% fire rate for all weapons',
                     apply: () => { gameState.runPerks.fireRateMod *= 0.8; }
                 },
                 {
                     id: 'damage',
-                    name: '🔥 Тяжелые пули',
-                    desc: '+25% к урону наносимого урона',
+                    name: '🔥 Heavy Bullets',
+                    desc: '+25% damage dealt',
                     apply: () => { gameState.runPerks.damageMod *= 1.25; }
                 },
                 {
                     id: 'speed',
-                    name: '⚡ Атлет',
-                    desc: '+15% к скорости бега',
+                    name: '⚡ Athlete',
+                    desc: '+15% run speed',
                     apply: () => { gameState.runPerks.speedMod *= 1.15; }
                 },
                 {
                     id: 'magnet',
-                    name: '🧲 Магнит',
-                    desc: '+150% к радиусу сбора патронов/лута',
+                    name: '🧲 Magnet',
+                    desc: '+150% ammo/loot pickup radius',
                     apply: () => { gameState.runPerks.magnetRadius *= 2.5; }
                 },
                 {
                     id: 'heal',
-                    name: '➕ Второе дыхание',
-                    desc: 'Мгновенно восстанавливает 50 единиц HP',
+                    name: '➕ Second Wind',
+                    desc: 'Instantly restores 50 HP',
                     apply: () => { gameState.hp = Math.min(getMaxHp(), gameState.hp + 50); }
                 },
                 {
                     id: 'armor',
-                    name: '🛡️ Бронеплита',
-                    desc: 'Снижает весь получаемый урон на 15%',
+                    name: '🛡️ Armor Plate',
+                    desc: 'Reduces all damage taken by 15%',
                     apply: () => { gameState.runPerks.damageReduction = Math.min(0.75, gameState.runPerks.damageReduction + 0.15); }
                 },
                 {
                     id: 'vampire',
-                    name: '🧛 Вампиризм',
-                    desc: 'Восстанавливает +2 HP при убийстве зомби',
+                    name: '🧛 Vampirism',
+                    desc: 'Restores +2 HP on zombie kill',
                     apply: () => { gameState.runPerks.vampirism += 2; }
                 },
                 {
                     id: 'regen',
-                    name: '🌱 Регенерация',
-                    desc: 'Постепенно восстанавливает +1 HP каждые 2 сек',
+                    name: '🌱 Regeneration',
+                    desc: 'Gradually restores +1 HP every 2 sec',
                     apply: () => { gameState.runPerks.regenRate += 0.5; }
                 }
             ];
@@ -3338,13 +3338,13 @@
                 card.innerHTML = `
                     <div class="perk-name">${perk.name}</div>
                     <div class="perk-desc">${perk.desc}</div>
-                    <button class="perk-btn">ВЫБРАТЬ</button>
+                    <button class="perk-btn">CHOOSE</button>
                 `;
                 card.onclick = () => {
                     perk.apply();
                     document.getElementById('perk-overlay').style.display = 'none';
                     gamePaused = false;
-                    addLogMessage(`Получено улучшение: ${perk.name}`, "system");
+                    addLogMessage(`Upgrade obtained: ${perk.name}`, "system");
                     sound.playCollect();
                     updateHudVisuals();
                 };
@@ -3356,10 +3356,10 @@
 
         // Satisfying kill combo popups and rewards
         function triggerComboEffect(count) {
-            let comboText = "ДВОЙНОЕ УБИЙСТВО!";
-            if (count === 3) comboText = "ТРОЙНОЕ УБИЙСТВО!";
-            else if (count === 4) comboText = "КРОВАВАЯ БАНЯ!";
-            else if (count >= 5) comboText = "НЕИСТОВСТВО ХАОСА!";
+            let comboText = "DOUBLE KILL!";
+            if (count === 3) comboText = "TRIPLE KILL!";
+            else if (count === 4) comboText = "BLOOD BATH!";
+            else if (count >= 5) comboText = "CHAOS RAMPAGE!";
             
             let bonusXp = count * 5;
             gainXp(bonusXp);
@@ -3377,16 +3377,16 @@
         }
 
         // =========================================================================
-        // 7. ИНТЕРФЕЙС СТАНЦИИ: ТАБЫ, КРАФТ, УЛУЧШЕНИЯ
+        // 7. STATION INTERFACE: TABS, CRAFTING, UPGRADES
         // =========================================================================
         function openStationMenu() {
-            // Сохраняем игру при прибытии на станцию
+            // Save game on station arrival
             saveGameData();
             
             let loc = LOCATIONS[gameState.currentLocationIndex];
             document.getElementById('sidebar-station-title').innerText = loc.name;
             
-            // Настройка панели Локации
+            // Setup Location panel
             document.getElementById('panel-loc-title').innerText = loc.name;
             document.getElementById('panel-loc-desc').innerText = loc.description;
             
@@ -3395,58 +3395,58 @@
             let matsText = document.getElementById('panel-loc-mats');
             
             if (gameState.currentLocationIndex === 0) {
-                threatBadge.className = "loc-badge badge-low"; threatBadge.innerText = "Минимальная";
-                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "Отсутствует";
-                matsText.innerText = "Бензин, Консервы, Вода";
+                threatBadge.className = "loc-badge badge-low"; threatBadge.innerText = "Minimal";
+                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "None";
+                matsText.innerText = "Gasoline, Canned Food, Water";
             } else if (loc.type === 'forest') {
-                threatBadge.className = "loc-badge badge-med"; threatBadge.innerText = "Средняя (Зомби)";
-                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "Отсутствует";
-                matsText.innerText = "Много Бензина, Ягоды (Еда), Вода";
+                threatBadge.className = "loc-badge badge-med"; threatBadge.innerText = "Medium (Zombies)";
+                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "None";
+                matsText.innerText = "Lots of Gasoline, Berries (Food), Water";
             } else if (loc.type === 'city') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Высокая (Толпы Зомби)";
-                radBadge.className = "loc-badge badge-high"; radBadge.innerText = "Опасный фон (1.5 рад/с)";
-                matsText.innerText = "Хлам, Фильтры, Армейские аптечки";
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "High (Zombie Hordes)";
+                radBadge.className = "loc-badge badge-high"; radBadge.innerText = "Dangerous background (1.5 rad/s)";
+                matsText.innerText = "Scrap, Filters, Military Medkits";
             } else if (loc.type === 'wasteland') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Высокая (Рейдеры)";
-                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "Отсутствует";
-                matsText.innerText = "Металлолом (Хлам), Патроны";
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "High (Raiders)";
+                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "None";
+                matsText.innerText = "Scrap metal (Scrap), Ammo";
             } else if (loc.type === 'tunnel') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Экстремальная (Мутанты в темноте)";
-                radBadge.className = "loc-badge badge-med"; radBadge.innerText = "Слабый фон (0.5 рад/с)";
-                matsText.innerText = "Патроны, Металлолом";
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Extreme (Mutants in the dark)";
+                radBadge.className = "loc-badge badge-med"; radBadge.innerText = "Weak background (0.5 rad/s)";
+                matsText.innerText = "Ammo, Scrap metal";
             } else if (loc.type === 'military') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Экстремальная (Военные Рейдеры)";
-                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "Отсутствует";
-                matsText.innerText = "Много патронов, Оружие, Броня";
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Extreme (Military Raiders)";
+                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "None";
+                matsText.innerText = "Lots of Ammo, Weapons, Armor";
             } else if (loc.type === 'bunker') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "СМЕРТЕЛЬНАЯ (БОСС)";
-                radBadge.className = "loc-badge badge-high"; radBadge.innerText = "Опасный фон (1.2 рад/с)";
-                matsText.innerText = "Только выживание";
+                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "DEADLY (BOSS)";
+                radBadge.className = "loc-badge badge-high"; radBadge.innerText = "Dangerous background (1.2 rad/s)";
+                matsText.innerText = "Survival only";
             }
 
-            // Сброс и отображение вкладок для NPC
+            // Reset and show NPC tabs
             document.getElementById('tab-trader').style.display = 'none';
             document.getElementById('tab-dialog').style.display = 'none';
             
-            // Если Сидорович (торговец) есть на этой локации (индекс 2 - Город)
+            // If trader is at this location (index 2 - City)
             if (gameState.currentLocationIndex === 2) {
                 document.getElementById('tab-trader').style.display = 'block';
                 setupTraderTab();
             }
 
-            // Если раненый выживший (квест) есть на этой локации (индекс 3 - Пустошь)
+            // If wounded survivor (quest) at this location (index 3 - Wasteland)
             if (gameState.currentLocationIndex === 3 && !gameState.questMedkitDelivered) {
                 document.getElementById('tab-dialog').style.display = 'block';
                 setupQuestTab();
             }
 
-            // Обновляем данные во всех вкладках
+            // Update data in all tabs
             updateCraftingTab();
             updateTrainTab();
             updateSurvivorTab();
             updateRouteMapTab();
 
-            // Переключаем на вкладку Локация по умолчанию
+            // Switch to Location tab by default
             switchStationTab('location');
             
             document.getElementById('hud-container').style.display = 'none';
@@ -3454,15 +3454,15 @@
         }
 
         function switchStationTab(tabId) {
-            // Снятие активных классов с кнопок табов
+            // Remove active class from tab buttons
             let buttons = document.querySelectorAll('.tab-btn');
             buttons.forEach(btn => btn.classList.remove('active'));
             
-            // Снятие активных классов с панелей
+            // Remove active class from panels
             let panels = document.querySelectorAll('.tab-panel');
             panels.forEach(panel => panel.classList.remove('active'));
             
-            // Активация выбранной
+            // Activate selected
             let targetBtn = Array.from(buttons).find(btn => btn.onclick.toString().includes(tabId));
             if (targetBtn) targetBtn.classList.add('active');
             
@@ -3470,16 +3470,16 @@
             if (targetPanel) targetPanel.classList.add('active');
         }
 
-        // Вкладка Крафта
+        // Crafting tab
         const CRAFT_RECIPES = [
-            { id: 'armor', name: 'Бронежилет', desc: 'Срезает 30% получаемого от атак врагов урона.', cost: { scrap: 5 }, type: 'gear' },
-            { id: 'water_filter', name: 'Фильтр для воды', desc: 'Вода восстанавливает 75 жажды вместо 45.', cost: { scrap: 3 }, type: 'gear' },
-            { id: 'ammo_pistol', name: 'Патроны для пистолета (x30)', desc: 'Патроны калибра 9х18мм.', cost: { scrap: 2 }, type: 'ammo' },
-            { id: 'ammo_rifle', name: 'Патроны для автомата (x50)', desc: 'Патроны калибра 5.45мм.', cost: { scrap: 3 }, type: 'ammo' },
-            { id: 'ammo_shotgun', name: 'Патроны для дробовика (x12)', desc: 'Дробь 12 калибра.', cost: { scrap: 3 }, type: 'ammo' },
-            { id: 'medkit', name: 'Армейская аптечка', desc: 'Восстанавливает здоровье.', cost: { scrap: 2, water: 1 }, type: 'item' },
-            { id: 'gasmask_filter', name: 'Фильтр противогаза', desc: 'Полностью заряжает противогаз до 100%.', cost: { scrap: 2, wood: 1 }, type: 'item' },
-            { id: 'wpn_upgrade', name: 'Апгрейд оружия', desc: 'Увеличивает урон всех пушек на +25%.', cost: { scrap: 8 }, type: 'wpn_upg' }
+            { id: 'armor', name: 'Kevlar Vest', desc: 'Cuts 30% damage taken from enemy attacks.', cost: { scrap: 5 }, type: 'gear' },
+            { id: 'water_filter', name: 'Water Filter', desc: 'Water restores 75 thirst instead of 45.', cost: { scrap: 3 }, type: 'gear' },
+            { id: 'ammo_pistol', name: 'Pistol Ammo (x30)', desc: '9x18mm caliber ammo.', cost: { scrap: 2 }, type: 'ammo' },
+            { id: 'ammo_rifle', name: 'Assault Rifle Ammo (x50)', desc: '5.45mm caliber ammo.', cost: { scrap: 3 }, type: 'ammo' },
+            { id: 'ammo_shotgun', name: 'Shotgun Ammo (x12)', desc: '12 gauge buckshot.', cost: { scrap: 3 }, type: 'ammo' },
+            { id: 'medkit', name: 'Military Medkit', desc: 'Restores health.', cost: { scrap: 2, water: 1 }, type: 'item' },
+            { id: 'gasmask_filter', name: 'Gas Mask Filter', desc: 'Fully recharges gas mask to 100%.', cost: { scrap: 2, wood: 1 }, type: 'item' },
+            { id: 'wpn_upgrade', name: 'Weapon Upgrade', desc: 'Increases all weapon damage by +25%.', cost: { scrap: 8 }, type: 'wpn_upg' }
         ];
 
         function updateCraftingTab() {
@@ -3487,7 +3487,7 @@
             container.innerHTML = '';
             
             CRAFT_RECIPES.forEach(rec => {
-                // Проверяем, созданы ли уже уникальные предметы
+                // Check if unique items already crafted
                 if (rec.id === 'armor' && gameState.hasArmor) return;
                 if (rec.id === 'water_filter' && gameState.waterFilter) return;
                 
@@ -3502,18 +3502,18 @@
                     let isShort = playerAmount < reqAmount;
                     if (isShort) canCraft = false;
                     
-                    let resLabel = (res === 'scrap') ? '⚙️ Хлам' : (res === 'wood') ? '⛽ Бензин' : (res === 'water') ? '🥤 Вода' : res;
+                    let resLabel = (res === 'scrap') ? '⚙️ Scrap' : (res === 'wood') ? '⛽ Gasoline' : (res === 'water') ? '🥤 Water' : res;
                     matsPills += `<span class="craft-mats-pill ${isShort ? 'insufficient' : ''}">${resLabel}: ${playerAmount}/${reqAmount}</span>`;
                 }
 
-                // Дополнительное ограничение на апгрейд оружия (макс 3 уровня)
+                // Additional limit on weapon upgrade (max 3 levels)
                 let nameLabel = rec.name;
                 if (rec.id === 'wpn_upgrade') {
                     let lvl = Math.min(gameState.weaponUpgrades.pistol, gameState.weaponUpgrades.rifle, gameState.weaponUpgrades.shotgun);
-                    nameLabel = `${rec.name} (Текущий уровень: +${lvl * 25}%)`;
+                    nameLabel = `${rec.name} (Current level: +${lvl * 25}%)`;
                     if (lvl >= 3) {
                         canCraft = false;
-                        nameLabel = `${rec.name} (МАКС. АПГРЕЙД)`;
+                        nameLabel = `${rec.name} (MAX UPGRADE)`;
                     }
                 }
                 
@@ -3523,7 +3523,7 @@
                         <div class="craft-desc">${rec.desc}</div>
                         <div class="craft-mats">${matsPills}</div>
                     </div>
-                    <button class="craft-btn" ${canCraft ? '' : 'disabled'} onclick="craftItem('${rec.id}')">Создать</button>
+                    <button class="craft-btn" ${canCraft ? '' : 'disabled'} onclick="craftItem('${rec.id}')">Craft</button>
                 `;
                 container.appendChild(card);
             });
@@ -3533,38 +3533,38 @@
             let rec = CRAFT_RECIPES.find(r => r.id === recipeId);
             if (!rec) return;
 
-            // Списываем ресурсы
+            // Deduct resources
             for (let [res, reqAmount] of Object.entries(rec.cost)) {
                 gameState.inventory[res] -= reqAmount;
             }
 
-            // Выдаем награду
+            // Grant reward
             if (recipeId === 'armor') {
                 gameState.hasArmor = true;
-                addLogMessage("🛡️ Создан кевларовый бронежилет! Защита повышена.", "system");
+                addLogMessage("🛡️ Kevlar vest crafted! Protection increased.", "system");
             } else if (recipeId === 'water_filter') {
                 gameState.waterFilter = true;
-                addLogMessage("🥤 Скрафчен фильтр для очистки воды.", "system");
+                addLogMessage("🥤 Water purification filter crafted.", "system");
             } else if (recipeId === 'ammo_pistol') {
                 gameState.inventory.ammo_pistol += 30;
-                addLogMessage("🔫 Созданы патроны для пистолета (30шт)", "system");
+                addLogMessage("🔫 Pistol ammo crafted (30pcs)", "system");
             } else if (recipeId === 'ammo_rifle') {
                 gameState.inventory.ammo_rifle += 50;
-                addLogMessage("💥 Созданы патроны для автомата (50шт)", "system");
+                addLogMessage("💥 Assault rifle ammo crafted (50pcs)", "system");
             } else if (recipeId === 'ammo_shotgun') {
                 gameState.inventory.ammo_shotgun += 12;
-                addLogMessage("🔥 Создана дробь для дробовика (12шт)", "system");
+                addLogMessage("🔥 Shotgun shells crafted (12pcs)", "system");
             } else if (recipeId === 'medkit') {
                 gameState.inventory.medkit++;
-                addLogMessage("➕ Создана армейская аптечка", "system");
+                addLogMessage("➕ Military medkit crafted", "system");
             } else if (recipeId === 'gasmask_filter') {
                 gameState.inventory.gasmask = 100;
-                addLogMessage("🎭 Фильтр заменен! Заряд 100%", "system");
+                addLogMessage("🎭 Filter replaced! Charge 100%", "system");
             } else if (recipeId === 'wpn_upgrade') {
                 gameState.weaponUpgrades.pistol++;
                 gameState.weaponUpgrades.rifle++;
                 gameState.weaponUpgrades.shotgun++;
-                addLogMessage("🔫 Оружие модернизировано! Урон повышен на 25%.", "system");
+                addLogMessage("🔫 Weapon upgraded! Damage increased by 25%.", "system");
             }
 
             sound.playCollect();
@@ -3573,52 +3573,52 @@
             updateHudVisuals();
         }
 
-        // Вкладка Внедорожника
+        // SUV tab
         function updateTrainTab() {
             let maxWood = getMaxWoodCapacity();
             document.getElementById('boiler-fuel-txt').innerText = `${Math.round(gameState.trainFuel)} / 100`;
             document.getElementById('boiler-fuel-fill').style.width = `${gameState.trainFuel}%`;
             
-            // Отключение кнопки заправки, если нет бензина
+            // Disable refuel button if no gasoline
             document.getElementById('boiler-refuel-btn').disabled = (gameState.inventory.wood <= 0 || gameState.trainFuel >= 100);
 
-            // Апгрейды внедорожника
-            // Двигатель
+            // SUV upgrades
+            // Engine
             let engLvl = gameState.trainUpgrades.engine;
             let engCost = (engLvl === 0) ? 5 : (engLvl === 1) ? 10 : (engLvl === 2) ? 20 : 999;
-            document.getElementById('upg-engine-name').innerText = `Модернизация Двигателя (Ур. ${engLvl}/3)`;
+            document.getElementById('upg-engine-name').innerText = `Engine Upgrade (Lv. ${engLvl}/3)`;
             let engBtn = document.getElementById('upg-engine-btn');
             if (engLvl >= 3) {
-                engBtn.innerText = "Максимум";
+                engBtn.innerText = "Max";
                 engBtn.disabled = true;
             } else {
-                engBtn.innerText = `Улучшить (⚙️${engCost})`;
+                engBtn.innerText = `Upgrade (⚙️${engCost})`;
                 engBtn.disabled = gameState.inventory.scrap < engCost;
             }
 
-            // Броня
+            // Armor
             let armLvl = gameState.trainUpgrades.armor;
             let armCost = (armLvl === 0) ? 6 : (armLvl === 1) ? 12 : (armLvl === 2) ? 22 : 999;
-            document.getElementById('upg-armor-name').innerText = `Усиление Брони внедорожника (Ур. ${armLvl}/3)`;
+            document.getElementById('upg-armor-name').innerText = `SUV Armor Reinforcement (Lv. ${armLvl}/3)`;
             let armBtn = document.getElementById('upg-armor-btn');
             if (armLvl >= 3) {
-                armBtn.innerText = "Максимум";
+                armBtn.innerText = "Max";
                 armBtn.disabled = true;
             } else {
-                armBtn.innerText = `Улучшить (⚙️${armCost})`;
+                armBtn.innerText = `Upgrade (⚙️${armCost})`;
                 armBtn.disabled = gameState.inventory.scrap < armCost;
             }
 
-            // Склад
+            // Storage
             let stLvl = gameState.trainUpgrades.storage;
             let stCost = (stLvl === 0) ? 4 : (stLvl === 1) ? 8 : (stLvl === 2) ? 15 : 999;
-            document.getElementById('upg-storage-name').innerText = `Расширение Багажника (Ур. ${stLvl}/3)`;
+            document.getElementById('upg-storage-name').innerText = `Trunk Expansion (Lv. ${stLvl}/3)`;
             let stBtn = document.getElementById('upg-storage-btn');
             if (stLvl >= 3) {
-                stBtn.innerText = "Максимум";
+                stBtn.innerText = "Max";
                 stBtn.disabled = true;
             } else {
-                stBtn.innerText = `Улучшить (⚙️${stCost})`;
+                stBtn.innerText = `Upgrade (⚙️${stCost})`;
                 stBtn.disabled = gameState.inventory.scrap < stCost;
             }
         }
@@ -3649,14 +3649,14 @@
                 gameState.inventory.scrap -= cost;
                 gameState.trainUpgrades[type]++;
                 sound.playCollect();
-                addLogMessage(`🚙 Внедорожник: Модернизирован ${type === 'engine' ? 'двигатель' : type === 'armor' ? 'корпус брони' : 'багажник'}!`, "system");
+                addLogMessage(`🚙 SUV: Upgraded ${type === 'engine' ? 'engine' : type === 'armor' ? 'armor hull' : 'trunk'}!`, "system");
                 saveGameData();
                 updateTrainTab();
                 updateHudVisuals();
             }
         }
 
-        // Вкладка Персонажа (Навыки)
+        // Character tab (Skills)
         function updateSurvivorTab() {
             document.getElementById('char-lvl').innerText = gameState.level;
             document.getElementById('char-xp').innerText = `${gameState.xp} / ${gameState.level * 100}`;
@@ -3670,7 +3670,7 @@
             document.getElementById('skill-agility-lvl').innerText = `${gameState.skills.agility} / 5`;
             document.getElementById('skill-survival-lvl').innerText = `${gameState.skills.survival} / 5`;
 
-            // Управление кнопками плюсов
+            // Manage plus buttons
             let plusBtns = document.querySelectorAll('.skill-plus-btn');
             plusBtns.forEach((btn, idx) => {
                 let skill = (idx === 0) ? 'strength' : (idx === 1) ? 'agility' : 'survival';
@@ -3685,7 +3685,7 @@
                 gameState.skills[skill]++;
                 
                 if (skill === 'strength') {
-                    // Корректируем HP игрока вверх на 15 при прокачке
+                    // Adjust player HP +15 on upgrade
                     gameState.hp += 15;
                 }
                 
@@ -3696,7 +3696,7 @@
             }
         }
 
-        // Вкладка Карты Железных Дорог
+        // Railway Map tab
         function updateRouteMapTab() {
             let container = document.getElementById('route-stations-list');
             container.innerHTML = '';
@@ -3712,20 +3712,20 @@
                 let btnHtml = '';
                 if (isNext) {
                     let canTravel = gameState.trainFuel >= actualFuelCost;
-                    btnHtml = `<button class="route-travel-btn" ${canTravel ? '' : 'disabled'} onclick="travelToStation(${idx}, ${actualFuelCost})">Переехать (🔥${actualFuelCost})</button>`;
+                    btnHtml = `<button class="route-travel-btn" ${canTravel ? '' : 'disabled'} onclick="travelToStation(${idx}, ${actualFuelCost})">Travel (🔥${actualFuelCost})</button>`;
                 } else if (idx === gameState.currentLocationIndex) {
-                    btnHtml = `<span style="font-weight:bold; color:var(--primary-accent); margin-left:auto; font-size:0.8rem; text-transform:uppercase;">Стоянка</span>`;
+                    btnHtml = `<span style="font-weight:bold; color:var(--primary-accent); margin-left:auto; font-size:0.8rem; text-transform:uppercase;">Camp</span>`;
                 } else if (idx < gameState.currentLocationIndex) {
-                    btnHtml = `<span style="font-weight:bold; color:var(--text-muted); margin-left:auto; font-size:0.8rem;">Пройдено</span>`;
+                    btnHtml = `<span style="font-weight:bold; color:var(--text-muted); margin-left:auto; font-size:0.8rem;">Completed</span>`;
                 } else {
-                    btnHtml = `<span style="font-weight:bold; color:rgba(255,255,255,0.15); margin-left:auto; font-size:0.8rem;">Заперто</span>`;
+                    btnHtml = `<span style="font-weight:bold; color:rgba(255,255,255,0.15); margin-left:auto; font-size:0.8rem;">Locked</span>`;
                 }
 
                 step.innerHTML = `
                     <div class="route-step-num">${idx + 1}</div>
                     <div class="route-step-details">
                         <span class="route-step-name">${loc.name}</span>
-                        <span class="route-step-cost">${idx > 0 ? `Расход топлива: ${actualFuelCost} бензина` : 'Старт'}</span>
+                        <span class="route-step-cost">${idx > 0 ? `Fuel cost: ${actualFuelCost} gasoline` : 'Start'}</span>
                     </div>
                     ${btnHtml}
                 `;
@@ -3733,7 +3733,7 @@
             });
         }
 
-        // Механика Переезда
+        // Travel mechanic
         function travelToStation(targetIdx, fuelCost) {
             gameState.trainFuel -= fuelCost;
             document.getElementById('station-menu-overlay').style.display = 'none';
@@ -3742,19 +3742,19 @@
             travelOverlay.style.display = 'flex';
             
             let targetLocName = LOCATIONS[targetIdx].name;
-            document.getElementById('travel-status-txt').innerText = `Переезд на стоянку: ${targetLocName}...`;
+            document.getElementById('travel-status-txt').innerText = `En route to camp: ${targetLocName}...`;
             
             let fill = document.getElementById('travel-progress-fill');
             fill.style.width = '0%';
             
-            // Начинаем звук двигателя
+            // Start engine sound
             let chugInterval = setInterval(() => {
                 sound.playChug();
             }, 300);
 
-            // Анимация
+            // Animation
             let pct = 0;
-            let travelDuration = 5000; // 5 секунд переезд
+            let travelDuration = 5000; // 5 seconds travel
             let steps = 50;
             let stepTime = travelDuration / steps;
 
@@ -3764,7 +3764,7 @@
                 pct += (100 / steps);
                 fill.style.width = `${pct}%`;
                 
-                // Случайные события посреди дороги (на 50% пути)
+                // Random events halfway through (at 50% of journey)
                 if (pct >= 50 && !randEventTriggered) {
                     randEventTriggered = true;
                     triggerTravelRandomEvent();
@@ -3778,52 +3778,52 @@
                     gameState.currentLocationIndex = targetIdx;
                     saveGameData();
                     openStationMenu();
-                    addLogMessage(`🚙 Прибыли на стоянку: ${targetLocName}!`, "system");
+                    addLogMessage(`🚙 Arrived at camp: ${targetLocName}!`, "system");
                 }
             }, stepTime);
         }
 
-        // Случайные события во время переезда
+        // Random events during travel
         function triggerTravelRandomEvent() {
             let roll = Math.random();
             let armorLevel = gameState.trainUpgrades.armor;
             let subtext = document.getElementById('travel-subtext-txt');
 
             if (roll < 0.25 && gameState.currentLocationIndex > 0) {
-                // Рейд бандитов
+                // Bandit raid
                 let scrapLoss = Math.max(0, 5 - armorLevel * 2);
                 let foodLoss = Math.max(0, 2 - armorLevel * 1);
                 gameState.inventory.scrap = Math.max(0, gameState.inventory.scrap - scrapLoss);
                 gameState.inventory.food = Math.max(0, gameState.inventory.food - foodLoss);
                 
-                subtext.innerText = `⚠️ Событие: На внедорожник напали рейдеры! Броня заблокировала часть потерь. Потеряно: ⚙️${scrapLoss} хлама, 🥫${foodLoss} еды.`;
+                subtext.innerText = `⚠️ Event: Raiders attacked the SUV! Armor blocked some losses. Lost: ⚙️${scrapLoss} scrap, 🥫${foodLoss}  food.`;
                 subtext.style.color = 'var(--danger-accent)';
             } else if (roll < 0.50) {
-                // Нашли припасы на дороге
+                // Found supplies on the road
                 gameState.inventory.scrap += 4;
                 gameState.inventory.ammo_pistol += 20;
-                subtext.innerText = `⚙️ Событие: Вы нашли заброшенную машину! Получено: ⚙️4 хлама, 🔫20 пистолетных пуль.`;
+                subtext.innerText = `⚙️ Event: You found an abandoned car! Gained: ⚙️4 scrap, 🔫20 pistol rounds.`;
                 subtext.style.color = 'var(--primary-accent)';
             } else if (roll < 0.70) {
-                // Раненый попутчик
+                // Wounded hitchhiker
                 gameState.inventory.food = Math.max(0, gameState.inventory.food - 1);
                 gameState.inventory.medkit += 1;
-                subtext.innerText = `🩹 Событие: Встретили выжившего на дороге. Поделились едой (-1 тушенка), он дал вам Аптечку (+1)`;
+                subtext.innerText = `🩹 Event: Met a survivor on the road. Shared food (-1 can), he gave you a Medkit (+1)`;
                 subtext.style.color = 'var(--cyan-accent)';
             } else {
-                subtext.innerText = `🚙 Дорога свободна. Внедорожник спокойно едет по шоссе сквозь постапокалиптические туманы.`;
+                subtext.innerText = `🚙 The road is clear. The SUV calmly cruises down the highway through post-apocalyptic fog.`;
                 subtext.style.color = 'var(--text-muted)';
             }
             updateHudVisuals();
         }
 
-        // Вкладка Торговца (Локальный Сидорович на 3 локации)
+        // Trader Tab (Local trader at 3rd location)
         function setupTraderTab() {
             let actions = document.getElementById('trader-actions-list');
             actions.innerHTML = `
-                <button class="craft-btn" id="trade-btn-1" onclick="tradeWithNpc(1)">1 Бензин -> 8 Пист. Патронов</button>
-                <button class="craft-btn" id="trade-btn-2" onclick="tradeWithNpc(2)">3 Хлама -> 1 Аптечка</button>
-                <button class="craft-btn" id="trade-btn-3" onclick="tradeWithNpc(3)">2 Хлама -> 1 Противогаз</button>
+                <button class="craft-btn" id="trade-btn-1" onclick="tradeWithNpc(1)">1 Gasoline -> 8 Pistol Ammo</button>
+                <button class="craft-btn" id="trade-btn-2" onclick="tradeWithNpc(2)">3 Scrap -> 1 Medkit</button>
+                <button class="craft-btn" id="trade-btn-3" onclick="tradeWithNpc(3)">2 Scrap -> 1 Gas Mask</button>
             `;
             updateTraderButtons();
         }
@@ -3840,30 +3840,30 @@
                 gameState.inventory.wood--;
                 gameState.inventory.ammo_pistol += 8;
                 sound.playCollect();
-                addLogMessage("⚖️ Сделка: Бензин обменен на патроны.", "system");
+                addLogMessage("⚖️ Trade: Gasoline exchanged for ammo.", "system");
             } else if (dealId === 2 && gameState.inventory.scrap >= 3) {
                 gameState.inventory.scrap -= 3;
                 gameState.inventory.medkit++;
                 sound.playCollect();
-                addLogMessage("⚖️ Сделка: Хлам обменен на Аптечку.", "system");
+                addLogMessage("⚖️ Trade: Scrap exchanged for Medkit.", "system");
             } else if (dealId === 3 && gameState.inventory.scrap >= 2) {
                 gameState.inventory.scrap -= 2;
                 gameState.inventory.gasmask = 100;
                 sound.playCollect();
-                addLogMessage("⚖️ Сделка: Заряжен Противогаз.", "system");
+                addLogMessage("⚖️ Trade: Gas Mask charged.", "system");
             }
             updateTraderButtons();
             updateHudVisuals();
             saveGameData();
         }
 
-        // Вкладка Квеста (Раненый выживший на 4 локации)
+        // Quest Tab (Wounded survivor at 4th location)
         function setupQuestTab() {
             let actBox = document.getElementById('npc-dialog-actions');
             let hasMedkit = gameState.inventory.medkit > 0;
             actBox.innerHTML = `
-                <button class="craft-btn" ${hasMedkit ? '' : 'disabled'} onclick="completeNpcQuest()">Отдать Аптечку</button>
-                <button class="craft-btn" onclick="switchStationTab('location')">Отказать и уйти</button>
+                <button class="craft-btn" ${hasMedkit ? '' : 'disabled'} onclick="completeNpcQuest()">Give Medkit</button>
+                <button class="craft-btn" onclick="switchStationTab('location')">Refuse and leave</button>
             `;
         }
 
@@ -3878,19 +3878,19 @@
                 
                 sound.playCollect();
                 gainXp(150);
-                addLogMessage("👤 Квест: Вы помогли торговцу и получили ⚙️18 Хлама!", "system");
+                addLogMessage("👤 Quest: You helped the trader and received ⚙️18  Scrap!", "system");
                 saveGameData();
                 updateHudVisuals();
             }
         }
 
         // =========================================================================
-        // 8. ЗАПУСК ИГРЫ И СЦЕНЫ PHASER
+        // 8. GAME LAUNCH AND PHASER SCENE
         // =========================================================================
         let activeGameScene = null;
 
         function startNewGame() {
-            // Инициализация стартовых параметров для Новой игры
+            // Init start params for New Game
             gameState = {
                 currentLocationIndex: 0,
                 // Rogue-like perks collected during the run
@@ -3943,7 +3943,7 @@
                 document.getElementById('main-menu-overlay').style.display = 'none';
                 openStationMenu();
             } else {
-                alert("Нет сохраненных игр!");
+                alert("No saved games!");
             }
         }
 
@@ -3954,7 +3954,7 @@
         // =========================================================================
         
         let scene, camera, renderer;
-        // activeGameScene объявлен выше в глобальном контексте
+        // activeGameScene declared above in global scope
         // Prevent pinch-to-zoom on mobile devices (multi-touch zoom prevention)
         document.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) {
@@ -4024,7 +4024,7 @@
         let killCombo = 0;            // Current kill combo multiplier
         let playerAnimProgress = 0; // Accumulator for smooth player walking/sprinting animations
         let lastFireTime = 0;
-        // currentActiveWeapon объявлена глобально выше
+        // currentActiveWeapon declared globally above
         
         // Materials cache
         let materials = {};
@@ -4382,13 +4382,13 @@
             
             // Pre-generate shared SpriteMaterials for all 7 loot types to avoid runtime Canvas texture generation & GPU texture upload lags
             let lootTypes = {
-                wood: "БЕНЗИН",
-                scrap: "ХЛАМ",
-                food: "КОНСЕРВЫ",
-                water: "ВОДА",
-                ammo: "ПАТРОНЫ",
-                medkit: "АПТЕЧКА",
-                gasmask: "ФИЛЬТР"
+                wood: "GASOLINE",
+                scrap: "SCRAP",
+                food: "CANNED",
+                water: "WATER",
+                ammo: "AMMO",
+                medkit: "MEDKIT",
+                gasmask: "FILTER"
             };
             for (let [type, name] of Object.entries(lootTypes)) {
                 let canvas = document.createElement('canvas');
@@ -4824,7 +4824,7 @@
             gameState.inventory.wood -= lostWood;
             gameState.inventory.scrap -= lostScrap;
             
-            addLogMessage(`⚠️ Отступили во внедорожник. Потери: ⛽${lostWood} бензина, ⚙️${lostScrap} хлама.`, "danger");
+            addLogMessage(`⚠️ Retreated to SUV. Losses: ⛽${lostWood} gasoline, ⚙️${lostScrap}  scrap.`, "danger");
             openStationMenu();
         }
         
@@ -4872,21 +4872,21 @@
             // Check ammo
             if (currentActiveWeapon === 'rifle') {
                 if (gameState.inventory.ammo_rifle <= 0) {
-                    addLogMessage("Закончились патроны для автомата!", "danger");
+                    addLogMessage("Out of assault rifle ammo!", "danger");
                     selectWeaponFromSlot(1);
                     return;
                 }
                 gameState.inventory.ammo_rifle--;
             } else if (currentActiveWeapon === 'shotgun') {
                 if (gameState.inventory.ammo_shotgun <= 0) {
-                    addLogMessage("Закончилась дробь для дробовика!", "danger");
+                    addLogMessage("Out of shotgun shells!", "danger");
                     selectWeaponFromSlot(1);
                     return;
                 }
                 gameState.inventory.ammo_shotgun--;
             } else {
                 if (gameState.inventory.ammo_pistol <= 0) {
-                    addLogMessage("Закончились патроны для пистолета!", "danger");
+                    addLogMessage("Out of pistol ammo!", "danger");
                     return;
                 }
                 gameState.inventory.ammo_pistol--;
@@ -4993,7 +4993,7 @@
             let nameTag = "";
             
             if (type === 'wood') {
-                nameTag = "БЕНЗИН";
+                nameTag = "GASOLINE";
                 let b = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.4, 0.18), new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 }));
                 b.castShadow = true; b.receiveShadow = true;
                 loot.add(b);
@@ -5007,7 +5007,7 @@
                 loot.add(c);
             }
             else if (type === 'scrap') {
-                nameTag = "ХЛАМ";
+                nameTag = "SCRAP";
                 for (let i = 0; i < 3; i++) {
                     let p = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.06, 0.35), new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.6, metalness: 0.8 }));
                     p.position.y = -0.1 + i * 0.08;
@@ -5017,7 +5017,7 @@
                 }
             }
             else if (type === 'food') {
-                nameTag = "КОНСЕРВЫ";
+                nameTag = "CANNED";
                 let c = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.32, 8), new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.5, metalness: 0.5 }));
                 c.castShadow = true; c.receiveShadow = true;
                 loot.add(c);
@@ -5031,7 +5031,7 @@
                 loot.add(rimBot);
             }
             else if (type === 'water') {
-                nameTag = "ВОДА";
+                nameTag = "WATER";
                 let b = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.32, 8), new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.3, transparent: true, opacity: 0.8 }));
                 b.castShadow = true; b.receiveShadow = true;
                 loot.add(b);
@@ -5045,7 +5045,7 @@
                 loot.add(cap);
             }
             else if (type === 'ammo') {
-                nameTag = "ПАТРОНЫ";
+                nameTag = "AMMO";
                 let box = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, 0.22), new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5, metalness: 0.6 }));
                 box.castShadow = true; box.receiveShadow = true;
                 loot.add(box);
@@ -5055,7 +5055,7 @@
                 loot.add(clasp);
             }
             else if (type === 'medkit') {
-                nameTag = "АПТЕЧКА";
+                nameTag = "MEDKIT";
                 let box = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.28, 0.15), new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.6 }));
                 box.castShadow = true; box.receiveShadow = true;
                 loot.add(box);
@@ -5067,7 +5067,7 @@
                 loot.add(c2);
             }
             else if (type === 'gasmask') {
-                nameTag = "ФИЛЬТР";
+                nameTag = "FILTER";
                 let can = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.15, 8), new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.5 }));
                 can.castShadow = true; can.receiveShadow = true;
                 loot.add(can);
@@ -5142,7 +5142,7 @@
             lastTime = Date.now();
             
             // On-screen diagnostic log to confirm the correct version of index.html is loaded
-            addLogMessage("🛠️ Движок 3D: активирован звук и следы!", "system");
+            addLogMessage("🛠️ 3D Engine: sound and footprints active!", "system");
             
             // Clear old scene items
             walls = [];
@@ -5377,10 +5377,10 @@
             scene.add(laserLine);
             
             // Set tutorial message
-            checkTutorial('movement', '🚀 Добро пожаловать!', 'Используйте клавиши W, A, S, D для ходьбы. Удерживайте Shift для бега. Поворачивайте мышь для прицеливания и стреляйте ЛКМ.', '🚂');
-            addLogMessage(`📍 Вылазка: ${loc.name}`, "system");
+            checkTutorial('movement', '🚀 Welcome!', 'Use WASD keys to move. Hold Shift to sprint. Aim with mouse and shoot with left click.', '🚂');
+            addLogMessage(`📍 Sortie: ${loc.name}`, "system");
             if (loc.radiation > 0) {
-                addLogMessage("☢️ ВНИМАНИЕ: Зона радиоактивного заражения!", "danger");
+                addLogMessage("☢️ WARNING: Radioactive contamination zone!", "danger");
             }
             
             // Start main loop
@@ -6468,10 +6468,10 @@
             
             if (npcType === 'campfire') {
                 phrases = [
-                    "Холодает... Ночь близко.",
-                    "Слышишь эти завывания в чащах?",
-                    "Хорошо хоть костер еще горит...",
-                    "Эй, путник! Присаживайся погреться."
+                    "Getting cold... Night is near.",
+                    "Hear those howls in the thickets?",
+                    "At least the campfire still burns...",
+                    "Hey, traveler! Sit down and warm up."
                 ];
                 
                 // Spawn a campfire near them!
@@ -6527,10 +6527,10 @@
                 
             } else if (npcType === 'wounded') {
                 phrases = [
-                    "Агх... эти твари меня покусали...",
-                    "Рейдеры устроили засаду...",
-                    "У тебя случайно нет лишней Аптечки?",
-                    "Помоги мне... не бросай здесь..."
+                    "Ugh... those creatures bit me...",
+                    "Raiders set up an ambush...",
+                    "You don't happen to have a spare Medkit?",
+                    "Help me... don't leave me here..."
                 ];
                 
                 // Lying Stalker
@@ -6554,10 +6554,10 @@
             } else {
                 // Standing Guard Stalker
                 phrases = [
-                    "Оружие наизготовку!",
-                    "Будь аккуратнее на пустошах.",
-                    "Впереди большая угроза...",
-                    "Держи ухо востро!"
+                    "Weapons ready!",
+                    "Be careful in the wastelands.",
+                    "A great threat lies ahead...",
+                    "Keep your eyes peeled!"
                 ];
                 
                 let stalker = createRobloxCharacter('#1e293b', '#dfc4a5', '#1e293b');
@@ -6726,7 +6726,7 @@
                 enemy.userData.lastShot = 0;
                 enemy.userData.lastSummon = 0;
                 
-                addLogMessage("🧟‍♂️ Внимание! Появился Сверхмутант!", "danger");
+                addLogMessage("🧟‍♂️ Warning! Super Mutant appeared!", "danger");
             }
             
             enemy.position.set(x, 0, z);
@@ -6820,8 +6820,8 @@
             let dist = playerGroup.position.distanceTo(pos);
             if (dist < 4.0) {
                 let dmg = Math.round((4.0 - dist) * 12);
-                damagePlayer(dmg, "взрыва зомби");
-                addLogMessage(`💥 Вас задел взрыв толстого зомби! Урон: ${dmg} HP`, "danger");
+                damagePlayer(dmg, "zombie explosion");
+                addLogMessage(`💥 Fat zombie explosion hit you! Damage: ${dmg} HP`, "danger");
             }
             
             // Damage other enemies
@@ -6850,14 +6850,14 @@
             }
             
             if (nearestNode) {
-                if (nearestNode.userData.type === 'tree') checkTutorial('tree', '⛽ Сбор бензина', 'Подойдите к бензоколонке и зажмите ПРОБЕЛ (или кнопку на экране), чтобы собрать Бензин для внедорожника.', '⛽');
-                if (nearestNode.userData.type === 'scrap') checkTutorial('scrap', '⚙️ Сбор металлолома', 'Подойдите к куче хлама и зажмите ПРОБЕЛ, чтобы собрать металлолом для крафта.', '⚙️');
+                if (nearestNode.userData.type === 'tree') checkTutorial('tree', '⛽ Collecting Gasoline', 'Approach the fuel canister and hold SPACE (or on-screen button) to collect Gasoline for the SUV.', '⛽');
+                if (nearestNode.userData.type === 'scrap') checkTutorial('scrap', '⚙️ Collecting Scrap', 'Approach the scrap pile and hold SPACE to collect metal for crafting.', '⚙️');
                 
                 if (keys.Space) {
                     if (nearestNode.userData.type === 'tree') {
                         let cap = getMaxWoodCapacity();
                         if (gameState.inventory.wood >= cap) {
-                            addLogMessage(`Багажник для бензина забит! (Максимум: ${cap})`, "warning");
+                            addLogMessage(`Gasoline trunk is full! (Max: ${cap})`, "warning");
                             clearProgressBar();
                             return;
                         }
@@ -6931,16 +6931,16 @@
                 sound.playCollect();
                 let cap = getMaxWoodCapacity();
                 if (gameState.inventory.wood >= cap) {
-                    addLogMessage(`Багажник для бензина забит! (Максимум: ${cap})`, "warning");
+                    addLogMessage(`Gasoline trunk is full! (Max: ${cap})`, "warning");
                 } else {
                     gameState.inventory.wood = Math.min(cap, gameState.inventory.wood + 3);
-                    addLogMessage("+3 Бензин", "system");
+                    addLogMessage("+3 Gasoline", "system");
                 }
                 gainXp(12);
             } else if (node.userData.type === 'scrap') {
                 sound.playCollect();
                 gameState.inventory.scrap += 2;
-                addLogMessage("+2 Металлолом", "system");
+                addLogMessage("+2 Scrap Metal", "system");
                 gainXp(15);
             }
             
@@ -7147,7 +7147,7 @@
                 let perksSpeed = (gameState.runPerks && gameState.runPerks.speedMod !== undefined) ? gameState.runPerks.speedMod : 1.0;
                 let speed = 4.5 * (1 + gameState.skills.agility * 0.08) * perksSpeed; // 4.5 units/s
                 
-                // На телефоне спринт активируется автоматически при движении
+                // Auto-sprint on mobile when moving
                 let isSprintActive = keys.Shift || isMobileDevice;
                 
                 if (isMoving) {
@@ -7199,7 +7199,7 @@
                             spawnFootprint(playerGroup.position.x, playerGroup.position.z, playerGroup.rotation.y);
                         }
                     }
-                    // Рука с оружием направлена вперед при ходьбе
+                    // Gun arm points forward while walking
                     playerGroup.userData.armR.rotation.x = -Math.PI / 2.0;
                     
                     // Spawn dust particles
@@ -7211,7 +7211,7 @@
                     playerGroup.userData.legL.rotation.x = 0;
                     playerGroup.userData.legR.rotation.x = 0;
                     playerGroup.userData.armL.rotation.x = 0;
-                    // Рука с оружием всегда смотрит вперед (готовность стрелять)
+                    // Gun arm always faces forward (ready to shoot)
                     playerGroup.userData.armR.rotation.x = -Math.PI / 2.0;
                 }
                 
@@ -7290,10 +7290,10 @@
                                 let distXZ = Math.sqrt(dx * dx + dz * dz);
                                 if (distXZ < 0.65) {
                                     collided = true;
-                                    damagePlayer(b.userData.damage, "атаки рейдеров");
+                                    damagePlayer(b.userData.damage, "a raider attack");
                                     spawnBoxSparks(b.position, 0xd90429, 6, 0.1);
                                     spawnBloodDecal(playerGroup.position.x, playerGroup.position.z);
-                                    addLogMessage(`⚠️ В вас попал рейдер! Урон: ${b.userData.damage} HP`, "danger");
+                                    addLogMessage(`⚠️ A raider hit you! Damage: ${b.userData.damage} HP`, "danger");
                                 }
                             }
                         }
@@ -7605,7 +7605,7 @@
                 // Walk limbs animations
                 if (e.userData.type.startsWith('zombie')) {
                     if (dist < 10.0) {
-                        checkTutorial('enemy', '🧟 Опасность близко!', 'На вас бежит зомби! Выберите оружие на 1-3 и стреляйте.', '🧟');
+                        checkTutorial('enemy', '🧟 Danger close!', 'A zombie is running at you! Select a weapon with 1-3 and shoot.', '🧟');
                     }
                     if (true) {
                         // Move straight to player
@@ -7679,9 +7679,9 @@
                             e.userData.lastAttack = now;
                             sound.playHit();
                             spawnBoxSparks(playerGroup.position, 0xd90429, 12, 0.12);
-                            damagePlayer(e.userData.dmg, "атаки зомби");
+                            damagePlayer(e.userData.dmg, "a zombie attack");
                             spawnBloodDecal(playerGroup.position.x, playerGroup.position.z);
-                            addLogMessage(`💥 Вас укусил зомби! Урон: ${e.userData.dmg} HP`, "danger");
+                            addLogMessage(`💥 A zombie bit you! Damage: ${e.userData.dmg} HP`, "danger");
                         }
                     }
                 }
@@ -7723,7 +7723,7 @@
                             e.userData.leapCooldown = now;
                             // Leap force
                             e.userData.leapVelocity = new THREE.Vector3(Math.sin(angle)*8.0, 3.0, Math.cos(angle)*8.0);
-                            addLogMessage("👹 Мутант совершил прыжок!", "danger");
+                            addLogMessage("👹 Mutant lunged at you!", "danger");
                         }
                         
                         if (e.userData.leapVelocity && e.userData.leapVelocity.lengthSq() > 0.1) {
@@ -7759,9 +7759,9 @@
                             e.userData.lastAttack = now;
                             sound.playHit();
                             spawnBoxSparks(playerGroup.position, 0xd90429, 12, 0.12);
-                            damagePlayer(e.userData.dmg, "атаки мутанта");
+                            damagePlayer(e.userData.dmg, "a mutant attack");
                             spawnBloodDecal(playerGroup.position.x, playerGroup.position.z);
-                            addLogMessage(`💥 Вас задел мутант! Урон: ${e.userData.dmg} HP`, "danger");
+                            addLogMessage(`💥 A mutant hit you! Damage: ${e.userData.dmg} HP`, "danger");
                         }
                     }
                 }
@@ -7777,7 +7777,7 @@
                     if (now > e.userData.lastSummon + 8000 && dist < 18.0) {
                         e.userData.lastSummon = now;
                         spawn3DEnemy(e.position.x + THREE.MathUtils.randFloat(-3, 3), e.position.z + 4.0, 'zombie_fast');
-                        addLogMessage("🧟‍♂️ Босс призвал прислужника!", "danger");
+                        addLogMessage("🧟‍♂️ Boss summoned a minion!", "danger");
                     }
                 }
             }
@@ -7793,7 +7793,7 @@
                 let dist = playerGroup.position.distanceTo(loot.position);
                 let magnetRad = (gameState.runPerks && gameState.runPerks.magnetRadius !== undefined) ? gameState.runPerks.magnetRadius : 1.2;
                 
-                // Втягивание лута магнитом
+                // Loot vacuum by magnet
                 if (dist < magnetRad && dist >= 1.2) {
                     let pullDir = playerGroup.position.clone().sub(loot.position).normalize();
                     loot.position.add(pullDir.multiplyScalar(7.5 * dt));
@@ -7807,31 +7807,31 @@
                     if (type === 'wood') {
                         let cap = getMaxWoodCapacity();
                         if (gameState.inventory.wood >= cap) {
-                            addLogMessage(`Багажник забит!`, "warning");
+                            addLogMessage(`Trunk is full!`, "warning");
                             continue;
                         }
                         gameState.inventory.wood++;
-                        addLogMessage("+1 Бензин", "system");
+                        addLogMessage("+1 Gasoline", "system");
                     } else if (type === 'food') {
                         gameState.inventory.food++;
-                        addLogMessage("+1 Консервы", "system");
+                        addLogMessage("+1 Canned Food", "system");
                     } else if (type === 'water') {
                         gameState.inventory.water++;
-                        addLogMessage("+1 Чистая вода", "system");
+                        addLogMessage("+1 Clean Water", "system");
                     } else if (type === 'ammo') {
                         gameState.inventory.ammo_pistol += 20;
                         gameState.inventory.ammo_rifle += 30;
                         gameState.inventory.ammo_shotgun += 6;
-                        addLogMessage("+Боеприпасы всех калибров!", "system");
+                        addLogMessage("+Ammo of all calibers!", "system");
                     } else if (type === 'medkit') {
                         gameState.inventory.medkit++;
-                        addLogMessage("+1 Военная аптечка", "system");
+                        addLogMessage("+1 Military Medkit", "system");
                     } else if (type === 'gasmask') {
                         gameState.inventory.gasmask = Math.min(100, gameState.inventory.gasmask + 45);
-                        addLogMessage("+45% Фильтр противогаза", "system");
+                        addLogMessage("+45% Filter gas mask", "system");
                     } else if (type === 'scrap') {
                         gameState.inventory.scrap++;
-                        addLogMessage("+1 Детали хлама", "system");
+                        addLogMessage("+1 Scrap parts", "system");
                     }
                     
                     sound.playCollect();

@@ -3261,6 +3261,7 @@
         let groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
         let raycaster = new THREE.Raycaster();
         let worldMousePoint = new THREE.Vector3();
+        let sunLight = null;
         let muzzleFlashLight = null;
         let bulletGeo = new THREE.BoxGeometry(0.12, 0.12, 0.4);
         let bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
@@ -4409,19 +4410,27 @@
                 scene.add(instancedMeshes[i]);
             }
             
-            // 3D Ambient Light (Darkened for grittier post-apoc atmosphere)
-            let ambient = new THREE.AmbientLight(0xdcdcdc, loc.theme === 'tunnel' ? 0.02 : 0.12);
+            // 3D Ambient Light (Fill light)
+            let ambient = new THREE.AmbientLight(0xdcdcdc, loc.theme === 'tunnel' ? 0.01 : 0.08);
             scene.add(ambient);
             
+            // Hemisphere Light for soft sky-dome ambient global illumination (indirect lighting bounce)
+            let hemiLight = new THREE.HemisphereLight(
+                loc.theme === 'tunnel' || loc.theme === 'bunker' ? 0x1e293b : 0xbae6fd, // Sky color (cool cyan-blue)
+                loc.theme === 'tunnel' || loc.theme === 'bunker' ? 0x090d16 : 0x78716c, // Ground color (warm stone bounce)
+                loc.theme === 'tunnel' || loc.theme === 'bunker' ? 0.05 : 0.45          // Intensity
+            );
+            scene.add(hemiLight);
+            
             // 3D Sunlight (Dimmed to represent hazy, sun-choked post-apoc sky)
-            let sunLight = new THREE.DirectionalLight(0xe0dbcd, loc.theme === 'tunnel' ? 0.02 : 0.35);
+            sunLight = new THREE.DirectionalLight(0xe0dbcd, loc.theme === 'tunnel' ? 0.02 : 0.45);
             sunLight.position.set(15, 30, 10);
             sunLight.castShadow = true;
             sunLight.shadow.mapSize.width = 1024;
             sunLight.shadow.mapSize.height = 1024;
             sunLight.shadow.camera.near = 0.5;
             sunLight.shadow.camera.far = 100;
-            let d = N * 1.2;
+            let d = 22.0; // Tight frustum for high resolution sharp shadows around the player!
             sunLight.shadow.camera.left = -d;
             sunLight.shadow.camera.right = d;
             sunLight.shadow.camera.top = d;
@@ -6180,7 +6189,7 @@
                 }
             }
             
-            // 9. Camera follow player
+            // 9. Camera and SunLight follow player
             if (playerGroup) {
                 // Lerp camera position (adjust height/depth based on mobile aspect ratio to zoom out horizontally)
                 let aspect = window.innerWidth / window.innerHeight;
@@ -6189,6 +6198,12 @@
                 let targetCamPos = new THREE.Vector3(playerGroup.position.x, playerGroup.position.y + heightOffset, playerGroup.position.z + depthOffset);
                 camera.position.lerp(targetCamPos, 0.08);
                 camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 0.5, -0.5)));
+                
+                // Track sunLight position and shadow camera around the player
+                if (sunLight) {
+                    sunLight.position.set(playerGroup.position.x + 15, 30, playerGroup.position.z + 10);
+                    sunLight.target = playerGroup;
+                }
             }
             
             // Animate flickering fire barrel lights and flame meshes

@@ -2773,6 +2773,21 @@
         }
 
         const sound = new SoundSynth();
+
+        // Save original MeshStandardMaterial
+        const OriginalMeshStandardMaterial = THREE.MeshStandardMaterial;
+        
+        // Shadow/override with a dynamic material chooser based on quality settings
+        THREE.MeshStandardMaterial = function(params) {
+            if (typeof graphicsQuality !== 'undefined') {
+                if (graphicsQuality === 'low') {
+                    return new THREE.MeshLambertMaterial(params);
+                } else if (graphicsQuality === 'medium') {
+                    return new THREE.MeshPhongMaterial(params);
+                }
+            }
+            return new OriginalMeshStandardMaterial(params);
+        };
         
         // On-screen logger for runtime JS errors (greatly simplifies debugging on mobile and desktop)
         window.onerror = function(message, source, lineno, colno, error) {
@@ -5688,7 +5703,7 @@
             sunLight.position.copy(sunPos);
             // Store sun offset relative to the player for dynamic shadow camera tracking
             sunLight.userData.offset = sunPos.clone();
-            sunLight.castShadow = (sunIntensity > 0.0);
+            sunLight.castShadow = (sunIntensity > 0.0 && graphicsQuality === 'high');
             sunLight.shadow.bias = -0.0008; // Prevent shadow acne / self-shadowing flickering on weapons & character meshes
             sunLight.shadow.mapSize.width = 1024;
             sunLight.shadow.mapSize.height = 1024;
@@ -5941,16 +5956,18 @@
             group.add(barrel);
             
             // 2. Flickering Orange Fire Light
-            let fireLight = new THREE.PointLight(0xff5500, 2.5, 10.0);
-            fireLight.position.set(0, 1.0, 0);
-            fireLight.castShadow = false;
-            group.add(fireLight);
-            
-            flickeringLights.push({
-                light: fireLight,
-                baseIntensity: 2.5,
-                seed: Math.random() * 100
-            });
+            if (graphicsQuality !== 'low') {
+                let fireLight = new THREE.PointLight(0xff5500, 2.5, 10.0);
+                fireLight.position.set(0, 1.0, 0);
+                fireLight.castShadow = false;
+                group.add(fireLight);
+                
+                flickeringLights.push({
+                    light: fireLight,
+                    baseIntensity: 2.5,
+                    seed: Math.random() * 100
+                });
+            }
             
             // 3. Fire flame mesh
             let fireGeo = new THREE.ConeGeometry(0.25, 0.5, 6);
@@ -6035,7 +6052,7 @@
             }
             
             // 40% chance that the car is on fire!
-            if (Math.random() < 0.4) {
+            if (Math.random() < 0.4 && graphicsQuality !== 'low') {
                 // Flickering Orange Fire Light
                 let fireLight = new THREE.PointLight(0xff5500, 2.5, 12.0);
                 fireLight.position.set(0, 0.9, 0.4);
@@ -6385,7 +6402,7 @@
             playerGroup.rotation.y = Math.PI;   // Face away from camera (back view) by default
             
             // Soft auric glow around player so they never merge with dark ground textures
-            let playerAuraLight = new THREE.PointLight(0x06b6d4, 1.2, 3.8); // cyan light, intensity 1.2, range 3.8
+            let playerAuraLight = new THREE.PointLight(0x06b6d4, (graphicsQuality === 'low') ? 0.0 : 1.2, 3.8); // cyan light, intensity 1.2, range 3.8
             playerAuraLight.position.set(0, 0.95, 0); // torso height
             playerGroup.add(playerAuraLight);
             playerGroup.userData.auraLight = playerAuraLight;
@@ -6396,7 +6413,7 @@
             // Flashlight SpotLight for dark themes (move slightly forward to z=0.4 and add bias to prevent self-shadowing from head/torso)
             let flashlight = new THREE.SpotLight(0xffffff, loc.theme === 'tunnel' ? 8.0 : 2.0, 30.0, Math.PI / 7, 0.5, 1);
             flashlight.position.set(0, 1.6, 0.4);
-            flashlight.castShadow = true;
+            flashlight.castShadow = (graphicsQuality === 'high');
             flashlight.shadow.mapSize.width = 512;
             flashlight.shadow.mapSize.height = 512;
             flashlight.shadow.bias = -0.002;
@@ -6835,11 +6852,13 @@
                 }
                 
                 // Fire light
-                let fireLight = new THREE.PointLight(0xff5500, 2.5, 8.0);
-                fireLight.position.set(0, 0.5, 0);
-                fireLight.castShadow = false;
-                fireGroup.add(fireLight);
-                flickeringLights.push({ light: fireLight, baseIntensity: 2.5, seed: Math.random() * 100 });
+                if (graphicsQuality !== 'low') {
+                    let fireLight = new THREE.PointLight(0xff5500, 2.5, 8.0);
+                    fireLight.position.set(0, 0.5, 0);
+                    fireLight.castShadow = false;
+                    fireGroup.add(fireLight);
+                    flickeringLights.push({ light: fireLight, baseIntensity: 2.5, seed: Math.random() * 100 });
+                }
                 
                 // Flame
                 let fireGeo = new THREE.ConeGeometry(0.18, 0.45, 6);

@@ -3254,6 +3254,9 @@
         let flickeringLights = [];
         let flickeringMeshes = [];
         let speechBubbles = [];
+        let lootSpriteMaterials = {};
+        let bloodDecals = [];
+        let sharedBloodGeo = null;
         
         // Input state
         let keys = { W: false, A: false, S: false, D: false, Shift: false, Space: false, mouseDown: false };
@@ -3625,6 +3628,42 @@
             materials.radBarrel = new THREE.MeshStandardMaterial({ map: radBarrelTex, roughness: 0.35, metalness: 0.5 });
             materials.wall = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.75, metalness: 0.2 });
             materials.bloodSplatter = new THREE.MeshBasicMaterial({ map: bloodSplatterTex, transparent: true, opacity: 0.85, depthWrite: false });
+            
+            // Pre-generate shared SpriteMaterials for all 7 loot types to avoid runtime Canvas texture generation & GPU texture upload lags
+            let lootTypes = {
+                wood: "БЕНЗИН",
+                scrap: "ХЛАМ",
+                food: "КОНСЕРВЫ",
+                water: "ВОДА",
+                ammo: "ПАТРОНЫ",
+                medkit: "АПТЕЧКА",
+                gasmask: "ФИЛЬТР"
+            };
+            for (let [type, name] of Object.entries(lootTypes)) {
+                let canvas = document.createElement('canvas');
+                canvas.width = 128;
+                canvas.height = 32;
+                let ctx = canvas.getContext('2d');
+                
+                // Draw a beautiful comic style label box
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'; // Slate 900 background
+                ctx.fillRect(0, 0, 128, 32);
+                ctx.strokeStyle = '#eab308'; // Golden yellow border
+                ctx.lineWidth = 2;
+                ctx.strokeRect(1, 1, 126, 30);
+                
+                ctx.font = 'bold 11px Arial, sans-serif';
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(name, 64, 16);
+                
+                let tex = new THREE.CanvasTexture(canvas);
+                lootSpriteMaterials[type] = new THREE.SpriteMaterial({ map: tex, transparent: true });
+            }
+            
+            // Shared geometry for blood decals to prevent massive runtime BoxGeometry memory leak
+            sharedBloodGeo = new THREE.BoxGeometry(1, 0.005, 1);
             
             // Multiple ground variations
             materials.brokenSlabs = [
@@ -4037,17 +4076,7 @@
             }
         }
         
-        function spawnBloodDecal(pos) {
-            let decalGeo = new THREE.BoxGeometry(0.8, 0.01, 0.8);
-            let decalMat = new THREE.MeshLambertMaterial({ color: 0x991b1b });
-            let d = new THREE.Mesh(decalGeo, decalMat);
-            d.position.set(pos.x, 0.06, pos.z);
-            d.rotation.y = THREE.MathUtils.randFloat(0, Math.PI*2);
-            scene.add(d);
-            
-            d.userData.isDecal = true;
-            colliders.push(new THREE.Box3().setFromObject(d)); // just a dummy AABB
-        }
+
         
         // Weapons specs
         function getWeaponCooldown(type) {
@@ -4267,26 +4296,15 @@
                 loot.add(core);
             }
             
-            // Floating text label
-            let canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 32;
-            let ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(0, 0, 128, 32);
-            ctx.font = 'bold 12px Outfit, Arial';
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(nameTag, 64, 16);
-            
-            let labelTex = new THREE.CanvasTexture(canvas);
-            let labelMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true });
-            let labelSprite = new THREE.Sprite(labelMat);
-            labelSprite.position.set(0, 0.65, 0);
-            labelSprite.scale.set(1.4, 0.35, 1);
-            loot.add(labelSprite);
-
+            // Floating text label - optimized to use pre-rendered shared SpriteMaterials
+            let labelMat = lootSpriteMaterials[type];
+            if (labelMat) {
+                let labelSprite = new THREE.Sprite(labelMat);
+                labelSprite.position.set(0, 0.65, 0);
+                labelSprite.scale.set(1.4, 0.35, 1);
+                loot.add(labelSprite);
+            }
+ 
             scene.add(loot);
             loot.updateMatrixWorld(true);
             
@@ -4550,16 +4568,12 @@
             // Real SUV headlight SpotLights (one for left, one for right headlight)
             let headlightL_Light = new THREE.SpotLight(0xffedd5, 15.0, 35.0, Math.PI / 6, 0.5, 1);
             headlightL_Light.position.set(-0.7, 0.8, 2.2);
-            headlightL_Light.castShadow = true;
-            headlightL_Light.shadow.mapSize.width = 512;
-            headlightL_Light.shadow.mapSize.height = 512;
+            headlightL_Light.castShadow = false;
             trainGroup.add(headlightL_Light);
             
             let headlightR_Light = new THREE.SpotLight(0xffedd5, 15.0, 35.0, Math.PI / 6, 0.5, 1);
             headlightR_Light.position.set(0.7, 0.8, 2.2);
-            headlightR_Light.castShadow = true;
-            headlightR_Light.shadow.mapSize.width = 512;
-            headlightR_Light.shadow.mapSize.height = 512;
+            headlightR_Light.castShadow = false;
             trainGroup.add(headlightR_Light);
             
             // Spotlight targets pointing forward relative to the SUV
@@ -4680,7 +4694,7 @@
             // 2. Flickering Orange Fire Light
             let fireLight = new THREE.PointLight(0xff5500, 2.5, 10.0);
             fireLight.position.set(0, 1.0, 0);
-            fireLight.castShadow = true;
+            fireLight.castShadow = false;
             group.add(fireLight);
             
             flickeringLights.push({
@@ -4776,7 +4790,7 @@
                 // Flickering Orange Fire Light
                 let fireLight = new THREE.PointLight(0xff5500, 2.5, 12.0);
                 fireLight.position.set(0, 0.9, 0.4);
-                fireLight.castShadow = true;
+                fireLight.castShadow = false;
                 group.add(fireLight);
                 
                 flickeringLights.push({
@@ -5090,12 +5104,22 @@
         }
 
         function spawnBloodDecal(x, z) {
+            // Cap total blood decals to prevent massive WebGL draw call overhead and memory bloat
+            if (bloodDecals.length > 100) {
+                let oldest = bloodDecals.shift();
+                if (scene && oldest) scene.remove(oldest);
+            }
+            
             let size = THREE.MathUtils.randFloat(0.6, 1.4);
-            let bloodGeo = new THREE.BoxGeometry(size, 0.005, size);
-            let bloodDecal = new THREE.Mesh(bloodGeo, materials.bloodSplatter);
+            // Use pre-allocated shared geometry to completely prevent memory leaks
+            let bloodDecal = new THREE.Mesh(sharedBloodGeo, materials.bloodSplatter);
+            bloodDecal.scale.set(size, 1, size);
+            
             bloodDecal.position.set(x + THREE.MathUtils.randFloat(-0.2, 0.2), 0.025 + Math.random()*0.005, z + THREE.MathUtils.randFloat(-0.2, 0.2));
             bloodDecal.rotation.y = Math.random() * Math.PI * 2;
             scene.add(bloodDecal);
+            
+            bloodDecals.push(bloodDecal);
         }
         
         // Spawn Level props, enemies, loot
@@ -5114,6 +5138,8 @@
             let flashlight = new THREE.SpotLight(0xffffff, loc.theme === 'tunnel' ? 8.0 : 2.0, 30.0, Math.PI / 7, 0.5, 1);
             flashlight.position.set(0, 1.6, 0.4);
             flashlight.castShadow = true;
+            flashlight.shadow.mapSize.width = 512;
+            flashlight.shadow.mapSize.height = 512;
             flashlight.shadow.bias = -0.002;
             playerGroup.add(flashlight);
             playerGroup.userData.flashlight = flashlight;
@@ -5494,7 +5520,7 @@
                 // Fire light
                 let fireLight = new THREE.PointLight(0xff5500, 2.5, 8.0);
                 fireLight.position.set(0, 0.5, 0);
-                fireLight.castShadow = true;
+                fireLight.castShadow = false;
                 fireGroup.add(fireLight);
                 flickeringLights.push({ light: fireLight, baseIntensity: 2.5, seed: Math.random() * 100 });
                 

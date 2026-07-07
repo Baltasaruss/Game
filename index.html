@@ -6260,6 +6260,9 @@
         
         // 2D Tactical Minimap Renderer
         function drawMinimap() {
+            // Guard check to prevent crash on death or scene transition
+            if (!gameActive || !scene || !playerGroup || !playerGroup.position) return;
+            
             let canvas = document.getElementById('minimap-canvas');
             if (!canvas) return;
             let ctx = canvas.getContext('2d');
@@ -6273,8 +6276,6 @@
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
             ctx.lineWidth = 1.5;
             ctx.strokeRect(0, 0, canvas.width, canvas.height);
-            
-            if (!playerGroup) return;
             
             let px = playerGroup.position.x;
             let pz = playerGroup.position.z;
@@ -6306,6 +6307,7 @@
             // Draw Loot items (green dots)
             ctx.fillStyle = '#22c55e';
             for (let loot of lootItems) {
+                if (!loot || !loot.position) continue;
                 let dx = (loot.position.x - px) * zoom;
                 let dz = (loot.position.z - pz) * zoom;
                 let screenX = cx + dx;
@@ -6318,7 +6320,7 @@
             }
             
             // Draw SUV/Car (blue square with 'V')
-            if (trainGroup) {
+            if (trainGroup && trainGroup.position) {
                 let dx = (trainGroup.position.x - px) * zoom;
                 let dz = (trainGroup.position.z - pz) * zoom;
                 let screenX = cx + dx;
@@ -6338,6 +6340,7 @@
             // Draw Enemies (red dots)
             ctx.fillStyle = '#ef4444';
             for (let enemy of enemies) {
+                if (!enemy || !enemy.position) continue;
                 let dx = (enemy.position.x - px) * zoom;
                 let dz = (enemy.position.z - pz) * zoom;
                 let screenX = cx + dx;

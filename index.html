@@ -1187,8 +1187,8 @@
             font-weight: bold;
         }
 
-        /* Медиа-запрос для оптимизации вертикального экрана (мобильные устройства) */
-        @media (max-width: 768px) {
+        /* Медиа-запрос для мобильных устройств (вертикальный и горизонтальный экраны) */
+        @media (max-width: 1024px), (max-height: 500px) {
             /* Hide slot hotkeys on mobile */
             .inv-slot-key {
                 display: none;
@@ -1393,6 +1393,103 @@
             }
             .station-content {
                 padding: 0.6rem !important;
+            }
+        }
+
+        /* Специальные CSS правила для горизонтальной ориентации мобильных телефонов (широкий, но низкий экран) */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .hud-stats-panel {
+                top: 0.25rem !important;
+                left: 0.25rem !important;
+                width: 190px !important;
+                font-size: 0.7rem !important;
+                padding: 0.25rem !important;
+            }
+            .hud-mats-panel {
+                top: 0.25rem !important;
+                left: 200px !important;
+                bottom: auto !important;
+                display: flex !important;
+                flex-direction: row !important; /* Выстраиваем материалы в строчку */
+                gap: 8px !important;
+                padding: 0.25rem 0.5rem !important;
+                font-size: 0.7rem !important;
+                background: rgba(15, 15, 20, 0.85) !important;
+                z-index: 55 !important;
+            }
+            .hud-weapon-panel {
+                top: 0.25rem !important;
+                right: 0.25rem !important;
+                width: 150px !important;
+                padding: 0.25rem !important;
+                height: 42px !important;
+            }
+            .hud-minimap-panel {
+                top: auto !important;
+                bottom: 0.25rem !important;
+                right: 0.25rem !important;
+                width: 52px !important;
+                height: 52px !important;
+                z-index: 55 !important;
+            }
+            #minimap-canvas {
+                width: 46px !important;
+                height: 46px !important;
+            }
+            .hud-level-panel {
+                top: 0.25rem !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                padding: 0.15rem 0.4rem !important;
+                font-size: 0.7rem !important;
+            }
+            #game-log {
+                top: auto !important;
+                bottom: 3.5rem !important;
+                left: 0.25rem !important;
+                width: 240px !important;
+                max-height: 38px !important;
+                font-size: 0.6rem !important;
+            }
+            .hud-inventory-panel {
+                bottom: 0.25rem !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                width: 220px !important;
+                padding: 2px !important;
+            }
+            .inv-slot {
+                width: 26px !important;
+                height: 26px !important;
+            }
+            .inv-slot-icon {
+                font-size: 0.8rem !important;
+            }
+            .inv-slot-amount {
+                font-size: 0.5rem !important;
+            }
+            
+            /* Сдвигаем кнопки и джойстики по краям, освобождая центр экрана */
+            #mobile-action-buttons {
+                bottom: 0.5rem !important;
+                left: 0 !important;
+                width: 100% !important;
+                padding: 0 7.5rem !important; /* Кнопки находятся прямо около джойстиков */
+                display: flex !important;
+                justify-content: space-between !important;
+                pointer-events: none !important;
+            }
+            .mobile-btn {
+                width: 42px !important;
+                height: 42px !important;
+            }
+            #joystick-move-zone {
+                bottom: 0.5rem !important;
+                left: 1rem !important;
+            }
+            #joystick-shoot-zone {
+                bottom: 0.5rem !important;
+                right: 1rem !important;
             }
         }
     </style>
@@ -3769,11 +3866,25 @@
         }
         
         function onWindowResize() {
-            if (camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
+            const resize = () => {
+                if (camera && renderer) {
+                    let w = window.innerWidth;
+                    let h = window.innerHeight;
+                    camera.aspect = w / h;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(w, h);
+                    
+                    // Force redraw of dynamic elements that depend on layout size (like minimap)
+                    let canvas = document.getElementById('minimap-canvas');
+                    if (canvas && typeof drawMinimap === 'function') {
+                        drawMinimap();
+                    }
+                }
+            };
+            resize();
+            // Trigger again with delays to handle mobile layout transition settling
+            setTimeout(resize, 100);
+            setTimeout(resize, 250);
         }
         
         function onKeyDown(e) {

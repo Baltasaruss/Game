@@ -1551,10 +1551,127 @@
                 right: 1rem !important;
             }
         }
+        
+        /* Rogue-like Perk Card Selection Overlay */
+        #perk-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(10, 10, 12, 0.88) !important;
+            backdrop-filter: blur(15px) !important;
+            z-index: 1000 !important;
+            display: none;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: #fff !important;
+        }
+        #perk-overlay h2 {
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 1.4rem !important;
+            margin-bottom: 2rem !important;
+            color: #facc15 !important;
+            text-shadow: 2px 2px 0px #000 !important;
+            text-align: center !important;
+            animation: flashPerkTitle 0.6s infinite alternate !important;
+        }
+        @keyframes flashPerkTitle {
+            from { opacity: 0.8; transform: scale(1.0); }
+            to { opacity: 1; transform: scale(1.03); }
+        }
+        #perk-cards-container {
+            display: flex !important;
+            gap: 1.5rem !important;
+            max-width: 90% !important;
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+        }
+        .perk-card {
+            background: rgba(30, 30, 38, 0.95) !important;
+            border: 3px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px !important;
+            padding: 1.5rem !important;
+            width: 190px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+            cursor: pointer !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        }
+        .perk-card:hover {
+            border-color: #facc15 !important;
+            transform: translateY(-8px) scale(1.04) !important;
+            box-shadow: 0 15px 40px rgba(250, 204, 21, 0.2) !important;
+        }
+        .perk-name {
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.75rem !important;
+            margin-bottom: 1rem !important;
+            color: #facc15 !important;
+            line-height: 1.3 !important;
+        }
+        .perk-desc {
+            font-size: 0.8rem !important;
+            color: #cbd5e1 !important;
+            margin-bottom: 1.5rem !important;
+            line-height: 1.4 !important;
+            flex-grow: 1 !important;
+        }
+        .perk-btn {
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.65rem !important;
+            padding: 0.6rem 1.2rem !important;
+            background: #ea580c !important;
+            border: none !important;
+            color: #fff !important;
+            border-radius: 6px !important;
+            cursor: pointer !important;
+            width: 100% !important;
+            box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3) !important;
+            pointer-events: none !important;
+        }
+        
+        /* Floating Combo Indicator */
+        #combo-popup {
+            position: absolute !important;
+            top: 25% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) scale(0.5) !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 1.1rem !important;
+            color: #facc15 !important;
+            text-shadow: 3px 3px 0px #000 !important;
+            z-index: 100 !important;
+            pointer-events: none !important;
+            opacity: 0 !important;
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        }
+        #combo-popup.active {
+            opacity: 1 !important;
+            transform: translate(-50%, -50%) scale(1.15) !important;
+            animation: pulseCombo 0.25s infinite alternate !important;
+        }
+        @keyframes pulseCombo {
+            from { transform: translate(-50%, -50%) scale(1.1); }
+            to { transform: translate(-50%, -50%) scale(1.22); }
+        }
     </style>
 </head>
 <body>
     <div id="game-container"></div>
+
+    <!-- ВЫБОР ПЕРКА (РОГАЛИК-МЕХАНИКА ТАЙМКИЛЛЕРА) -->
+    <div id="perk-overlay">
+        <h2 id="perk-title">ВЫБОР УЛУЧШЕНИЯ!</h2>
+        <div id="perk-cards-container"></div>
+    </div>
+
+    <!-- КОМБО-ИНДИКАТОР -->
+    <div id="combo-popup">ДВОЙНОЕ УБИЙСТВО!</div>
 
     <!-- 1. ГЛАВНОЕ МЕНЮ -->
     <div id="main-menu-overlay" class="overlay">
@@ -2409,6 +2526,17 @@
                 gasmask: 50 // Заряд фильтра в процентах (0-100)
             },
             
+            // Rogue-like perks collected during the run
+            runPerks: {
+                fireRateMod: 1.0,
+                damageMod: 1.0,
+                speedMod: 1.0,
+                magnetRadius: 1.2,
+                damageReduction: 0.0,
+                vampirism: 0,
+                regenRate: 0.0
+            },
+            
             // Улучшения поезда
             trainUpgrades: {
                 engine: 0,   // Уровень 0-3
@@ -2452,7 +2580,8 @@
             } else if (type === 'rifle') {
                 skillMult += gameState.skills.agility * 0.10;
             }
-            return Math.round(baseDmg * upgMult * skillMult);
+            let perksDmg = (gameState.runPerks && gameState.runPerks.damageMod !== undefined) ? gameState.runPerks.damageMod : 1.0;
+            return Math.round(baseDmg * upgMult * skillMult * perksDmg);
         }
 
         // =========================================================================
@@ -2472,6 +2601,19 @@
                     if (!gameState.skills) gameState.skills = { strength:0, agility:0, survival:0 };
                     if (!gameState.trainUpgrades) gameState.trainUpgrades = { engine:0, armor:0, storage:0 };
                     if (!gameState.weaponUpgrades) gameState.weaponUpgrades = { pistol:0, rifle:0, shotgun:0 };
+                    
+                    // Инициализация перков при загрузке старого сохранения
+                    if (!gameState.runPerks) {
+                        gameState.runPerks = {
+                            fireRateMod: 1.0,
+                            damageMod: 1.0,
+                            speedMod: 1.0,
+                            magnetRadius: 1.2,
+                            damageReduction: 0.0,
+                            vampirism: 0,
+                            regenRate: 0.0
+                        };
+                    }
                     return true;
                 } catch(e) {
                     console.error("Ошибка чтения сохранения", e);
@@ -2594,6 +2736,11 @@
 
             if (damageFromStats > 0) {
                 damagePlayer(damageFromStats * deltaSeconds, "голода и жажды");
+            } else {
+                // Если нет дебаффов голода/радиации, работает регенерация здоровья от перков
+                if (gameState.runPerks && gameState.runPerks.regenRate > 0 && gameState.hp < getMaxHp()) {
+                    gameState.hp = Math.min(getMaxHp(), gameState.hp + gameState.runPerks.regenRate * deltaSeconds);
+                }
             }
             
             updateHudVisuals();
@@ -2604,21 +2751,33 @@
                 // Бронежилет срезает 30% урона от врагов
                 amount *= 0.7;
             }
+            // Срезание урона от перков (например, Бронеплита)
+            if (gameState.runPerks && gameState.runPerks.damageReduction !== undefined && sourceText.includes("атаки")) {
+                amount *= (1 - gameState.runPerks.damageReduction);
+            }
             
             gameState.hp = Math.max(0, gameState.hp - amount);
             
             // Сочные спецэффекты попадания по игроку (только при существенном уроне или ударах врагов)
-            if (activeGameScene && activeGameScene.scene.isActive()) {
+            if (gameActive && !scene) {
+                // 2D Phaser scene
+                if (activeGameScene && activeGameScene.scene.isActive()) {
+                    let isTick = sourceText.includes("голода") || sourceText.includes("радиации") || sourceText.includes("окружающей");
+                    if (!isTick) {
+                        activeGameScene.cameras.main.shake(150, 0.012);
+                        activeGameScene.flashSprite(activeGameScene.player, 0xff3333, 100);
+                    } else {
+                        if (Math.random() < 0.015) {
+                            activeGameScene.cameras.main.shake(100, 0.003);
+                            activeGameScene.flashSprite(activeGameScene.player, 0xff5555, 60);
+                        }
+                    }
+                }
+            } else if (gameActive && scene) {
+                // 3D Three.js scene screen shake!
                 let isTick = sourceText.includes("голода") || sourceText.includes("радиации") || sourceText.includes("окружающей");
                 if (!isTick) {
-                    activeGameScene.cameras.main.shake(150, 0.012);
-                    activeGameScene.flashSprite(activeGameScene.player, 0xff3333, 100);
-                } else {
-                    // Для периодического урона от среды - слабая редкая тряска раз в 2 секунды
-                    if (Math.random() < 0.015) {
-                        activeGameScene.cameras.main.shake(100, 0.003);
-                        activeGameScene.flashSprite(activeGameScene.player, 0xff5555, 60);
-                    }
+                    screenShake = Math.min(1.5, screenShake + amount * 0.08 + 0.35);
                 }
             }
             
@@ -2802,10 +2961,131 @@
                 gameState.level++;
                 gameState.skillPoints += 2;
                 sound.playLevelUp();
-                showTutorialPopup("💥 Уровень Повышен!", `Вы достигли ${gameState.level} уровня! Получено 2 очка навыков. Войдите во внедорожник, перейдите во вкладку «Персонаж» и распределите очки, чтобы стать сильнее.`, "🎖️");
                 addLogMessage(`🎉 УРОВЕНЬ ПОВЫШЕН до ${gameState.level}!`, "system");
+                
+                // Trigger modern timekiller rogue-like perk card selection
+                triggerPerkSelection();
             }
             updateHudVisuals();
+        }
+
+        // Trigger Rogue-like Perk Card Choice Overlay (Vampire Survivors style!)
+        function triggerPerkSelection() {
+            gamePaused = true;
+            
+            // Safety guard: ensure runPerks is initialized
+            if (!gameState.runPerks) {
+                gameState.runPerks = {
+                    fireRateMod: 1.0,
+                    damageMod: 1.0,
+                    speedMod: 1.0,
+                    magnetRadius: 1.2,
+                    damageReduction: 0.0,
+                    vampirism: 0,
+                    regenRate: 0.0
+                };
+            }
+            
+            let availablePerks = [
+                {
+                    id: 'firerate',
+                    name: '💥 Свинцовый шторм',
+                    desc: '+20% к скорострельности всего оружия',
+                    apply: () => { gameState.runPerks.fireRateMod *= 0.8; }
+                },
+                {
+                    id: 'damage',
+                    name: '🔥 Тяжелые пули',
+                    desc: '+25% к урону наносимого урона',
+                    apply: () => { gameState.runPerks.damageMod *= 1.25; }
+                },
+                {
+                    id: 'speed',
+                    name: '⚡ Атлет',
+                    desc: '+15% к скорости бега',
+                    apply: () => { gameState.runPerks.speedMod *= 1.15; }
+                },
+                {
+                    id: 'magnet',
+                    name: '🧲 Магнит',
+                    desc: '+150% к радиусу сбора патронов/лута',
+                    apply: () => { gameState.runPerks.magnetRadius *= 2.5; }
+                },
+                {
+                    id: 'heal',
+                    name: '➕ Второе дыхание',
+                    desc: 'Мгновенно восстанавливает 50 единиц HP',
+                    apply: () => { gameState.hp = Math.min(getMaxHp(), gameState.hp + 50); }
+                },
+                {
+                    id: 'armor',
+                    name: '🛡️ Бронеплита',
+                    desc: 'Снижает весь получаемый урон на 15%',
+                    apply: () => { gameState.runPerks.damageReduction = Math.min(0.75, gameState.runPerks.damageReduction + 0.15); }
+                },
+                {
+                    id: 'vampire',
+                    name: '🧛 Вампиризм',
+                    desc: 'Восстанавливает +2 HP при убийстве зомби',
+                    apply: () => { gameState.runPerks.vampirism += 2; }
+                },
+                {
+                    id: 'regen',
+                    name: '🌱 Регенерация',
+                    desc: 'Постепенно восстанавливает +1 HP каждые 2 сек',
+                    apply: () => { gameState.runPerks.regenRate += 0.5; }
+                }
+            ];
+            
+            // Randomly pick 3 unique perks
+            let shuffled = availablePerks.sort(() => 0.5 - Math.random());
+            let selected = shuffled.slice(0, 3);
+            
+            let container = document.getElementById('perk-cards-container');
+            container.innerHTML = '';
+            
+            selected.forEach(perk => {
+                let card = document.createElement('div');
+                card.className = 'perk-card';
+                card.innerHTML = `
+                    <div class="perk-name">${perk.name}</div>
+                    <div class="perk-desc">${perk.desc}</div>
+                    <button class="perk-btn">ВЫБРАТЬ</button>
+                `;
+                card.onclick = () => {
+                    perk.apply();
+                    document.getElementById('perk-overlay').style.display = 'none';
+                    gamePaused = false;
+                    addLogMessage(`Получено улучшение: ${perk.name}`, "system");
+                    sound.playCollect();
+                    updateHudVisuals();
+                };
+                container.appendChild(card);
+            });
+            
+            document.getElementById('perk-overlay').style.display = 'flex';
+        }
+
+        // Satisfying kill combo popups and rewards
+        function triggerComboEffect(count) {
+            let comboText = "ДВОЙНОЕ УБИЙСТВО!";
+            if (count === 3) comboText = "ТРОЙНОЕ УБИЙСТВО!";
+            else if (count === 4) comboText = "КРОВАВАЯ БАНЯ!";
+            else if (count >= 5) comboText = "НЕИСТОВСТВО ХАОСА!";
+            
+            let bonusXp = count * 5;
+            gainXp(bonusXp);
+            
+            let el = document.getElementById('combo-popup');
+            if (el) {
+                el.innerText = `${comboText} x${count}! (+${bonusXp} XP)`;
+                el.className = 'active';
+                
+                clearTimeout(el.timeoutId);
+                el.timeoutId = setTimeout(() => {
+                    el.className = '';
+                }, 1400);
+            }
         }
 
         // =========================================================================
@@ -3325,6 +3605,16 @@
             // Инициализация стартовых параметров для Новой игры
             gameState = {
                 currentLocationIndex: 0,
+                // Rogue-like perks collected during the run
+                runPerks: {
+                    fireRateMod: 1.0,
+                    damageMod: 1.0,
+                    speedMod: 1.0,
+                    magnetRadius: 1.2,
+                    damageReduction: 0.0,
+                    vampirism: 0,
+                    regenRate: 0.0
+                },
                 hp: 100,
                 hunger: 100,
                 thirst: 100,
@@ -3427,6 +3717,10 @@
         
         // Timing
         let lastTime = 0;
+        let screenShake = 0;          // Cooldown camera kickback/shake intensity
+        let gamePaused = false;       // Local pause flag for Perk card selection overlay
+        let lastKillTime = 0;         // Timestamp of the last enemy killed (combo tracker)
+        let killCombo = 0;            // Current kill combo multiplier
         let playerAnimProgress = 0; // Accumulator for smooth player walking/sprinting animations
         let lastFireTime = 0;
         // currentActiveWeapon объявлена глобально выше
@@ -4138,7 +4432,7 @@
         }
         
         // Spawn 3D text (floating damage)
-        function spawnDamageText(worldPos, amount) {
+        function spawnDamageText(worldPos, amount, isHeal = false) {
             if (!scene || !camera) return; // Safety guard
             let tempV = worldPos.clone();
             tempV.project(camera);
@@ -4152,13 +4446,14 @@
             div.style.left = `${x}px`;
             div.style.top = `${y}px`;
             div.style.transform = 'translate(-50%, -50%)';
-            div.style.color = '#f43f5e';
+            div.style.color = isHeal ? '#22c55e' : '#f43f5e';
             div.style.fontFamily = "'Press Start 2P', monospace";
             div.style.fontSize = '12px';
             div.style.fontWeight = 'bold';
             div.style.textShadow = '2px 2px 0px #000';
             div.style.pointerEvents = 'none';
-            div.innerText = `-${amount}`;
+            div.style.zIndex = '90';
+            div.innerText = isHeal ? `+${amount}` : `-${amount}`;
             document.body.appendChild(div);
             
             let start = Date.now();
@@ -4253,7 +4548,8 @@
         // Weapons specs
         function getWeaponCooldown(type) {
             let base = (type === 'pistol') ? 350 : (type === 'rifle') ? 140 : 850;
-            return base * (1 - gameState.skills.agility * 0.08);
+            let perksMod = (gameState.runPerks && gameState.runPerks.fireRateMod !== undefined) ? gameState.runPerks.fireRateMod : 1.0;
+            return base * (1 - gameState.skills.agility * 0.08) * perksMod;
         }
         
         function fireWeapon() {
@@ -4289,9 +4585,9 @@
             sound.playShoot(currentActiveWeapon);
             updateWeaponHud();
             
-            // Screen shake
-            camera.position.x += THREE.MathUtils.randFloat(-0.25, 0.25);
-            camera.position.z += THREE.MathUtils.randFloat(-0.25, 0.25);
+            // Apply screen shake kickback based on weapon type!
+            let kick = (currentActiveWeapon === 'shotgun') ? 0.45 : (currentActiveWeapon === 'rifle') ? 0.12 : 0.08;
+            screenShake = Math.min(1.2, screenShake + kick);
             
             // Spawn bullet
             let bulletDir = worldMousePoint.clone().sub(playerGroup.position);
@@ -6144,6 +6440,24 @@
             
             gainXp(xp);
             
+            // Vampirism health recovery on enemy kill
+            if (gameState.runPerks && gameState.runPerks.vampirism > 0) {
+                gameState.hp = Math.min(getMaxHp(), gameState.hp + gameState.runPerks.vampirism);
+                spawnDamageText(playerGroup.position.clone().add(new THREE.Vector3(0, 1.8, 0)), `${gameState.runPerks.vampirism}`, true);
+            }
+
+            // Combo multiplier system
+            let now = Date.now();
+            if (now - lastKillTime < 3200) { // 3.2 seconds window
+                killCombo++;
+                if (killCombo >= 2) {
+                    triggerComboEffect(killCombo);
+                }
+            } else {
+                killCombo = 1;
+            }
+            lastKillTime = now;
+            
             // Random drop item
             if (Math.random() < 0.35 || enemy.userData.type === 'boss') {
                 let pool = ['food', 'water', 'ammo', 'scrap', 'gasmask'];
@@ -6414,8 +6728,8 @@
             // Draw Player (white arrow pointing in rotation direction)
             ctx.save();
             ctx.translate(cx, cy);
-            // In Three.js, character rotation is around Y axis, rotate canvas oppositely to match North orientation
-            ctx.rotate(-playerGroup.rotation.y);
+            // Adjust rotation so North (Math.PI) points upwards on 2D map
+            ctx.rotate(-playerGroup.rotation.y + Math.PI);
             
             // Yellow flashlight pointing cone
             ctx.fillStyle = 'rgba(254, 240, 138, 0.2)';
@@ -6444,8 +6758,14 @@
             let dt = (timestamp - lastTime) / 1000;
             lastTime = timestamp;
             
-            // Clamp dt to prevent massive physics jumps
-            if (dt > 0.1) dt = 0.1;
+            // Clamp dt to prevent massive physics jumps and negative jumps from Date.now() mismatch
+            if (dt < 0 || dt > 0.1) dt = 0.016;
+            
+            // Rogue-like perk choice screen pause guard
+            if (gamePaused) {
+                animationFrameId = requestAnimationFrame(animate3D);
+                return;
+            }
             
             if (gameActive && playerGroup && gameState.hp > 0) {
                 // 1. Keyboard & Joystick Movement Inputs (XZ Plane)
@@ -6500,7 +6820,8 @@
                     laserLine.geometry.attributes.position.needsUpdate = true;
                 }
                 let isSprinting = false;
-                let speed = 4.5 * (1 + gameState.skills.agility * 0.08); // 4.5 units/s
+                let perksSpeed = (gameState.runPerks && gameState.runPerks.speedMod !== undefined) ? gameState.runPerks.speedMod : 1.0;
+                let speed = 4.5 * (1 + gameState.skills.agility * 0.08) * perksSpeed; // 4.5 units/s
                 
                 // На телефоне спринт активируется автоматически при движении
                 let isSprintActive = keys.Shift || isMobileDevice;
@@ -6657,7 +6978,7 @@
                 handleHarvesting3D(dt);
                 
                 // 6. Update Loot collection
-                update3DLootCollection();
+                update3DLootCollection(dt);
                 
                 // 7. Update survival stats
                 updateLifeStats(dt, isMoving, isSprinting);
@@ -6704,12 +7025,23 @@
             
             // 9. Camera and SunLight follow player
             if (playerGroup) {
+                // Decay screen shake over time
+                screenShake = Math.max(0, screenShake - dt * 4.2);
+                
                 // Lerp camera position (adjust height/depth based on mobile aspect ratio to zoom out horizontally)
                 let aspect = window.innerWidth / window.innerHeight;
                 let heightOffset = aspect < 1.0 ? 19.0 : 13.0;
                 let depthOffset = aspect < 1.0 ? 13.0 : 9.0;
                 let targetCamPos = new THREE.Vector3(playerGroup.position.x, playerGroup.position.y + heightOffset, playerGroup.position.z + depthOffset);
                 camera.position.lerp(targetCamPos, 0.08);
+                
+                // Apply dynamic screen shake offset directly to camera position
+                if (screenShake > 0) {
+                    camera.position.x += (Math.random() - 0.5) * screenShake;
+                    camera.position.y += (Math.random() - 0.5) * screenShake;
+                    camera.position.z += (Math.random() - 0.5) * screenShake;
+                }
+                
                 camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 0.5, -0.5)));
                 
                 // Track sunLight position and shadow camera around the player (respecting dynamic sun offset)
@@ -7068,7 +7400,7 @@
             }
         }
         
-        function update3DLootCollection() {
+        function update3DLootCollection(dt) {
             for (let i = lootItems.length - 1; i >= 0; i--) {
                 let loot = lootItems[i];
                 // Rotate
@@ -7076,6 +7408,14 @@
                 loot.position.y = 0.4 + Math.sin(Date.now() * 0.005) * 0.15;
                 
                 let dist = playerGroup.position.distanceTo(loot.position);
+                let magnetRad = (gameState.runPerks && gameState.runPerks.magnetRadius !== undefined) ? gameState.runPerks.magnetRadius : 1.2;
+                
+                // Втягивание лута магнитом
+                if (dist < magnetRad && dist >= 1.2) {
+                    let pullDir = playerGroup.position.clone().sub(loot.position).normalize();
+                    loot.position.add(pullDir.multiplyScalar(7.5 * dt));
+                }
+                
                 if (dist < 1.2) {
                     // Pickup loot!
                     let type = loot.userData.type;

@@ -2235,7 +2235,7 @@
                 description: "Безопасная точка. Здесь вы нашли заброшенный внедорожник. Соберите базовые припасы и бензин, чтобы начать движение.",
                 type: "station",
                 theme: "grass",
-                timeOfDay: "morning",
+                timeOfDay: "evening",
                 size: 32, // размер сетки 32x32
                 radiation: 0,
                 fuelCost: 0,
@@ -2252,7 +2252,7 @@
                 description: "Густой хвойный лес. Здесь осталось огромное количество канистр с бензином и диких ягод, но в чащах прячутся восставшие мертвецы.",
                 type: "forest",
                 theme: "grass",
-                timeOfDay: "day",
+                timeOfDay: "twilight",
                 size: 40,
                 radiation: 0,
                 fuelCost: 15,
@@ -2265,7 +2265,7 @@
                 description: "Разрушенный радиационный пригород. Радиация смертельна без фильтров противогаза! Но в руинах полно ценных армейских медикаментов.",
                 type: "city",
                 theme: "city",
-                timeOfDay: "twilight",
+                timeOfDay: "night",
                 size: 45,
                 radiation: 1.5, // Сила радиации в секунду
                 fuelCost: 25,
@@ -2278,7 +2278,7 @@
                 description: "Бесплодная каменистая равнина, контролируемая бандами рейдеров. Они хорошо вооружены и нападают без предупреждения.",
                 type: "wasteland",
                 theme: "sand",
-                timeOfDay: "day",
+                timeOfDay: "twilight",
                 size: 40,
                 radiation: 0,
                 fuelCost: 30,
@@ -4546,8 +4546,8 @@
                 scene.add(instancedMeshes[i]);
             }
             
-                        // Dynamic Time of Day and Global Illumination settings
-            let timeOfDay = loc.timeOfDay || 'day';
+                        // Dynamic Time of Day and Global Illumination settings (Dramatic sunset, violet dusk, and pitch black night)
+            let timeOfDay = loc.timeOfDay || 'evening'; // Default to evening dusk
             let isIndoor = (loc.theme === 'tunnel' || loc.theme === 'bunker');
             
             let skyColor, groundColor, hemiIntensity;
@@ -4557,64 +4557,52 @@
             
             if (isIndoor) {
                 // Pitch black underground bunker/tunnel
-                skyColor = 0x1e293b;
-                groundColor = 0x090d16;
+                skyColor = 0x0f172a;
+                groundColor = 0x020617;
                 hemiIntensity = 0.02;
-                ambientColor = 0x090d16;
+                ambientColor = 0x020617;
                 ambientIntensity = 0.005;
                 sunColor = 0x38bdf8;
                 sunIntensity = 0.0; // no sun
                 sunPos = new THREE.Vector3(0, 10, 0);
-                fogColor = '#010103';
+                fogColor = '#010102';
                 fogDensity = 0.025;
-            } else if (timeOfDay === 'morning') {
-                // Golden-rose cool morning dawn
-                skyColor = 0xfdbcb4; // peach/dawn pink
-                groundColor = 0x4a3e3d; // warm earth
-                hemiIntensity = 0.45;
-                ambientColor = 0x5e4a5e; // purple dawn tone
-                ambientIntensity = 0.12;
-                sunColor = 0xfda4af; // warm pink-gold sun
-                sunIntensity = 0.55;
-                sunPos = new THREE.Vector3(-20, 12, 10); // low sun angle
-                fogColor = '#2d233c'; // hazy dawn purple
-                fogDensity = 0.015;
             } else if (timeOfDay === 'twilight') {
-                // Dusty crimson-orange twilight sunset
-                skyColor = 0xea580c; // bright sunset orange
-                groundColor = 0x371c1c; // dark reddish-brown ground bounce
-                hemiIntensity = 0.35;
-                ambientColor = 0x2d1a12; // deep warm orange ambient
-                ambientIntensity = 0.08;
-                sunColor = 0xdc2626; // sunset crimson red sun
-                sunIntensity = 0.35;
-                sunPos = new THREE.Vector3(25, 7, -15); // low sunset angle
-                fogColor = '#1e110c'; // dusty orange sunset fog
-                fogDensity = 0.018;
+                // Dusty crimson-orange sunset (very dramatic, Mad Max style)
+                skyColor = 0x9a3412; // dim rust orange sky
+                groundColor = 0x270e0f; // dark red-brown ground bounce
+                hemiIntensity = 0.25;
+                ambientColor = 0x1c0d0a; // extremely low orange fill
+                ambientIntensity = 0.04;
+                sunColor = 0xb91c1c; // blood red sunset sun
+                sunIntensity = 0.25;
+                sunPos = new THREE.Vector3(25, 6, -15); // low sunset angle
+                fogColor = '#140905'; // dusty dark reddish-black fog
+                fogDensity = 0.016;
             } else if (timeOfDay === 'night') {
-                // Starry dark blue cold night
-                skyColor = 0x1e293b; // deep slate blue sky
-                groundColor = 0x090d16; // dark night ground
-                hemiIntensity = 0.08;
-                ambientColor = 0x090d16; // dim midnight fill
-                ambientIntensity = 0.02;
-                sunColor = 0x38bdf8; // cool blue moonlight
-                sunIntensity = 0.12;
-                sunPos = new THREE.Vector3(-15, 22, -10);
-                fogColor = '#020205'; // pitch black dark blue fog
-                fogDensity = 0.012;
+                // Starry pitch-black night
+                skyColor = 0x0f172a; // very dim slate blue sky
+                groundColor = 0x020617; // dark ground
+                hemiIntensity = 0.05;
+                ambientColor = 0x020617;
+                ambientIntensity = 0.005;
+                sunColor = 0x0ea5e9; // pale moon blue
+                sunIntensity = 0.08;
+                sunPos = new THREE.Vector3(-15, 20, -10);
+                fogColor = '#010103'; // deep pitch black night fog
+                fogDensity = 0.022; // slightly thicker to make flashlight beam stand out
             } else {
-                // Default: Day (Bright hazy daylight)
-                skyColor = 0xbae6fd; // cyan-blue sky
-                groundColor = 0x78716c; // warm grey stone
-                hemiIntensity = 0.65;
-                ambientColor = 0xdcdcdc; // clear slate grey
-                ambientIntensity = 0.18;
-                sunColor = 0xfef08a; // bright pale yellow sun
-                sunIntensity = 0.85;
-                sunPos = new THREE.Vector3(10, 32, 12); // high sun
-                fogColor = '#0a0b0f'; // cool dusty day fog
-                fogDensity = 0.01;
+                // Default: 'evening' - Moody desaturated violet-indigo evening dusk
+                skyColor = 0x312e81; // dim indigo blue sky
+                groundColor = 0x0f172a; // dark slate grey ground bounce
+                hemiIntensity = 0.3;
+                ambientColor = 0x0f172a; // cool dark blue fill
+                ambientIntensity = 0.05;
+                sunColor = 0xc084fc; // pale purple sunset sun
+                sunIntensity = 0.35;
+                sunPos = new THREE.Vector3(-20, 10, 10); // low sun angle
+                fogColor = '#06070c'; // desaturated dark slate violet fog
+                fogDensity = 0.014;
             }
             
             // Set Scene Background and Fog dynamically

@@ -3644,6 +3644,7 @@
             window.addEventListener('mousemove', onMouseMove);
             window.addEventListener('mousedown', onMouseDown);
             window.addEventListener('mouseup', onMouseUp);
+            window.addEventListener('blur', onWindowBlur);
             
             // Compatibility reference
             activeGameScene = {
@@ -3791,6 +3792,16 @@
             if (e.button === 0) {
                 keys.mouseDown = false;
             }
+        }
+        
+        function onWindowBlur() {
+            keys.W = false;
+            keys.A = false;
+            keys.S = false;
+            keys.D = false;
+            keys.Shift = false;
+            keys.Space = false;
+            keys.mouseDown = false;
         }
         
         // Roblox Character Builder
@@ -6469,6 +6480,7 @@
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mousedown', onMouseDown);
             window.removeEventListener('mouseup', onMouseUp);
+            window.removeEventListener('blur', onWindowBlur);
             
             const container = document.getElementById('game-container');
             container.innerHTML = '';

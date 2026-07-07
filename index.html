@@ -7023,8 +7023,8 @@
                 }
             }
             
-            // 9. Camera and SunLight follow player
-            if (playerGroup) {
+            // 9. Camera and SunLight follow player (null-safe check to prevent crashes on death)
+            if (playerGroup && camera) {
                 // Decay screen shake over time
                 screenShake = Math.max(0, screenShake - dt * 4.2);
                 

@@ -2276,7 +2276,7 @@
                 armor: 0,    // Уровень 0-3
                 storage: 0   // Уровень 0-3
             },
-            trainFuel: 40,   // Топливо в котле поезда
+            trainFuel: 40,   // Топливо в бензобаке внедорожника
             
             // Экипировка и улучшения
             hasArmor: false,
@@ -3015,7 +3015,7 @@
                     <div class="route-step-num">${idx + 1}</div>
                     <div class="route-step-details">
                         <span class="route-step-name">${loc.name}</span>
-                        <span class="route-step-cost">${idx > 0 ? `Расход котла: ${actualFuelCost} топлива` : 'Старт'}</span>
+                        <span class="route-step-cost">${idx > 0 ? `Расход топлива: ${actualFuelCost} бензина` : 'Старт'}</span>
                     </div>
                     ${btnHtml}
                 `;
@@ -4525,6 +4525,7 @@
             // Store sun offset relative to the player for dynamic shadow camera tracking
             sunLight.userData.offset = sunPos.clone();
             sunLight.castShadow = (sunIntensity > 0.0);
+            sunLight.shadow.bias = -0.0008; // Prevent shadow acne / self-shadowing flickering on weapons & character meshes
             sunLight.shadow.mapSize.width = 1024;
             sunLight.shadow.mapSize.height = 1024;
             sunLight.shadow.camera.near = 0.5;
@@ -5050,13 +5051,15 @@
             let wallGeo = new THREE.BoxGeometry(2.0, 3.0, 2.0);
             
             for (let i = -N; i <= N; i++) {
-                // North boundary wall
+                // North boundary wall (includes N/S corners)
                 spawnWallMesh(i * 2.0, N * 2.0, wallGeo);
-                // South boundary wall
+                // South boundary wall (includes N/S corners)
                 spawnWallMesh(i * 2.0, -N * 2.0, wallGeo);
-                // East boundary wall
+            }
+            for (let i = -N + 1; i < N; i++) {
+                // East boundary wall (excludes corners already covered)
                 spawnWallMesh(N * 2.0, i * 2.0, wallGeo);
-                // West boundary wall
+                // West boundary wall (excludes corners already covered)
                 spawnWallMesh(-N * 2.0, i * 2.0, wallGeo);
             }
             

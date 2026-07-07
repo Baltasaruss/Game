@@ -3730,6 +3730,14 @@
         }
         
         function onKeyDown(e) {
+            // Prevent default browser behaviors like scrolling on space/arrows when game is running to prevent stuck keys
+            if (gameActive) {
+                let controlKeys = ['w', 'W', 's', 'S', 'a', 'A', 'd', 'D', ' ', 'Shift', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+                if (controlKeys.includes(e.key) || [32, 37, 38, 39, 40].includes(e.keyCode)) {
+                    e.preventDefault();
+                }
+            }
+            
             if (e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц' || e.keyCode === 38) keys.W = true;
             if (e.key === 'a' || e.key === 'A' || e.key === 'ф' || e.key === 'Ф' || e.keyCode === 37) keys.A = true;
             if (e.key === 's' || e.key === 'S' || e.key === 'ы' || e.key === 'Ы' || e.keyCode === 40) keys.S = true;
@@ -3766,6 +3774,13 @@
         }
         
         function onKeyUp(e) {
+            if (gameActive) {
+                let controlKeys = ['w', 'W', 's', 'S', 'a', 'A', 'd', 'D', ' ', 'Shift', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+                if (controlKeys.includes(e.key) || [32, 37, 38, 39, 40].includes(e.keyCode)) {
+                    e.preventDefault();
+                }
+            }
+            
             if (e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц' || e.keyCode === 38) keys.W = false;
             if (e.key === 'a' || e.key === 'A' || e.key === 'ф' || e.key === 'Ф' || e.keyCode === 37) keys.A = false;
             if (e.key === 's' || e.key === 'S' || e.key === 'ы' || e.key === 'Ы' || e.keyCode === 40) keys.S = false;

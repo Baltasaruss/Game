@@ -3380,7 +3380,7 @@
         let gameActive = false;
         let animationFrameId = null;
         
-        let isMobileDevice = false;
+        let isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
         let joystickInput = { x: 0, y: 0 };
         let joystickShootInput = { x: 0, y: 0 };
         let isShootingJoystickActive = false;
@@ -3415,7 +3415,7 @@
         let worldMousePoint = new THREE.Vector3();
         let sunLight = null;
         let rainParticles = null;
-        let rainCount = 1500;
+        let rainCount = isMobileDevice ? 400 : 1500; // Optimized particle count for mobile screens
         let muzzleFlashLight = null;
         let bulletGeo = new THREE.BoxGeometry(0.12, 0.12, 0.4);
         let bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
@@ -3483,10 +3483,11 @@
             // Camera
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
             
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            // Renderer (Antialias disabled on mobile for massive GPU fill-rate boost!)
+            renderer = new THREE.WebGLRenderer({ antialias: !isMobileDevice });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
+            // Dynamic shadows completely disabled on mobile (BasicShadowMap on PC for performance)
+            renderer.shadowMap.enabled = !isMobileDevice;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.25;
@@ -5661,6 +5662,64 @@
                 if (rx > -10 && rx < 6 && rz > -12 && rz < 6) continue;
                 spawnBloodDecal(rx, rz);
             }
+
+            // 6. Spawn procedural puddles, lakes, and decorative shore reeds (outdoor themes only)
+            if (theme !== 'tunnel' && theme !== 'bunker') {
+                // Style water color dynamically based on theme/time of day
+                let waterColor = 0x14b8a6; // Teal/cyan radioactive water
+                if (theme === 'sand') waterColor = 0x0284c7; // Sandy blue oasis
+                else if (theme === 'asphalt') waterColor = 0x475569; // Slate rain puddles
+                
+                let puddleMaterial = new THREE.MeshStandardMaterial({
+                    color: waterColor,
+                    roughness: 0.05,
+                    metalness: 0.85,
+                    transparent: true,
+                    opacity: 0.6,
+                });
+                
+                let puddleCount = THREE.MathUtils.randInt(5, 9);
+                for (let i = 0; i < puddleCount; i++) {
+                    let rx = THREE.MathUtils.randFloat(-sizeRange, sizeRange);
+                    let rz = THREE.MathUtils.randFloat(-sizeRange, sizeRange);
+                    
+                    // Skip starter safe zones
+                    if (rx > -15 && rx < 10 && rz > -20 && rz < 10) continue;
+                    if (isInsideWall(rx, rz)) continue;
+                    
+                    let rad = THREE.MathUtils.randFloat(2.8, 6.5);
+                    
+                    // Thin cylinder sitting slightly above the ground (y = 0.012) to avoid z-fighting
+                    let puddleGeo = new THREE.CylinderGeometry(rad, rad, 0.02, 16);
+                    let puddle = new THREE.Mesh(puddleGeo, puddleMaterial);
+                    puddle.position.set(rx, 0.012, rz);
+                    
+                    // Uneven scaling to make puddles organic and oval
+                    puddle.scale.set(1.0, 1.0, THREE.MathUtils.randFloat(0.65, 1.35));
+                    puddle.receiveShadow = true;
+                    scene.add(puddle);
+                    
+                    // Add shore reeds around the puddle banks
+                    let reedCount = THREE.MathUtils.randInt(3, 7);
+                    for (let r = 0; r < reedCount; r++) {
+                        let angle = Math.random() * Math.PI * 2;
+                        let dist = rad + THREE.MathUtils.randFloat(0.1, 0.6);
+                        let reX = rx + Math.sin(angle) * dist;
+                        let reZ = rz + Math.cos(angle) * dist;
+                        
+                        if (reX < -sizeRange || reX > sizeRange || reZ < -sizeRange || reZ > sizeRange) continue;
+                        if (isInsideWall(reX, reZ)) continue;
+                        
+                        let reedHeight = THREE.MathUtils.randFloat(0.9, 1.7);
+                        let reedGeo = new THREE.BoxGeometry(0.08, reedHeight, 0.08);
+                        let reedMat = new THREE.MeshLambertMaterial({ color: 0x14532d }); // dark forest green reed
+                        let reed = new THREE.Mesh(reedGeo, reedMat);
+                        reed.position.set(reX, reedHeight / 2, reZ);
+                        reed.castShadow = true;
+                        scene.add(reed);
+                    }
+                }
+            }
         }
         
         function isInsideWall(x, z) {
@@ -7159,28 +7218,42 @@
             // Show mobile controls panel
             document.getElementById('mobile-controls').style.display = 'block';
             
-            // Move Joystick
+            // Move Joystick (Independent multi-touch tracking via touch identifiers)
             const moveZone = document.getElementById('joystick-move-zone');
             const moveOuter = document.getElementById('joystick-move-outer');
             const moveKnob = document.getElementById('joystick-move-knob');
             
             let moveActive = false;
             let moveStart = { x: 0, y: 0 };
+            let moveTouchId = null;
             
             moveZone.addEventListener('touchstart', (e) => {
-                moveActive = true;
-                const touch = e.touches[0];
-                const rect = moveOuter.getBoundingClientRect();
-                moveStart.x = rect.left + rect.width / 2;
-                moveStart.y = rect.top + rect.height / 2;
+                for (let touch of e.changedTouches) {
+                    if (moveTouchId === null) {
+                        moveTouchId = touch.identifier;
+                        moveActive = true;
+                        const rect = moveOuter.getBoundingClientRect();
+                        moveStart.x = rect.left + rect.width / 2;
+                        moveStart.y = rect.top + rect.height / 2;
+                        break;
+                    }
+                }
                 e.preventDefault();
             }, { passive: false });
             
             moveZone.addEventListener('touchmove', (e) => {
-                if (!moveActive) return;
-                const touch = e.touches[0];
-                let dx = touch.clientX - moveStart.x;
-                let dy = touch.clientY - moveStart.y;
+                if (!moveActive || moveTouchId === null) return;
+                let targetTouch = null;
+                for (let touch of e.touches) {
+                    if (touch.identifier === moveTouchId) {
+                        targetTouch = touch;
+                        break;
+                    }
+                }
+                if (!targetTouch) return;
+                
+                let dx = targetTouch.clientX - moveStart.x;
+                let dy = targetTouch.clientY - moveStart.y;
                 let dist = Math.sqrt(dx * dx + dy * dy);
                 let maxDist = 30; // max knob travel
                 
@@ -7197,36 +7270,80 @@
             }, { passive: false });
             
             moveZone.addEventListener('touchend', (e) => {
-                moveActive = false;
-                moveKnob.style.transform = 'translate(0px, 0px)';
-                joystickInput.x = 0;
-                joystickInput.y = 0;
+                if (moveTouchId === null) return;
+                let touchEnded = false;
+                for (let touch of e.changedTouches) {
+                    if (touch.identifier === moveTouchId) {
+                        touchEnded = true;
+                        break;
+                    }
+                }
+                if (touchEnded) {
+                    moveActive = false;
+                    moveTouchId = null;
+                    moveKnob.style.transform = 'translate(0px, 0px)';
+                    joystickInput.x = 0;
+                    joystickInput.y = 0;
+                }
                 e.preventDefault();
             }, { passive: false });
             
-            // Shoot/Aim Joystick
+            moveZone.addEventListener('touchcancel', (e) => {
+                if (moveTouchId === null) return;
+                let touchEnded = false;
+                for (let touch of e.changedTouches) {
+                    if (touch.identifier === moveTouchId) {
+                        touchEnded = true;
+                        break;
+                    }
+                }
+                if (touchEnded) {
+                    moveActive = false;
+                    moveTouchId = null;
+                    moveKnob.style.transform = 'translate(0px, 0px)';
+                    joystickInput.x = 0;
+                    joystickInput.y = 0;
+                }
+                e.preventDefault();
+            }, { passive: false });
+            
+            // Shoot/Aim Joystick (Independent multi-touch tracking via touch identifiers)
             const shootZone = document.getElementById('joystick-shoot-zone');
             const shootOuter = document.getElementById('joystick-shoot-outer');
             const shootKnob = document.getElementById('joystick-shoot-knob');
             
             let shootActive = false;
             let shootStart = { x: 0, y: 0 };
+            let shootTouchId = null;
             
             shootZone.addEventListener('touchstart', (e) => {
-                shootActive = true;
-                isShootingJoystickActive = true;
-                const touch = e.touches[0];
-                const rect = shootOuter.getBoundingClientRect();
-                shootStart.x = rect.left + rect.width / 2;
-                shootStart.y = rect.top + rect.height / 2;
+                for (let touch of e.changedTouches) {
+                    if (shootTouchId === null) {
+                        shootTouchId = touch.identifier;
+                        shootActive = true;
+                        isShootingJoystickActive = true;
+                        const rect = shootOuter.getBoundingClientRect();
+                        shootStart.x = rect.left + rect.width / 2;
+                        shootStart.y = rect.top + rect.height / 2;
+                        break;
+                    }
+                }
                 e.preventDefault();
             }, { passive: false });
             
             shootZone.addEventListener('touchmove', (e) => {
-                if (!shootActive) return;
-                const touch = e.touches[0];
-                let dx = touch.clientX - shootStart.x;
-                let dy = touch.clientY - shootStart.y;
+                if (!shootActive || shootTouchId === null) return;
+                let targetTouch = null;
+                for (let touch of e.touches) {
+                    if (touch.identifier === shootTouchId) {
+                        targetTouch = touch;
+                        break;
+                    }
+                }
+                if (!targetTouch) return;
+                
+                let dx = targetTouch.clientX - shootStart.x;
+                let dy = targetTouch.clientY - shootStart.y;
                 let dist = Math.sqrt(dx * dx + dy * dy);
                 let maxDist = 30;
                 
@@ -7253,11 +7370,42 @@
             }, { passive: false });
             
             shootZone.addEventListener('touchend', (e) => {
-                shootActive = false;
-                isShootingJoystickActive = false;
-                shootKnob.style.transform = 'translate(0px, 0px)';
-                joystickShootInput.x = 0;
-                joystickShootInput.y = 0;
+                if (shootTouchId === null) return;
+                let touchEnded = false;
+                for (let touch of e.changedTouches) {
+                    if (touch.identifier === shootTouchId) {
+                        touchEnded = true;
+                        break;
+                    }
+                }
+                if (touchEnded) {
+                    shootActive = false;
+                    isShootingJoystickActive = false;
+                    shootTouchId = null;
+                    shootKnob.style.transform = 'translate(0px, 0px)';
+                    joystickShootInput.x = 0;
+                    joystickShootInput.y = 0;
+                }
+                e.preventDefault();
+            }, { passive: false });
+
+            shootZone.addEventListener('touchcancel', (e) => {
+                if (shootTouchId === null) return;
+                let touchEnded = false;
+                for (let touch of e.changedTouches) {
+                    if (touch.identifier === shootTouchId) {
+                        touchEnded = true;
+                        break;
+                    }
+                }
+                if (touchEnded) {
+                    shootActive = false;
+                    isShootingJoystickActive = false;
+                    shootTouchId = null;
+                    shootKnob.style.transform = 'translate(0px, 0px)';
+                    joystickShootInput.x = 0;
+                    joystickShootInput.y = 0;
+                }
                 e.preventDefault();
             }, { passive: false });
 

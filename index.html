@@ -2138,6 +2138,7 @@
                 description: "Безопасная точка. Здесь вы нашли заброшенный внедорожник. Соберите базовые припасы и бензин, чтобы начать движение.",
                 type: "station",
                 theme: "grass",
+                timeOfDay: "morning",
                 size: 32, // размер сетки 32x32
                 radiation: 0,
                 fuelCost: 0,
@@ -2154,6 +2155,7 @@
                 description: "Густой хвойный лес. Здесь осталось огромное количество канистр с бензином и диких ягод, но в чащах прячутся восставшие мертвецы.",
                 type: "forest",
                 theme: "grass",
+                timeOfDay: "day",
                 size: 40,
                 radiation: 0,
                 fuelCost: 15,
@@ -2166,6 +2168,7 @@
                 description: "Разрушенный радиационный пригород. Радиация смертельна без фильтров противогаза! Но в руинах полно ценных армейских медикаментов.",
                 type: "city",
                 theme: "city",
+                timeOfDay: "twilight",
                 size: 45,
                 radiation: 1.5, // Сила радиации в секунду
                 fuelCost: 25,
@@ -2178,6 +2181,7 @@
                 description: "Бесплодная каменистая равнина, контролируемая бандами рейдеров. Они хорошо вооружены и нападают без предупреждения.",
                 type: "wasteland",
                 theme: "sand",
+                timeOfDay: "day",
                 size: 40,
                 radiation: 0,
                 fuelCost: 30,
@@ -2196,6 +2200,7 @@
                 description: "Заброшенный глухой туннель под холмами. Царит кромешная тьма, ваш фонарик освещает лишь малую зону. Остерегайтесь проворных мутантов.",
                 type: "tunnel",
                 theme: "tunnel",
+                timeOfDay: "night",
                 size: 45,
                 radiation: 0.5,
                 fuelCost: 35,
@@ -2208,6 +2213,7 @@
                 description: "Укрепленный аванпост бывшей регулярной армии. Сейчас захвачен бандами наемников. Тяжелый бой, но здесь лежат ящики с лучшим снаряжением.",
                 type: "military",
                 theme: "asphalt",
+                timeOfDay: "night",
                 size: 50,
                 radiation: 0,
                 fuelCost: 40,
@@ -2220,6 +2226,7 @@
                 description: "Финальное укрытие человечества в горах. Ворота заблокированы системой управления лаборатории, которую охраняет гигантский Сверхмутант.",
                 type: "bunker",
                 theme: "bunker",
+                timeOfDay: "night",
                 size: 45,
                 radiation: 1.2,
                 fuelCost: 45,
@@ -4428,22 +4435,96 @@
                 scene.add(instancedMeshes[i]);
             }
             
+                        // Dynamic Time of Day and Global Illumination settings
+            let timeOfDay = loc.timeOfDay || 'day';
+            let isIndoor = (loc.theme === 'tunnel' || loc.theme === 'bunker');
+            
+            let skyColor, groundColor, hemiIntensity;
+            let ambientColor, ambientIntensity;
+            let sunColor, sunIntensity, sunPos;
+            let fogColor, fogDensity;
+            
+            if (isIndoor) {
+                // Pitch black underground bunker/tunnel
+                skyColor = 0x1e293b;
+                groundColor = 0x090d16;
+                hemiIntensity = 0.02;
+                ambientColor = 0x090d16;
+                ambientIntensity = 0.005;
+                sunColor = 0x38bdf8;
+                sunIntensity = 0.0; // no sun
+                sunPos = new THREE.Vector3(0, 10, 0);
+                fogColor = '#010103';
+                fogDensity = 0.025;
+            } else if (timeOfDay === 'morning') {
+                // Golden-rose cool morning dawn
+                skyColor = 0xfdbcb4; // peach/dawn pink
+                groundColor = 0x4a3e3d; // warm earth
+                hemiIntensity = 0.45;
+                ambientColor = 0x5e4a5e; // purple dawn tone
+                ambientIntensity = 0.12;
+                sunColor = 0xfda4af; // warm pink-gold sun
+                sunIntensity = 0.55;
+                sunPos = new THREE.Vector3(-20, 12, 10); // low sun angle
+                fogColor = '#2d233c'; // hazy dawn purple
+                fogDensity = 0.015;
+            } else if (timeOfDay === 'twilight') {
+                // Dusty crimson-orange twilight sunset
+                skyColor = 0xea580c; // bright sunset orange
+                groundColor = 0x371c1c; // dark reddish-brown ground bounce
+                hemiIntensity = 0.35;
+                ambientColor = 0x2d1a12; // deep warm orange ambient
+                ambientIntensity = 0.08;
+                sunColor = 0xdc2626; // sunset crimson red sun
+                sunIntensity = 0.35;
+                sunPos = new THREE.Vector3(25, 7, -15); // low sunset angle
+                fogColor = '#1e110c'; // dusty orange sunset fog
+                fogDensity = 0.018;
+            } else if (timeOfDay === 'night') {
+                // Starry dark blue cold night
+                skyColor = 0x1e293b; // deep slate blue sky
+                groundColor = 0x090d16; // dark night ground
+                hemiIntensity = 0.08;
+                ambientColor = 0x090d16; // dim midnight fill
+                ambientIntensity = 0.02;
+                sunColor = 0x38bdf8; // cool blue moonlight
+                sunIntensity = 0.12;
+                sunPos = new THREE.Vector3(-15, 22, -10);
+                fogColor = '#020205'; // pitch black dark blue fog
+                fogDensity = 0.012;
+            } else {
+                // Default: Day (Bright hazy daylight)
+                skyColor = 0xbae6fd; // cyan-blue sky
+                groundColor = 0x78716c; // warm grey stone
+                hemiIntensity = 0.65;
+                ambientColor = 0xdcdcdc; // clear slate grey
+                ambientIntensity = 0.18;
+                sunColor = 0xfef08a; // bright pale yellow sun
+                sunIntensity = 0.85;
+                sunPos = new THREE.Vector3(10, 32, 12); // high sun
+                fogColor = '#0a0b0f'; // cool dusty day fog
+                fogDensity = 0.01;
+            }
+            
+            // Set Scene Background and Fog dynamically
+            scene.background = new THREE.Color(fogColor);
+            scene.fog.color = new THREE.Color(fogColor);
+            scene.fog.density = fogDensity;
+
             // 3D Ambient Light (Fill light)
-            let ambient = new THREE.AmbientLight(0xdcdcdc, loc.theme === 'tunnel' ? 0.01 : 0.08);
+            let ambient = new THREE.AmbientLight(ambientColor, ambientIntensity);
             scene.add(ambient);
             
             // Hemisphere Light for soft sky-dome ambient global illumination (indirect lighting bounce)
-            let hemiLight = new THREE.HemisphereLight(
-                loc.theme === 'tunnel' || loc.theme === 'bunker' ? 0x1e293b : 0xbae6fd, // Sky color (cool cyan-blue)
-                loc.theme === 'tunnel' || loc.theme === 'bunker' ? 0x090d16 : 0x78716c, // Ground color (warm stone bounce)
-                loc.theme === 'tunnel' || loc.theme === 'bunker' ? 0.05 : 0.45          // Intensity
-            );
+            let hemiLight = new THREE.HemisphereLight(skyColor, groundColor, hemiIntensity);
             scene.add(hemiLight);
             
-            // 3D Sunlight (Dimmed to represent hazy, sun-choked post-apoc sky)
-            sunLight = new THREE.DirectionalLight(0xe0dbcd, loc.theme === 'tunnel' ? 0.02 : 0.45);
-            sunLight.position.set(15, 30, 10);
-            sunLight.castShadow = true;
+            // 3D Sunlight
+            sunLight = new THREE.DirectionalLight(sunColor, sunIntensity);
+            sunLight.position.copy(sunPos);
+            // Store sun offset relative to the player for dynamic shadow camera tracking
+            sunLight.userData.offset = sunPos.clone();
+            sunLight.castShadow = (sunIntensity > 0.0);
             sunLight.shadow.mapSize.width = 1024;
             sunLight.shadow.mapSize.height = 1024;
             sunLight.shadow.camera.near = 0.5;
@@ -6225,9 +6306,10 @@
                 camera.position.lerp(targetCamPos, 0.08);
                 camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 0.5, -0.5)));
                 
-                // Track sunLight position and shadow camera around the player
+                // Track sunLight position and shadow camera around the player (respecting dynamic sun offset)
                 if (sunLight) {
-                    sunLight.position.set(playerGroup.position.x + 15, 30, playerGroup.position.z + 10);
+                    let offset = sunLight.userData.offset || new THREE.Vector3(15, 30, 10);
+                    sunLight.position.copy(playerGroup.position).add(offset);
                     sunLight.target = playerGroup;
                 }
             }

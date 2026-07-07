@@ -2506,6 +2506,17 @@
         }
 
         const sound = new SoundSynth();
+        
+        // Bulletproof AudioContext resume on first user click or touch event
+        const resumeAudioContext = () => {
+            if (sound) {
+                sound.init();
+            }
+            window.removeEventListener('click', resumeAudioContext);
+            window.removeEventListener('touchstart', resumeAudioContext);
+        };
+        window.addEventListener('click', resumeAudioContext);
+        window.addEventListener('touchstart', resumeAudioContext);
 
         function changeVolume(value) {
             sound.setVolume(value);
@@ -3119,10 +3130,12 @@
             if (!scene) return;
             let geo = new THREE.PlaneGeometry(0.18, 0.35);
             let mat = new THREE.MeshBasicMaterial({
-                color: 0x000000,
+                color: 0x1c1917, // dark stone grey
                 transparent: true,
-                opacity: 0.12,
-                depthWrite: false
+                opacity: 0.45,
+                polygonOffset: true,
+                polygonOffsetFactor: -4,
+                polygonOffsetUnits: -4
             });
             let mesh = new THREE.Mesh(geo, mat);
             mesh.rotation.x = -Math.PI / 2;
@@ -3132,7 +3145,7 @@
             let sideOffset = isLeft ? 0.14 : -0.14;
             let ox = x + Math.cos(rotationY) * sideOffset;
             let oz = z - Math.sin(rotationY) * sideOffset;
-            mesh.position.set(ox, 0.01, oz);
+            mesh.position.set(ox, 0.02, oz);
             scene.add(mesh);
             
             footprints.push({
@@ -7268,7 +7281,7 @@
                             footprints.splice(i, 1);
                         }
                     } else {
-                        fp.mesh.material.opacity = 0.12 * (1.0 - dist / 5.0);
+                        fp.mesh.material.opacity = 0.45 * (1.0 - dist / 5.0);
                     }
                 }
                 

@@ -2377,6 +2377,132 @@
                     osc.stop(t + idx * 0.06 + 0.2);
                 });
             }
+
+            // Звук шагов
+            playStep() {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                let bufferSize = this.ctx.sampleRate * 0.04;
+                let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                let data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                let noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                let filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(140, t);
+                
+                let gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.045, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                
+                noise.start(t);
+                noise.stop(t + 0.04);
+            }
+
+            // Звук урчания/рыка зомби
+            playZombieGrowl(volume = 0.1) {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(70, t);
+                osc.frequency.linearRampToValueAtTime(40, t + 0.38);
+                
+                let filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(280, t);
+                
+                gain.gain.setValueAtTime(0.12 * volume, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                
+                osc.start(t);
+                osc.stop(t + 0.4);
+            }
+
+            // Урчание заведенного джипа на холостых
+            playEngineIdle(volume = 0.05) {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(32 + Math.sin(t * 18) * 3, t);
+                
+                let filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(90, t);
+                
+                gain.gain.setValueAtTime(0.08 * volume, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                
+                osc.start(t);
+                osc.stop(t + 0.14);
+            }
+
+            // Процедурный такт фоновой музыки
+            playMusicBeat(freq) {
+                this.init();
+                if (!this.ctx) return;
+                let t = this.ctx.currentTime;
+                
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, t);
+                
+                gain.gain.setValueAtTime(0.055, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+                
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(t);
+                osc.stop(t + 0.28);
+                
+                // Хай-хэты на фоне для ритма
+                if (Math.random() < 0.4) {
+                    let bufferSize = this.ctx.sampleRate * 0.015;
+                    let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    let data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    
+                    let src = this.ctx.createBufferSource();
+                    src.buffer = buffer;
+                    
+                    let hiFilter = this.ctx.createBiquadFilter();
+                    hiFilter.type = 'highpass';
+                    hiFilter.frequency.setValueAtTime(7500, t);
+                    
+                    let hiGain = this.ctx.createGain();
+                    hiGain.gain.setValueAtTime(0.012, t);
+                    hiGain.gain.exponentialRampToValueAtTime(0.001, t + 0.015);
+                    
+                    src.connect(hiFilter);
+                    hiFilter.connect(hiGain);
+                    hiGain.connect(this.masterGain);
+                    src.start(t);
+                    src.stop(t + 0.015);
+                }
+            }
         }
 
         const sound = new SoundSynth();
@@ -2967,6 +3093,52 @@
                 triggerPerkSelection();
             }
             updateHudVisuals();
+        }
+
+        // Procedural background music controls
+        function startMusic() {
+            if (bgmTimer) clearInterval(bgmTimer);
+            let notes = [110, 110, 130, 110, 146, 130, 165, 110]; // cool dark post-apoc bassline
+            let step = 0;
+            bgmTimer = setInterval(() => {
+                if (!gameActive || !scene) return;
+                sound.playMusicBeat(notes[step % notes.length]);
+                step++;
+            }, 300); // 300ms per beat (~200 BPM)
+        }
+        
+        function stopMusic() {
+            if (bgmTimer) {
+                clearInterval(bgmTimer);
+                bgmTimer = null;
+            }
+        }
+
+        // Spawn footprints flat on the ground
+        function spawnFootprint(x, z, rotationY) {
+            if (!scene) return;
+            let geo = new THREE.PlaneGeometry(0.18, 0.35);
+            let mat = new THREE.MeshBasicMaterial({
+                color: 0x000000,
+                transparent: true,
+                opacity: 0.12,
+                depthWrite: false
+            });
+            let mesh = new THREE.Mesh(geo, mat);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.rotation.z = -rotationY;
+            // Spawn slightly offset from center to show left/right foot pattern alternating
+            let isLeft = (footprints.length % 2 === 0);
+            let sideOffset = isLeft ? 0.14 : -0.14;
+            let ox = x + Math.cos(rotationY) * sideOffset;
+            let oz = z - Math.sin(rotationY) * sideOffset;
+            mesh.position.set(ox, 0.01, oz);
+            scene.add(mesh);
+            
+            footprints.push({
+                mesh: mesh,
+                spawnPos: new THREE.Vector3(ox, 0, oz)
+            });
         }
 
         // Trigger Rogue-like Perk Card Choice Overlay (Vampire Survivors style!)
@@ -3717,6 +3889,8 @@
         
         // Timing
         let lastTime = 0;
+        let bgmTimer = null;
+        let footprints = [];
         let screenShake = 0;          // Cooldown camera kickback/shake intensity
         let gamePaused = false;       // Local pause flag for Perk card selection overlay
         let lastKillTime = 0;         // Timestamp of the last enemy killed (combo tracker)
@@ -5082,6 +5256,9 @@
             // Start main loop
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             animationFrameId = requestAnimationFrame(animate3D);
+            
+            // Start BGM background music
+            startMusic();
         }
         
         function build3DTrain() {
@@ -6882,6 +7059,16 @@
                     playerGroup.userData.legL.rotation.x = Math.sin(playerAnimProgress) * 0.65;
                     playerGroup.userData.legR.rotation.x = -Math.sin(playerAnimProgress) * 0.65;
                     playerGroup.userData.armL.rotation.x = -Math.sin(playerAnimProgress) * 0.6;
+                    
+                    // Footstep sound synth + flat ground footprint particles
+                    let stepInterval = Math.PI; // step every half limb swing cycle
+                    if (playerAnimProgress % stepInterval < 0.22) {
+                        if (!playerGroup.userData.lastStepTime || Date.now() > playerGroup.userData.lastStepTime + (isSprinting ? 270 : 400)) {
+                            sound.playStep();
+                            playerGroup.userData.lastStepTime = Date.now();
+                            spawnFootprint(playerGroup.position.x, playerGroup.position.z, playerGroup.rotation.y);
+                        }
+                    }
                     // Рука с оружием направлена вперед при ходьбе
                     playerGroup.userData.armR.rotation.x = -Math.PI / 2.0;
                     
@@ -7055,6 +7242,35 @@
             if (playerGroup && camera) {
                 // Decay screen shake over time
                 screenShake = Math.max(0, screenShake - dt * 4.2);
+                
+                // Positional SUV engine humming audio when near train/SUV
+                if (trainGroup) {
+                    let tdist = playerGroup.position.distanceTo(trainGroup.position);
+                    if (tdist < 10.0) {
+                        if (!playerGroup.userData.lastEngineTime || Date.now() > playerGroup.userData.lastEngineTime + 160) {
+                            let vol = Math.max(0, 1.0 - tdist / 10.0);
+                            sound.playEngineIdle(vol);
+                            playerGroup.userData.lastEngineTime = Date.now();
+                        }
+                    }
+                }
+                
+                // Update character footprints fading out proportionally up to 5 meters
+                for (let i = footprints.length - 1; i >= 0; i--) {
+                    let fp = footprints[i];
+                    let dist = playerGroup.position.distanceTo(fp.spawnPos);
+                    if (dist > 5.0) {
+                        fp.mesh.material.opacity -= dt * 2.2;
+                        if (fp.mesh.material.opacity <= 0) {
+                            scene.remove(fp.mesh);
+                            fp.mesh.geometry.dispose();
+                            fp.mesh.material.dispose();
+                            footprints.splice(i, 1);
+                        }
+                    } else {
+                        fp.mesh.material.opacity = 0.12 * (1.0 - dist / 5.0);
+                    }
+                }
                 
                 // Lerp camera position (adjust height/depth based on mobile aspect ratio to zoom out horizontally)
                 let aspect = window.innerWidth / window.innerHeight;
@@ -7294,6 +7510,15 @@
                             }
                         }
                         
+                        // Positional zombie growls when chasing the player
+                        if (e.userData.type.startsWith('zombie') && e.userData.state === 'aggro') {
+                            if (!e.userData.lastGrowlTime || Date.now() > e.userData.lastGrowlTime + THREE.MathUtils.randFloat(4500, 9500)) {
+                                let vol = Math.max(0, 1.0 - dist / 15.0);
+                                if (vol > 0) sound.playZombieGrowl(vol);
+                                e.userData.lastGrowlTime = Date.now();
+                            }
+                        }
+                        
                         // Separation between zombies to prevent them from merging into one box
                         for (let k = 0; k < enemies.length; k++) {
                             if (e !== enemies[k] && enemies[k].userData.type.startsWith('zombie')) {
@@ -7331,7 +7556,7 @@
                     }
                 }
                 else if (e.userData.type === 'raider') {
-                    if (dist < viewRange + 3.0) {
+                    if (dist < detectDist + 3.0) {
                         // Keep distance and shoot
                         let walkDir = 0;
                         if (dist > 9.0) walkDir = 1; // get closer
@@ -7556,6 +7781,17 @@
             renderer = null;
             scene = null;
             camera = null;
+            
+            // Stop BGM
+            stopMusic();
+            
+            // Clear footprint meshes from GPU memory
+            for (let fp of footprints) {
+                if (scene) scene.remove(fp.mesh);
+                fp.mesh.geometry.dispose();
+                fp.mesh.material.dispose();
+            }
+            footprints = [];
         }
         
         function triggerMobileInteractionStart() {

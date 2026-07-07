@@ -624,6 +624,32 @@
             padding: 2px 6px;
             border-radius: 4px;
         }
+        
+        /* Locked weapon slots */
+        .inv-slot.locked {
+            opacity: 0.45 !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            border-color: rgba(255, 255, 255, 0.05) !important;
+            cursor: not-allowed !important;
+        }
+        .inv-slot.locked .inv-slot-icon {
+            filter: grayscale(100%) brightness(60%);
+        }
+        
+        /* Remove bars, align values */
+        .stat-value {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #f1f5f9;
+            text-shadow: 1px 1px 0px #000;
+        }
+        .hud-stats-panel {
+            gap: 6px !important;
+        }
+        .stat-bar-container {
+            display: none !important; /* Hide visual bars */
+        }
 
         .craft-mats-pill.insufficient {
             color: var(--danger-accent);
@@ -1325,8 +1351,8 @@
                 padding: 3px;
                 gap: 3px;
                 background: rgba(15, 15, 20, 0.9);
-                width: 90%;
-                max-width: 250px;
+                width: 95%;
+                max-width: 320px; /* Wider to fit 9 slots in portrait mobile */
                 justify-content: center;
                 z-index: 55;
             }
@@ -1455,7 +1481,7 @@
                 bottom: 0.25rem !important;
                 left: 50% !important;
                 transform: translateX(-50%) !important;
-                width: 220px !important;
+                width: 280px !important; /* Wider to fit 9 slots in landscape mobile */
                 padding: 2px !important;
             }
             .inv-slot {
@@ -1554,46 +1580,31 @@
         <div class="hud-stats-panel hud-element">
             <div class="stat-row">
                 <span class="stat-icon">❤️</span>
-                <div class="stat-bar-container">
-                    <div class="stat-bar bar-hp" id="hud-hp" style="width: 100%;"></div>
-                    <div class="stat-text" id="hud-hp-txt">100/100</div>
-                </div>
+                <span class="stat-value" id="hud-hp-txt">100/100</span>
             </div>
             <div class="stat-row">
                 <span class="stat-icon">🍖</span>
-                <div class="stat-bar-container">
-                    <div class="stat-bar bar-hunger" id="hud-hunger" style="width: 100%;"></div>
-                    <div class="stat-text" id="hud-hunger-txt">100/100</div>
-                </div>
+                <span class="stat-value" id="hud-hunger-txt">100/100</span>
             </div>
             <div class="stat-row">
                 <span class="stat-icon">💧</span>
-                <div class="stat-bar-container">
-                    <div class="stat-bar bar-thirst" id="hud-thirst" style="width: 100%;"></div>
-                    <div class="stat-text" id="hud-thirst-txt">100/100</div>
-                </div>
+                <span class="stat-value" id="hud-thirst-txt">100/100</span>
             </div>
             <div class="stat-row">
                 <span class="stat-icon">⚡</span>
-                <div class="stat-bar-container">
-                    <div class="stat-bar bar-stamina" id="hud-stamina" style="width: 100%;"></div>
-                    <div class="stat-text" id="hud-stamina-txt">100/100</div>
-                </div>
+                <span class="stat-value" id="hud-stamina-txt">100/100</span>
             </div>
             <!-- Радиация (появляется только в зараженной зоне) -->
-            <div class="stat-row" id="rad-row">
+            <div class="stat-row" id="rad-row" style="display: none;">
                 <span class="stat-icon">☢️</span>
-                <div class="stat-bar-container">
-                    <div class="stat-bar bar-rad" id="hud-rad" style="width: 0%;"></div>
-                    <div class="stat-text" id="hud-rad-txt">0%</div>
-                </div>
+                <span class="stat-value" id="hud-rad-txt">0%</span>
             </div>
         </div>
 
         <!-- Уровень (центр верх) -->
         <div class="hud-level-panel hud-element">
-            <span class="level-text" id="hud-lvl">УРОВЕНЬ 1</span>
-            <div class="xp-bar-container">
+            <span class="level-text" id="hud-lvl" style="font-family: 'Press Start 2P', monospace; font-size: 0.75rem;">УРОВЕНЬ 1 (0/100 XP)</span>
+            <div class="xp-bar-container" style="display: none;">
                 <div class="xp-bar" id="hud-xp" style="width: 0%;"></div>
             </div>
         </div>
@@ -1609,7 +1620,7 @@
         <div id="game-log"></div>
 
         <!-- Дрова и Металлолом (левый низ выше лога) -->
-        <div class="hud-mats-panel hud-element" style="bottom: 1.5rem;">
+        <div class="hud-mats-panel hud-element" style="display: none;">
             <div class="mat-item">
                 <span class="mat-icon">⛽</span> Бензин:
                 <span class="mat-amount" id="hud-wood">5 / 30</span>
@@ -1665,6 +1676,18 @@
                 <span class="inv-slot-icon">🎭</span>
                 <span class="inv-slot-amount" id="slot-gasmask-txt">x0</span>
             </div>
+            <!-- Бензин (Перенесен во внутренний инвентарь) -->
+            <div class="inv-slot" style="cursor: default;" id="slot-wood-parent">
+                <span class="inv-slot-key" style="display: none;">8</span>
+                <span class="inv-slot-icon">⛽</span>
+                <span class="inv-slot-amount" id="slot-wood-txt">x0</span>
+            </div>
+            <!-- Хлам (Перенесен во внутренний инвентарь) -->
+            <div class="inv-slot" style="cursor: default;" id="slot-scrap-parent">
+                <span class="inv-slot-key" style="display: none;">9</span>
+                <span class="inv-slot-icon">⚙️</span>
+                <span class="inv-slot-amount" id="slot-scrap-txt">x0</span>
+            </div>
         </div>
 
         <!-- Виртуальный джойстик и кнопки для мобильных устройств -->
@@ -1679,7 +1702,7 @@
             <!-- Правые кнопки управления -->
             <div id="mobile-action-buttons">
                 <!-- Кнопка Бега (Спринт) -->
-                <button id="btn-mobile-sprint" class="mobile-btn">
+                <button id="btn-mobile-sprint" class="mobile-btn" style="display: none;">
                     <span class="btn-icon">⚡</span>
                     <span class="btn-lbl">Спринт</span>
                 </button>
@@ -1689,7 +1712,7 @@
                         <span class="btn-icon">⛽</span>
                         <span class="btn-lbl">Сбор/Вход</span>
                     </button>
-                    <button id="btn-mobile-fire" class="mobile-btn" style="pointer-events: auto;">
+                    <button id="btn-mobile-fire" class="mobile-btn" style="display: none; pointer-events: auto;">
                         <span class="btn-icon">🎯</span>
                         <span class="btn-lbl">Огонь</span>
                     </button>
@@ -2592,35 +2615,26 @@
             let maxHp = getMaxHp();
             let maxStamina = getMaxStamina();
             
-            document.getElementById('hud-hp').style.width = `${(gameState.hp / maxHp) * 100}%`;
             document.getElementById('hud-hp-txt').innerText = `${Math.round(gameState.hp)}/${maxHp}`;
-            
-            document.getElementById('hud-hunger').style.width = `${gameState.hunger}%`;
             document.getElementById('hud-hunger-txt').innerText = `${Math.round(gameState.hunger)}/100`;
-            
-            document.getElementById('hud-thirst').style.width = `${gameState.thirst}%`;
             document.getElementById('hud-thirst-txt').innerText = `${Math.round(gameState.thirst)}/100`;
-            
-            document.getElementById('hud-stamina').style.width = `${(gameState.stamina / maxStamina) * 100}%`;
             document.getElementById('hud-stamina-txt').innerText = `${Math.round(gameState.stamina)}/${maxStamina}`;
-            
-            document.getElementById('hud-rad').style.width = `${gameState.radiation}%`;
             document.getElementById('hud-rad-txt').innerText = `${Math.round(gameState.radiation)}%`;
             
-            document.getElementById('hud-lvl').innerText = `УРОВЕНЬ ${gameState.level}`;
             let nextXp = gameState.level * 100;
-            document.getElementById('hud-xp').style.width = `${(gameState.xp / nextXp) * 100}%`;
-            
-            // Дрова / Хлам / Противогаз
-            document.getElementById('hud-wood').innerText = `${gameState.inventory.wood} / ${getMaxWoodCapacity()}`;
-            document.getElementById('hud-scrap').innerText = `${gameState.inventory.scrap}`;
-            document.getElementById('hud-gasmask').innerText = `${Math.round(gameState.inventory.gasmask)}%`;
+            document.getElementById('hud-lvl').innerText = `УРОВЕНЬ ${gameState.level} (${gameState.xp}/${nextXp} XP)`;
             
             // Расходники
             document.getElementById('slot-food-txt').innerText = `x${gameState.inventory.food}`;
             document.getElementById('slot-water-txt').innerText = `x${gameState.inventory.water}`;
             document.getElementById('slot-medkit-txt').innerText = `x${gameState.inventory.medkit}`;
-            document.getElementById('slot-gasmask-txt').innerText = `x${gameState.inventory.gasmask > 0 ? 1 : 0}`; // Показываем собранные фильтры
+            
+            // Показываем заряд фильтра в процентах прямо в слоте инвентаря
+            document.getElementById('slot-gasmask-txt').innerText = `${Math.round(gameState.inventory.gasmask)}%`;
+
+            // Обновляем слоты бензина и хлама
+            document.getElementById('slot-wood-txt').innerText = `${gameState.inventory.wood}/${getMaxWoodCapacity()}`;
+            document.getElementById('slot-scrap-txt').innerText = `x${gameState.inventory.scrap}`;
 
             // Оружие
             updateWeaponHud();
@@ -2641,13 +2655,20 @@
             document.getElementById('hud-wpn-name').innerText = name + (gameState.weaponUpgrades[currentActiveWeapon] > 0 ? ` +${gameState.weaponUpgrades[currentActiveWeapon]}` : '');
             document.getElementById('hud-wpn-ammo').innerText = ammo;
 
+            let isRifleUnlocked = gameState.inventory.ammo_rifle > 0 || gameState.weaponUpgrades.rifle > 0;
+            let isShotgunUnlocked = gameState.inventory.ammo_shotgun > 0 || gameState.weaponUpgrades.shotgun > 0;
+
             // Подсвечиваем активный слот
             document.getElementById('slot-wpn-1').classList.toggle('active', currentActiveWeapon === 'pistol');
             document.getElementById('slot-wpn-2').classList.toggle('active', currentActiveWeapon === 'rifle');
             document.getElementById('slot-wpn-3').classList.toggle('active', currentActiveWeapon === 'shotgun');
 
-            document.getElementById('slot-wpn-2-txt').innerText = gameState.inventory.ammo_rifle > 0 || gameState.weaponUpgrades.rifle > 0 ? 'АК-74' : 'заблокировано';
-            document.getElementById('slot-wpn-3-txt').innerText = gameState.inventory.ammo_shotgun > 0 || gameState.weaponUpgrades.shotgun > 0 ? 'МР-133' : 'заблокировано';
+            // Блокируем с помощью класса locked для неактивного серого цвета
+            document.getElementById('slot-wpn-2').classList.toggle('locked', !isRifleUnlocked);
+            document.getElementById('slot-wpn-3').classList.toggle('locked', !isShotgunUnlocked);
+
+            document.getElementById('slot-wpn-2-txt').innerText = isRifleUnlocked ? 'АК-74' : '🔒';
+            document.getElementById('slot-wpn-3-txt').innerText = isShotgunUnlocked ? 'МР-133' : '🔒';
         }
 
         function selectWeaponFromSlot(num) {
@@ -6276,8 +6297,11 @@
                 let isSprinting = false;
                 let speed = 4.5 * (1 + gameState.skills.agility * 0.08); // 4.5 units/s
                 
+                // На телефоне спринт активируется автоматически при движении
+                let isSprintActive = keys.Shift || isMobileDevice;
+                
                 if (isMoving) {
-                    if (keys.Shift && gameState.stamina > 5) {
+                    if (isSprintActive && gameState.stamina > 5) {
                         isSprinting = true;
                         speed *= 1.6;
                         gameState.stamina = Math.max(0, gameState.stamina - 28 * dt);

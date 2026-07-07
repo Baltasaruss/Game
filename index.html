@@ -4585,7 +4585,7 @@
             materials.scrap = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.5, metalness: 0.75 });
             materials.radBarrel = new THREE.MeshStandardMaterial({ map: radBarrelTex, roughness: 0.35, metalness: 0.5 });
             materials.wall = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.75, metalness: 0.2 });
-            materials.bloodSplatter = new THREE.MeshBasicMaterial({ map: bloodSplatterTex, transparent: true, opacity: 0.85, depthWrite: false });
+            materials.bloodSplatter = new THREE.MeshStandardMaterial({ map: bloodSplatterTex, transparent: true, opacity: 0.85, depthWrite: false, roughness: 0.9, metalness: 0.1 });
             
             // Pre-generate shared SpriteMaterials for all 7 loot types to avoid runtime Canvas texture generation & GPU texture upload lags
             let lootTypes = {

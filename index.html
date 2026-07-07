@@ -263,9 +263,10 @@
             background: rgba(15, 15, 20, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 12px;
-            padding: 0.8rem;
-            width: 150px;
-            text-align: center;
+            padding: 0.5rem 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
         }
 
@@ -1272,17 +1273,18 @@
                 top: -4px;
             }
 
-            /* Weapon panel (top-right) */
+            /* Weapon panel (top-right) - Horizontal layout, auto width */
             .hud-weapon-panel {
-                top: 0.5rem;
-                right: 0.5rem;
-                width: 38%;
-                padding: 0.4rem;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                height: 52px;
+                top: 0.5rem !important;
+                right: 0.5rem !important;
+                width: auto !important;
+                height: auto !important;
+                padding: 0.35rem 0.6rem !important;
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 6px !important;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
             }
             .weapon-title {
                 font-size: 0.65rem;
@@ -1473,9 +1475,13 @@
             .hud-weapon-panel {
                 top: 0.25rem !important;
                 right: 0.25rem !important;
-                width: 150px !important;
-                padding: 0.25rem !important;
-                height: 42px !important;
+                width: auto !important;
+                height: auto !important;
+                padding: 0.25rem 0.5rem !important;
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 6px !important;
             }
             .hud-minimap-panel {
                 top: auto !important;
@@ -1621,6 +1627,10 @@
                 <span class="stat-icon">⚡</span>
                 <span class="stat-value" id="hud-stamina-txt">100/100</span>
             </div>
+            <div class="stat-row">
+                <span class="stat-icon">⭐</span>
+                <span class="stat-value" id="hud-lvl">УРОВЕНЬ 1</span>
+            </div>
             <!-- Радиация (появляется только в зараженной зоне) -->
             <div class="stat-row" id="rad-row" style="display: none;">
                 <span class="stat-icon">☢️</span>
@@ -1628,19 +1638,12 @@
             </div>
         </div>
 
-        <!-- Уровень (центр верх) -->
-        <div class="hud-level-panel hud-element">
-            <span class="level-text" id="hud-lvl" style="font-family: 'Press Start 2P', monospace; font-size: 0.75rem;">УРОВЕНЬ 1 (0/100 XP)</span>
-            <div class="xp-bar-container" style="display: none;">
-                <div class="xp-bar" id="hud-xp" style="width: 0%;"></div>
-            </div>
-        </div>
+        <!-- Уровень перенесен в блок показателей -->
 
         <!-- Оружие (правый верх) -->
         <div class="hud-weapon-panel hud-element">
-            <div class="weapon-title">Оружие</div>
-            <div class="weapon-name" id="hud-wpn-name">Пистолет</div>
-            <div class="weapon-ammo" id="hud-wpn-ammo">45 / ∞</div>
+            <span id="hud-wpn-icon" style="font-size: 1.2rem;">🔫</span>
+            <span class="weapon-ammo" id="hud-wpn-ammo" style="font-family: 'Press Start 2P', monospace; font-size: 0.75rem; font-weight: bold; color: #f1f5f9; text-shadow: 1px 1px 0px #000;">45 / ∞</span>
         </div>
 
         <!-- Журнал логов (левый низ) -->
@@ -2660,15 +2663,20 @@
         
         function updateWeaponHud() {
             let name = 'Пистолет';
+            let icon = '🔫';
             let ammo = `${gameState.inventory.ammo_pistol} / ∞`;
             if (currentActiveWeapon === 'rifle') {
                 name = 'Автомат';
+                icon = '💥';
                 ammo = `${gameState.inventory.ammo_rifle}`;
             } else if (currentActiveWeapon === 'shotgun') {
                 name = 'Дробовик';
+                icon = '🔥';
                 ammo = `${gameState.inventory.ammo_shotgun}`;
             }
-            document.getElementById('hud-wpn-name').innerText = name + (gameState.weaponUpgrades[currentActiveWeapon] > 0 ? ` +${gameState.weaponUpgrades[currentActiveWeapon]}` : '');
+            // Показываем уровень улучшения на значке оружия
+            let lvlSuffix = gameState.weaponUpgrades[currentActiveWeapon] > 0 ? ` +${gameState.weaponUpgrades[currentActiveWeapon]}` : '';
+            document.getElementById('hud-wpn-icon').innerText = icon + lvlSuffix;
             document.getElementById('hud-wpn-ammo').innerText = ammo;
 
             let isRifleUnlocked = gameState.inventory.ammo_rifle > 0 || gameState.weaponUpgrades.rifle > 0;

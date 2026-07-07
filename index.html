@@ -4255,6 +4255,7 @@
         let flickeringLights = [];
         let flickeringMeshes = [];
         let speechBubbles = [];
+        let patrollingNPCs = [];
         let lootSpriteMaterials = {};
         let bloodDecals = [];
         let sharedBloodGeo = null;
@@ -6580,6 +6581,9 @@
             if (gameState.currentLocationIndex === 0) {
                 // Spawn grandfather Stepan sitting next to campfire on the first tutorial map
                 spawn3DNpc(4.0, -3.0, 'campfire');
+                // Spawn patrolling guard stalkers at the camp entrance blockpost
+                spawn3DNpc(10.0, -8.0, 'guard');
+                spawn3DNpc(8.0, -11.0, 'guard');
             } else {
                 // Spawn more flavor NPCs to make locations populated (2 in tunnels, 3-5 in open maps)
                 let npcCount = (theme === 'tunnel' || theme === 'bunker') ? 2 : THREE.MathUtils.randInt(3, 5);
@@ -6813,6 +6817,37 @@
             colliders.push(tree.userData.box);
         }
         
+        // Helper to render high-contrast, crisp dialogue bubbles
+        function drawSpeechBubble(ctx, text) {
+            ctx.clearRect(0, 0, 512, 128);
+            
+            // Draw comic speech bubble background (Slate 900)
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+            ctx.strokeStyle = '#eab308'; // Golden yellow border
+            ctx.lineWidth = 4;
+            
+            // Bubble box
+            ctx.fillRect(8, 8, 496, 80);
+            ctx.strokeRect(8, 8, 496, 80);
+            
+            // Pointer triangle
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+            ctx.beginPath();
+            ctx.moveTo(236, 87);
+            ctx.lineTo(276, 87);
+            ctx.lineTo(256, 107);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // High-contrast readable text
+            ctx.font = 'bold 22px Arial, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 256, 48);
+        }
+
         function spawn3DNpc(x, z, npcType) {
             let group = new THREE.Group();
             group.position.set(x, 0, z);
@@ -6930,40 +6965,31 @@
                 stalker.userData.armL.rotation.y = 0.3;
                 
                 group.add(stalker);
+
+                // Set patrol properties for guards
+                group.userData.spawnX = x;
+                group.userData.spawnZ = z;
+                group.userData.speed = 1.6;
+                group.userData.animProgress = 0;
+                group.userData.patrolTarget = new THREE.Vector3(x, 0, z);
+                group.userData.patrolWaitTime = 0;
+                patrollingNPCs.push(group);
             }
             
-            // Floating Speech Bubble Sprite
+            // Floating Speech Bubble Sprite (Increased resolution & size for high contrast readability)
             let canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 64;
+            canvas.width = 512;
+            canvas.height = 128;
             let ctx = canvas.getContext('2d');
             
             // Draw initial frame
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-            ctx.strokeStyle = '#0f172a';
-            ctx.lineWidth = 2.5;
-            ctx.fillRect(4, 4, 248, 42);
-            ctx.strokeRect(4, 4, 248, 42);
-            
-            // Pointer triangle
-            ctx.beginPath();
-            ctx.moveTo(118, 45);
-            ctx.lineTo(138, 45);
-            ctx.lineTo(128, 55);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-            
-            ctx.font = 'bold 11px Arial, sans-serif';
-            ctx.fillStyle = '#0f172a';
-            ctx.textAlign = 'center';
-            ctx.fillText(phrases[0], 128, 28);
+            drawSpeechBubble(ctx, phrases[0]);
             
             let labelTex = new THREE.CanvasTexture(canvas);
             let labelMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true });
             let labelSprite = new THREE.Sprite(labelMat);
-            labelSprite.position.set(0, 2.3, 0);
-            labelSprite.scale.set(2.4, 0.6, 1);
+            labelSprite.position.set(0, 2.6, 0);
+            labelSprite.scale.set(3.6, 0.9, 1);
             group.add(labelSprite);
             
             scene.add(group);
@@ -6971,6 +6997,7 @@
             
             // Add custom collider box so player runs into them (solid obstacle)
             let box = new THREE.Box3().setFromObject(group);
+            group.userData.box = box;
             colliders.push(box);
             
             speechBubbles.push({
@@ -6982,6 +7009,78 @@
                 context: ctx,
                 texture: labelTex
             });
+        }
+
+        function updatePatrollingNPCs(dt) {
+            let now = Date.now();
+            for (let npc of patrollingNPCs) {
+                if (!npc.userData.patrolTarget) {
+                    npc.userData.patrolTarget = new THREE.Vector3(npc.userData.spawnX || npc.position.x, 0, npc.userData.spawnZ || npc.position.z);
+                }
+                if (!npc.userData.patrolWaitTime) npc.userData.patrolWaitTime = 0;
+                
+                let dist = npc.position.distanceTo(npc.userData.patrolTarget);
+                
+                if (dist < 0.4 || now > npc.userData.patrolWaitTime + 10000) {
+                    npc.userData.patrolWaitTime = now + THREE.MathUtils.randFloat(2000, 6000); // Wait 2-6s
+                    let sx = npc.userData.spawnX !== undefined ? npc.userData.spawnX : npc.position.x;
+                    let sz = npc.userData.spawnZ !== undefined ? npc.userData.spawnZ : npc.position.z;
+                    npc.userData.patrolTarget.set(
+                        sx + THREE.MathUtils.randFloat(-5, 5),
+                        0,
+                        sz + THREE.MathUtils.randFloat(-5, 5)
+                    );
+                }
+                
+                let stalkerMesh = npc.children[0];
+                if (!stalkerMesh) continue;
+                
+                if (now < npc.userData.patrolWaitTime) {
+                    if (stalkerMesh.userData.legL) stalkerMesh.userData.legL.rotation.x = 0;
+                    if (stalkerMesh.userData.legR) stalkerMesh.userData.legR.rotation.x = 0;
+                    if (stalkerMesh.userData.armL) stalkerMesh.userData.armL.rotation.x = -Math.PI / 3.0;
+                    if (stalkerMesh.userData.armR) stalkerMesh.userData.armR.rotation.x = -Math.PI / 2.0;
+                } else {
+                    let angle = Math.atan2(npc.userData.patrolTarget.x - npc.position.x, npc.userData.patrolTarget.z - npc.position.z);
+                    npc.rotation.y = angle;
+                    
+                    let speed = npc.userData.speed || 1.6;
+                    let nextX = npc.position.x + Math.sin(angle) * speed * dt;
+                    let nextZ = npc.position.z + Math.cos(angle) * speed * dt;
+                    
+                    _scratchBoxMin.set(nextX - 0.35, 0.05, nextZ - 0.35);
+                    _scratchBoxMax.set(nextX + 0.35, 1.8, nextZ + 0.35);
+                    _scratchColBox.set(_scratchBoxMin, _scratchBoxMax);
+                    
+                    let collidedWalls = false;
+                    for (let col of colliders) {
+                        if (col === npc.userData.box) continue;
+                        if (_scratchColBox.intersectsBox(col)) {
+                            collidedWalls = true;
+                            break;
+                        }
+                    }
+                    
+                    if (collidedWalls) {
+                        npc.userData.patrolWaitTime = 0;
+                        let sx = npc.userData.spawnX !== undefined ? npc.userData.spawnX : npc.position.x;
+                        let sz = npc.userData.spawnZ !== undefined ? npc.userData.spawnZ : npc.position.z;
+                        npc.userData.patrolTarget.set(sx, 0, sz);
+                    } else {
+                        npc.position.set(nextX, 0, nextZ);
+                        if (npc.userData.box) {
+                            npc.userData.box.setFromObject(npc);
+                        }
+                    }
+                    
+                    if (!npc.userData.animProgress) npc.userData.animProgress = 0;
+                    npc.userData.animProgress += 5.0 * dt;
+                    if (stalkerMesh.userData.legL) stalkerMesh.userData.legL.rotation.x = Math.sin(npc.userData.animProgress) * 0.45;
+                    if (stalkerMesh.userData.legR) stalkerMesh.userData.legR.rotation.x = -Math.sin(npc.userData.animProgress) * 0.45;
+                    if (stalkerMesh.userData.armL) stalkerMesh.userData.armL.rotation.x = -Math.PI / 3.0;
+                    if (stalkerMesh.userData.armR) stalkerMesh.userData.armR.rotation.x = -Math.PI / 2.0;
+                }
+            }
         }
         
         function spawn3DScrap(x, z) {
@@ -7706,6 +7805,9 @@
             // 8. Update physical parts (death ragdoll bounce)
             update3DPhysicalParts(dt);
             
+            // 8a. Update patrolling stalker guards
+            updatePatrollingNPCs(dt);
+            
             // 8b. Update NPC speech bubbles cycle
             let nowSb = Date.now();
             for (let sb of speechBubbles) {
@@ -7713,31 +7815,7 @@
                     sb.lastChangeTime = nowSb;
                     sb.currentIndex = (sb.currentIndex + 1) % sb.phrases.length;
                     
-                    let ctx = sb.context;
-                    ctx.clearRect(0, 0, 256, 64);
-                    
-                    // Draw comic speech bubble
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                    ctx.strokeStyle = '#0f172a';
-                    ctx.lineWidth = 2.5;
-                    ctx.fillRect(4, 4, 248, 42);
-                    ctx.strokeRect(4, 4, 248, 42);
-                    
-                    // Triangle pointer pointing down
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                    ctx.beginPath();
-                    ctx.moveTo(118, 45);
-                    ctx.lineTo(138, 45);
-                    ctx.lineTo(128, 55);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.stroke();
-                    
-                    ctx.font = 'bold 11px Arial, sans-serif';
-                    ctx.fillStyle = '#0f172a';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(sb.phrases[sb.currentIndex], 128, 28);
-                    
+                    drawSpeechBubble(sb.context, sb.phrases[sb.currentIndex]);
                     sb.texture.needsUpdate = true;
                 }
             }
@@ -8300,6 +8378,7 @@
             lootItems = [];
             physicalParts = [];
             speechBubbles = [];
+            patrollingNPCs = [];
             activeLights = [];
             flickeringLights = [];
             flickeringMeshes = [];

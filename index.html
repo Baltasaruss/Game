@@ -5199,7 +5199,8 @@
             
             // 4. Enemies
             for (let [eType, qty] of Object.entries(loc.enemies)) {
-                let actualQty = qty;
+                // Use a balanced 3x multiplier for enemies (except starting tutorial map) to make the game action-packed and fun
+                let actualQty = (gameState.currentLocationIndex === 0) ? qty : Math.round(qty * 3.0);
                 for (let i = 0; i < actualQty; i++) {
                     let rx = 0, rz = 0;
                     let found = false;
@@ -5249,8 +5250,8 @@
                 // Spawn grandfather Stepan sitting next to campfire on the first tutorial map
                 spawn3DNpc(4.0, -3.0, 'campfire');
             } else {
-                // Spawn 1-2 flavor NPCs in the world depending on theme
-                let npcCount = (theme === 'tunnel' || theme === 'bunker') ? 1 : 2;
+                // Spawn more flavor NPCs to make locations populated (2 in tunnels, 3-5 in open maps)
+                let npcCount = (theme === 'tunnel' || theme === 'bunker') ? 2 : THREE.MathUtils.randInt(3, 5);
                 for (let i = 0; i < npcCount; i++) {
                     let rx = 0, rz = 0;
                     let found = false;

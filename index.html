@@ -3369,6 +3369,8 @@
         let raycaster = new THREE.Raycaster();
         let worldMousePoint = new THREE.Vector3();
         let sunLight = null;
+        let rainParticles = null;
+        let rainCount = 1500;
         let muzzleFlashLight = null;
         let bulletGeo = new THREE.BoxGeometry(0.12, 0.12, 0.4);
         let bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
@@ -4609,6 +4611,39 @@
             scene.background = new THREE.Color(fogColor);
             scene.fog.color = new THREE.Color(fogColor);
             scene.fog.density = fogDensity;
+
+            // Setup dynamic post-apoc rain effect if outdoor
+            if (!isIndoor) {
+                let rainGeo = new THREE.BufferGeometry();
+                let positions = new Float32Array(rainCount * 6); // 2 vertices per line streak
+                
+                for (let i = 0; i < rainCount; i++) {
+                    let rx = THREE.MathUtils.randFloat(-20, 20);
+                    let ry = THREE.MathUtils.randFloat(0, 18);
+                    let rz = THREE.MathUtils.randFloat(-20, 20);
+                    
+                    let idx = i * 6;
+                    positions[idx] = rx;
+                    positions[idx + 1] = ry;
+                    positions[idx + 2] = rz;
+                    positions[idx + 3] = rx;
+                    positions[idx + 4] = ry - 0.7; // length of streak
+                    positions[idx + 5] = rz;
+                }
+                
+                rainGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                let rainMat = new THREE.LineBasicMaterial({
+                    color: 0x60a5fa, // atmospheric light blue rain streak
+                    transparent: true,
+                    opacity: 0.35,
+                    blending: THREE.NormalBlending
+                });
+                
+                rainParticles = new THREE.LineSegments(rainGeo, rainMat);
+                scene.add(rainParticles);
+            } else {
+                rainParticles = null;
+            }
 
             // 3D Ambient Light (Fill light)
             let ambient = new THREE.AmbientLight(ambientColor, ambientIntensity);
@@ -6438,6 +6473,52 @@
                 fm.mesh.scale.set(scaleXZ, scaleY, scaleXZ);
             }
             
+            // Update rain particles around the player
+            if (rainParticles && playerGroup) {
+                let positions = rainParticles.geometry.attributes.position.array;
+                let px = playerGroup.position.x;
+                let pz = playerGroup.position.z;
+                
+                for (let i = 0; i < rainCount; i++) {
+                    let idx = i * 6;
+                    
+                    // Fall speed
+                    positions[idx + 1] -= 22 * dt;
+                    positions[idx + 4] -= 22 * dt;
+                    
+                    // If hit the ground (Y <= 0), reset to top
+                    if (positions[idx + 1] < 0) {
+                        let rx = px + THREE.MathUtils.randFloat(-20, 20);
+                        let ry = THREE.MathUtils.randFloat(13, 19);
+                        let rz = pz + THREE.MathUtils.randFloat(-20, 20);
+                        
+                        positions[idx] = rx;
+                        positions[idx + 1] = ry;
+                        positions[idx + 2] = rz;
+                        positions[idx + 3] = rx;
+                        positions[idx + 4] = ry - 0.7;
+                        positions[idx + 5] = rz;
+                    }
+                    
+                    // If player moved away, wrap raindrops around them
+                    let dx = positions[idx] - px;
+                    let dz = positions[idx + 2] - pz;
+                    if (dx * dx + dz * dz > 520) { // ~23 units away
+                        let rx = px + THREE.MathUtils.randFloat(-20, 20);
+                        let ry = THREE.MathUtils.randFloat(0, 19);
+                        let rz = pz + THREE.MathUtils.randFloat(-20, 20);
+                        
+                        positions[idx] = rx;
+                        positions[idx + 1] = ry;
+                        positions[idx + 2] = rz;
+                        positions[idx + 3] = rx;
+                        positions[idx + 4] = ry - 0.7;
+                        positions[idx + 5] = rz;
+                    }
+                }
+                rainParticles.geometry.attributes.position.needsUpdate = true;
+            }
+
             // 10. Render
             if (renderer) {
                 renderer.render(scene, camera);
@@ -6834,6 +6915,7 @@
             flickeringLights = [];
             flickeringMeshes = [];
             
+            rainParticles = null;
             renderer = null;
             scene = null;
             camera = null;

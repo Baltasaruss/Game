@@ -3376,6 +3376,9 @@
         let bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
         let enemyBulletGeo = new THREE.BoxGeometry(0.15, 0.15, 0.4);
         let enemyBulletMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+        // Cached boss plasma geometry and material to prevent dynamic memory allocation
+        let plasmaGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+        let plasmaMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
         
         // Timing
         let lastTime = 0;
@@ -4089,6 +4092,7 @@
         
         // Spawn 3D text (floating damage)
         function spawnDamageText(worldPos, amount) {
+            if (!scene || !camera) return; // Safety guard
             let tempV = worldPos.clone();
             tempV.project(camera);
             
@@ -4173,6 +4177,7 @@
         
         // Spawn particles
         function spawnBoxSparks(pos, color, count = 8, size = 0.12) {
+            if (!scene) return; // Safety guard
             for (let i = 0; i < count; i++) {
                 let sparkGeo = new THREE.BoxGeometry(size, size, size);
                 let sparkMat = new THREE.MeshBasicMaterial({ color: color });
@@ -4205,6 +4210,7 @@
         }
         
         function fireWeapon() {
+            if (!scene || !playerGroup) return; // Safety guard
             let now = Date.now();
             let cd = getWeaponCooldown(currentActiveWeapon);
             if (now < lastFireTime + cd) return;
@@ -4278,6 +4284,7 @@
         }
         
         function spawnBulletMesh(pos, dir, dmg, lifeTimeMs) {
+            if (!scene) return; // Safety guard
             let b = new THREE.Mesh(bulletGeo, bulletMat);
             b.position.copy(pos);
             b.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(pos, pos.clone().add(dir), new THREE.Vector3(0, 1, 0)));
@@ -4293,6 +4300,7 @@
         }
         
         function spawnEnemyBullet(pos, dir, dmg) {
+            if (!scene) return; // Safety guard
             let b = new THREE.Mesh(enemyBulletGeo, enemyBulletMat);
             b.position.copy(pos);
             b.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(pos, pos.clone().add(dir), new THREE.Vector3(0, 1, 0)));
@@ -4308,8 +4316,7 @@
         }
         
         function spawnBossPlasma(pos, dir) {
-            let plasmaGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-            let plasmaMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+            if (!scene) return; // Safety guard
             let b = new THREE.Mesh(plasmaGeo, plasmaMat);
             b.position.copy(pos);
             scene.add(b);
@@ -4492,9 +4499,28 @@
             flickeringLights = [];
             flickeringMeshes = [];
             
-            // Clear Three.js Scene objects
-            while(scene.children.length > 0){ 
-                scene.remove(scene.children[0]); 
+            // Helper function to recursively dispose of mesh memory
+            const disposeNode = (node) => {
+                if (node.geometry) node.geometry.dispose();
+                if (node.material) {
+                    if (Array.isArray(node.material)) {
+                        node.material.forEach(m => m.dispose());
+                    } else {
+                        node.material.dispose();
+                    }
+                }
+            };
+
+            // Clear Three.js Scene objects and dispose their GPU resources to prevent memory leaks
+            if (scene) {
+                scene.traverse((node) => {
+                    if (node.isMesh || node.isInstancedMesh || node.isLineSegments) {
+                        disposeNode(node);
+                    }
+                });
+                while (scene.children.length > 0) { 
+                    scene.remove(scene.children[0]); 
+                }
             }
             
             let loc = LOCATIONS[gameState.currentLocationIndex];
@@ -5322,6 +5348,7 @@
         }
 
         function spawnBloodDecal(x, z) {
+            if (!scene) return; // Safety guard
             // Cap total blood decals to prevent massive WebGL draw call overhead and memory bloat
             if (bloodDecals.length > 100) {
                 let oldest = bloodDecals.shift();
@@ -5921,6 +5948,7 @@
         }
         
         function spawn3DEnemy(x, z, type) {
+            if (!scene) return; // Safety guard
             let enemy;
             
             if (type === 'zombie') {
@@ -6880,6 +6908,14 @@
                 let age = Date.now() - p.userData.spawnTime;
                 if (age > 3000) {
                     scene.remove(p);
+                    if (p.geometry) p.geometry.dispose();
+                    if (p.material) {
+                        if (Array.isArray(p.material)) {
+                            p.material.forEach(m => m.dispose());
+                        } else {
+                            p.material.dispose();
+                        }
+                    }
                     physicalParts.splice(i, 1);
                 }
             }

@@ -5960,6 +5960,17 @@
             enemy.userData.lastAttack = 0;
             enemy.userData.lastHit = 0;
             
+            // Initialize patrol parameters for State Machine
+            enemy.userData.state = 'patrol';
+            enemy.userData.spawnX = x;
+            enemy.userData.spawnZ = z;
+            enemy.userData.patrolTarget = new THREE.Vector3(
+                x + THREE.MathUtils.randFloat(-5, 5),
+                0,
+                z + THREE.MathUtils.randFloat(-5, 5)
+            );
+            enemy.userData.patrolWaitTime = 0;
+            
             enemies.push(enemy);
         }
         
@@ -6463,10 +6474,95 @@
         }
         
         function update3DEnemies(dt, time) {
-            let viewRange = 999.0; // Always active
-            
             for (let e of enemies) {
+                // 1. Calculate detection range based on type & weapon noise
+                let baseRange = 12.0;
+                if (e.userData.type === 'zombie_fast') baseRange = 16.0;
+                else if (e.userData.type === 'raider' || e.userData.type === 'mutant') baseRange = 18.0;
+                else if (e.userData.type === 'boss') baseRange = 22.0;
+                
+                let detectDist = baseRange;
+                // If player fired a gun in the last 1.5 seconds, sound makes enemies much more alert
+                if (Date.now() < lastFireTime + 1500) {
+                    detectDist += 15.0; 
+                }
+                
                 let dist = e.position.distanceTo(playerGroup.position);
+                
+                // State machine transitions
+                if (dist < detectDist) {
+                    e.userData.state = 'aggro';
+                } else if (dist > detectDist * 1.5) {
+                    // Lose target if player gets far away
+                    e.userData.state = 'patrol';
+                }
+                
+                // 2. Patrolling state logic (wandering near spawn point)
+                if (e.userData.state !== 'aggro') {
+                    if (!e.userData.patrolTarget) {
+                        e.userData.patrolTarget = new THREE.Vector3(e.userData.spawnX || e.position.x, 0, e.userData.spawnZ || e.position.z);
+                    }
+                    
+                    let targetDist = e.position.distanceTo(e.userData.patrolTarget);
+                    // Reached waypoint or stuck too long
+                    if (targetDist < 0.4 || Date.now() > e.userData.patrolWaitTime + 12000) {
+                        e.userData.patrolWaitTime = Date.now() + THREE.MathUtils.randFloat(1500, 4500); // Wait 1.5-4.5s
+                        let sx = e.userData.spawnX !== undefined ? e.userData.spawnX : e.position.x;
+                        let sz = e.userData.spawnZ !== undefined ? e.userData.spawnZ : e.position.z;
+                        e.userData.patrolTarget.set(
+                            sx + THREE.MathUtils.randFloat(-6, 6),
+                            0,
+                            sz + THREE.MathUtils.randFloat(-6, 6)
+                        );
+                    }
+                    
+                    if (Date.now() < e.userData.patrolWaitTime) {
+                        // Standing idle
+                        if (e.userData.legL) e.userData.legL.rotation.x = 0;
+                        if (e.userData.legR) e.userData.legR.rotation.x = 0;
+                        if (e.userData.armL) e.userData.armL.rotation.x = 0;
+                        if (e.userData.armR) e.userData.armR.rotation.x = 0;
+                    } else {
+                        // Walk slowly to waypoint
+                        let patrolAngle = Math.atan2(e.userData.patrolTarget.x - e.position.x, e.userData.patrolTarget.z - e.position.z);
+                        e.rotation.y = patrolAngle;
+                        
+                        let patrolSpeed = e.userData.speed * 0.45;
+                        let stepX = Math.sin(patrolAngle) * patrolSpeed * dt;
+                        let stepZ = Math.cos(patrolAngle) * patrolSpeed * dt;
+                        let nextX = e.position.x + stepX;
+                        let nextZ = e.position.z + stepZ;
+                        
+                        // Collision check
+                        let colBox = new THREE.Box3(
+                            new THREE.Vector3(nextX - 0.3, 0.05, nextZ - 0.3),
+                            new THREE.Vector3(nextX + 0.3, 1.8, nextZ + 0.3)
+                        );
+                        let collided = false;
+                        for (let col of colliders) {
+                            if (colBox.intersectsBox(col)) { collided = true; break; }
+                        }
+                        if (collided) {
+                            // Turn around & pick new waypoint immediately
+                            e.userData.patrolWaitTime = 0;
+                            let sx = e.userData.spawnX !== undefined ? e.userData.spawnX : e.position.x;
+                            let sz = e.userData.spawnZ !== undefined ? e.userData.spawnZ : e.position.z;
+                            e.userData.patrolTarget.set(sx, 0, sz);
+                        } else {
+                            e.position.set(nextX, 0, nextZ);
+                        }
+                        
+                        // Swing limbs slowly
+                        let t = Date.now() * 0.005;
+                        if (e.userData.legL) e.userData.legL.rotation.x = Math.sin(t) * 0.35;
+                        if (e.userData.legR) e.userData.legR.rotation.x = -Math.sin(t) * 0.35;
+                        if (e.userData.armL) e.userData.armL.rotation.x = 0;
+                        if (e.userData.armR) e.userData.armR.rotation.x = 0;
+                    }
+                    continue; // Skip the aggro chase/attack logic
+                }
+                
+                // 3. AGGRO STATE (Chasing & Attacking)
                 let angle = Math.atan2(playerGroup.position.x - e.position.x, playerGroup.position.z - e.position.z);
                 e.rotation.y = angle;
                 
@@ -6475,7 +6571,7 @@
                     if (dist < 10.0) {
                         checkTutorial('enemy', '🧟 Опасность близко!', 'На вас бежит зомби! Выберите оружие на 1-3 и стреляйте.', '🧟');
                     }
-                    if (dist < viewRange) {
+                    if (true) {
                         // Move straight to player
                         let stepX = Math.sin(angle) * e.userData.speed * dt;
                         let stepZ = Math.cos(angle) * e.userData.speed * dt;

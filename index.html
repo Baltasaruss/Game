@@ -2928,6 +2928,13 @@
                 type: "station",
                 theme: "grass",
                 timeOfDay: "evening",
+                // Darker dusk than the shared 'evening' palette — this camp reads too bright otherwise.
+                atmosphere: {
+                    skyColor: 0x2a2760, groundColor: 0x131a2e, hemiIntensity: 0.4,
+                    ambientColor: 0x161d33, ambientIntensity: 0.26,
+                    sunColor: 0xb488e0, sunIntensity: 0.42, sunPos: [-20, 12, 10],
+                    fogColor: '#0e0f1d', fogDensity: 0.015
+                },
                 size: 34,
                 radiation: 0,
                 fuelCost: 12,
@@ -3137,10 +3144,10 @@
                 enemyPool: ['zombie','zombie_slime','zombie_acid'],
                 innerStructure: 'chambers', manholes: false,
                 atmosphere: {
-                    skyColor: 0x1b4a57, groundColor: 0x123038, hemiIntensity: 0.65,
-                    ambientColor: 0x184049, ambientIntensity: 0.5,
-                    sunColor: 0x67e8f9, sunIntensity: 0.45, sunPos: [0, 16, 0],
-                    fogColor: '#123038', fogDensity: 0.013
+                    skyColor: 0x123640, groundColor: 0x0b2027, hemiIntensity: 0.4,
+                    ambientColor: 0x0f2c33, ambientIntensity: 0.3,
+                    sunColor: 0x67e8f9, sunIntensity: 0.28, sunPos: [0, 16, 0],
+                    fogColor: '#0c2228', fogDensity: 0.016
                 }
             },
             supermarket: {
@@ -6440,7 +6447,8 @@
             let timeOfDay = loc.timeOfDay || 'evening'; // Default to evening dusk
             let themeCfg = getTheme(loc.theme);
             let isIndoor = themeCfg.isIndoor;
-            let themeAtmo = themeCfg.atmosphere; // explicit per-theme override, or null to derive from timeOfDay
+            // A per-location `atmosphere` overrides the theme's; either is null to derive from timeOfDay.
+            let themeAtmo = loc.atmosphere || themeCfg.atmosphere;
 
             let skyColor, groundColor, hemiIntensity;
             let ambientColor, ambientIntensity;

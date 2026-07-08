@@ -1697,9 +1697,40 @@
             from { transform: translate(-50%, -50%) scale(1.1); }
             to { transform: translate(-50%, -50%) scale(1.22); }
         }
+
+        /* Vignette overlay for survival atmosphere */
+        #vignette-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(0,0,0,0.65) 90%);
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        /* CRT scanlines effect for retro gaming juice */
+        #scanline-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.12) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.03),
+                rgba(0, 255, 0, 0.01),
+                rgba(0, 0, 255, 0.03)
+            );
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+            z-index: 98;
+        }
     </style>
 </head>
 <body>
+    <!-- Aesthetic Screen Overlays -->
+    <div id="vignette-overlay"></div>
+    <div id="scanline-overlay"></div>
+
     <!-- Portrait Orientation Enforcement Overlay -->
     <div id="orientation-overlay">
         <div style="font-size: 64px; margin-bottom: 24px; animation: spin-rotate 2s infinite linear;">📱</div>
@@ -4236,6 +4267,8 @@
         let lootSpriteMaterials = {};
         let bloodDecals = [];
         let sharedBloodGeo = null;
+        let shockwaves = [];
+        let gunRecoilAngle = 0;
         
         // Input state
         let keys = { W: false, A: false, S: false, D: false, Shift: false, Space: false, mouseDown: false };
@@ -4308,14 +4341,24 @@
         let materials = {};
         
         // Helper to generate pixelated textures on the fly
-        function createPixelTexture(width, height, baseColorHex, noiseVal = 12, patternFunc = null) {
+        function createPixelTexture(width, height, baseColorHex, noiseVal = 12, patternFunc = null, useGradient = false) {
             let canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
             let ctx = canvas.getContext('2d');
             
-            // Base fill
-            ctx.fillStyle = baseColorHex;
+            // Base fill with optional vertical gradient
+            if (useGradient) {
+                let col = new THREE.Color(baseColorHex);
+                let gradient = ctx.createLinearGradient(0, 0, 0, height);
+                let colTop = col.clone().multiplyScalar(1.15); // brighter top
+                let colBottom = col.clone().multiplyScalar(0.70); // darker bottom
+                gradient.addColorStop(0, '#' + colTop.getHexString());
+                gradient.addColorStop(1, '#' + colBottom.getHexString());
+                ctx.fillStyle = gradient;
+            } else {
+                ctx.fillStyle = baseColorHex;
+            }
             ctx.fillRect(0, 0, width, height);
             
             // Add pixelated noise
@@ -4345,6 +4388,63 @@
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
             return texture;
+        }
+
+        // Generate procedural bump maps on the fly from base textures
+        function createPixelBumpTextureFromCanvas(baseCanvas) {
+            let width = baseCanvas.width;
+            let height = baseCanvas.height;
+            let canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            let ctx = canvas.getContext('2d');
+            
+            // Read base pixels
+            let baseCtx = baseCanvas.getContext('2d');
+            let imgData = baseCtx.getImageData(0, 0, width, height);
+            let pixels = imgData.data;
+            
+            let bumpImgData = ctx.createImageData(width, height);
+            let bumpPixels = bumpImgData.data;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                let r = pixels[i];
+                let g = pixels[i+1];
+                let b = pixels[i+2];
+                // Grayscale luminance
+                let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                
+                bumpPixels[i] = gray;
+                bumpPixels[i+1] = gray;
+                bumpPixels[i+2] = gray;
+                bumpPixels[i+3] = 255;
+            }
+            
+            ctx.putImageData(bumpImgData, 0, 0);
+            
+            let texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            return texture;
+        }
+
+        function createBumpTexture(baseTexture) {
+            if (!baseTexture || !baseTexture.image) return null;
+            return createPixelBumpTextureFromCanvas(baseTexture.image);
+        }
+
+        function createMaterialWithBump(mapTex, bumpScale = 0.05, extraParams = {}) {
+            let params = Object.assign({ map: mapTex, roughness: 0.8 }, extraParams);
+            if (graphicsQuality === 'high') {
+                let bumpMap = createBumpTexture(mapTex);
+                if (bumpMap) {
+                    params.bumpMap = bumpMap;
+                    params.bumpScale = bumpScale;
+                }
+            }
+            return new THREE.MeshStandardMaterial(params);
         }
         
         function initThreeEngine() {
@@ -4379,8 +4479,9 @@
             container.appendChild(renderer.domElement);
             
             // Generate procedural pixel textures
+            // Generate procedural pixel textures
             // 1. Player face (gritty desaturated dirty skin, neutral grim mouth)
-            let playerFaceTex = createPixelTexture(32, 32, '#c0b19f', 6, (ctx, w, h) => {
+            let playerFaceTex = createPixelTexture(32, 32, '#c0b19f', 4, (ctx, w, h) => {
                 ctx.fillStyle = '#0d0f12'; // Grim eyes
                 ctx.fillRect(7, 9, 4, 6);
                 ctx.fillRect(21, 9, 4, 6);
@@ -4389,22 +4490,31 @@
                 ctx.fillRect(22, 10, 1, 2);
                 ctx.fillStyle = '#2b241e'; // Grim straight mouth
                 ctx.fillRect(11, 20, 10, 2);
-            });
+            }, true);
             
             // 2. Player torso (dark charcoal tactical gear and black straps)
-            let playerTorsoTex = createPixelTexture(32, 32, '#2d2e30', 10, (ctx, w, h) => {
+            let playerTorsoTex = createPixelTexture(32, 32, '#2d2e30', 8, (ctx, w, h) => {
                 ctx.strokeStyle = '#141517'; // Tactical black vest straps
                 ctx.lineWidth = 2;
                 ctx.strokeRect(5.5, -1, 2, 34);
                 ctx.strokeRect(24.5, -1, 2, 34);
+                
+                // Tactical pocket details
+                ctx.fillStyle = '#1d1e20'; // darker pocket base
+                ctx.fillRect(7, 8, 7, 6);
+                ctx.fillRect(18, 8, 7, 6);
+                ctx.fillStyle = '#3a3b3d'; // pocket top flap highlight
+                ctx.fillRect(7, 8, 7, 2);
+                ctx.fillRect(18, 8, 7, 2);
+
                 ctx.fillStyle = '#0f0f10'; // Belt
                 ctx.fillRect(0, 24, 32, 4);
                 ctx.fillStyle = '#5a5c61'; // Weathered steel buckle
                 ctx.fillRect(14, 23, 4, 6);
-            });
+            }, true);
             
             // 3. Zombie face (decayed grey-green skin, tiny pinpoint red pupils)
-            let zombieFaceTex = createPixelTexture(32, 32, '#3a3f35', 8, (ctx, w, h) => {
+            let zombieFaceTex = createPixelTexture(32, 32, '#3a3f35', 6, (ctx, w, h) => {
                 ctx.fillStyle = '#12140f'; // Dark hollow eye sockets
                 ctx.fillRect(5, 9, 6, 6);
                 ctx.fillRect(20, 9, 6, 6);
@@ -4413,29 +4523,46 @@
                 ctx.fillRect(22, 11, 2, 2);
                 ctx.fillStyle = '#1c0707'; // Gaping rotting jaw
                 ctx.fillRect(9, 20, 14, 7);
-            });
+            }, true);
             
             // 4. Zombie torso (shredded brown rags over rotting grey-green skin)
-            let zombieTorsoTex = createPixelTexture(32, 32, '#2b231d', 12, (ctx, w, h) => {
+            let zombieTorsoTex = createPixelTexture(32, 32, '#2b231d', 10, (ctx, w, h) => {
                 ctx.fillStyle = '#3a3f35'; // Exposed rotting flesh
                 ctx.fillRect(4, 18, 8, 14);
                 ctx.fillRect(20, 4, 6, 12);
+                
+                // Rotting exposed rib cage
+                ctx.fillStyle = '#eaeae6'; // bone color
+                ctx.fillRect(12, 10, 8, 1);
+                ctx.fillRect(13, 13, 6, 1);
+                ctx.fillRect(14, 16, 4, 1);
+                ctx.fillStyle = '#991b1b'; // bloody gaps
+                ctx.fillRect(11, 10, 1, 1);
+                ctx.fillRect(20, 10, 1, 1);
+
                 ctx.fillStyle = '#4a1515'; // Dark dried blood stains
                 ctx.fillRect(6, 22, 3, 3);
                 ctx.fillRect(21, 8, 3, 3);
-            });
+            }, true);
             
             // 5. Raider torso (olive drab camo vest with black kevlar plates)
-            let raiderTorsoTex = createPixelTexture(32, 32, '#33372f', 12, (ctx, w, h) => {
+            let raiderTorsoTex = createPixelTexture(32, 32, '#33372f', 10, (ctx, w, h) => {
                 ctx.fillStyle = '#191b1c'; // Tactical black vest plates
                 ctx.fillRect(4, 4, 24, 24);
                 ctx.fillStyle = '#222520'; // Camo spots
                 ctx.fillRect(6, 8, 20, 3);
                 ctx.fillRect(6, 16, 20, 3);
-            });
+                
+                // Orange spraypaint gang skull symbol
+                ctx.fillStyle = '#ea580c';
+                ctx.fillRect(14, 11, 4, 4);
+                ctx.fillRect(12, 13, 8, 1);
+                ctx.fillRect(13, 16, 2, 2);
+                ctx.fillRect(17, 16, 2, 2);
+            }, true);
             
             // 5b. Raider face (Gasmask - black rubber mask, orange glowing round visor lenses)
-            let raiderFaceTex = createPixelTexture(32, 32, '#1a1c1e', 4, (ctx, w, h) => {
+            let raiderFaceTex = createPixelTexture(32, 32, '#1a1c1e', 3, (ctx, w, h) => {
                 ctx.fillStyle = '#0a0a0b'; // mask lines
                 ctx.fillRect(4, 18, 24, 10);
                 
@@ -4453,20 +4580,26 @@
                 // Gas mask canister
                 ctx.fillStyle = '#374151';
                 ctx.fillRect(12, 17, 8, 9);
-            });
+            }, true);
             
             // 6. Brick wall textures (dirty concrete and faded caution stripes)
-            let wallTex = createPixelTexture(32, 32, '#42454a', 8, (ctx, w, h) => {
+            let wallTex = createPixelTexture(32, 32, '#42454a', 6, (ctx, w, h) => {
                 ctx.fillStyle = '#8c732b'; // Faded caution yellow
                 ctx.beginPath();
                 for (let i = -16; i < 48; i += 8) {
                     ctx.moveTo(i, 0); ctx.lineTo(i + 4, 0); ctx.lineTo(i - 4, 32); ctx.lineTo(i - 8, 32);
                 }
                 ctx.closePath(); ctx.fill();
-                ctx.strokeStyle = '#1d1e21'; // soot and panel division line
+                
+                // Concrete borders/lines
+                ctx.strokeStyle = '#1d1e21';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(0.5, 0.5, 31, 31);
-            });
+                
+                // Panel beveled highlight edge
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.strokeRect(1.5, 1.5, 29, 29);
+            }, true);
             
             // 7. Ground baseplates (4 variations for each terrain type to prevent tiling monotony)
             let grass1 = createPixelTexture(64, 64, '#33372c', 6, (ctx, w, h) => {
@@ -4554,62 +4687,77 @@
             materials.asphaltTex = asphalt1;
             
             // 8. Train metal (bolted armored plates with weld/rust marks)
-            let trainMetalTex = createPixelTexture(32, 32, '#2d2f33', 6, (ctx, w, h) => {
+            let trainMetalTex = createPixelTexture(32, 32, '#2d2f33', 4, (ctx, w, h) => {
                 ctx.strokeStyle = '#1c1d1f'; // dark plate borders
                 ctx.lineWidth = 1;
                 ctx.strokeRect(0.5, 0.5, 31, 31);
+                
+                // Metallic highlight edges for beveled armor plates
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+                ctx.beginPath();
+                ctx.moveTo(1.5, 29.5); ctx.lineTo(1.5, 1.5); ctx.lineTo(29.5, 1.5);
+                ctx.stroke();
+
                 // Weld/Rust marks
                 ctx.fillStyle = '#42261b';
                 ctx.fillRect(12, 1, 8, 1);
                 ctx.fillRect(1, 15, 1, 6);
+                
                 // Rivets/bolts
                 ctx.fillStyle = '#121314';
                 ctx.fillRect(2, 2, 2, 2);
                 ctx.fillRect(28, 2, 2, 2);
                 ctx.fillRect(2, 28, 2, 2);
                 ctx.fillRect(28, 28, 2, 2);
-            });
+            }, true);
             
             // Define standard texturized materials using PBR MeshStandardMaterial
             // 9. Procedural Wood grain
-            let woodTex = createPixelTexture(16, 16, '#78350f', 8, (ctx, w, h) => {
+            let woodTex = createPixelTexture(16, 16, '#78350f', 6, (ctx, w, h) => {
                 ctx.fillStyle = '#451a03'; // dark lines
                 ctx.fillRect(0, 3, 16, 2);
                 ctx.fillRect(0, 10, 16, 2);
-            });
+            }, true);
 
             // 10. Procedural Leaf pattern
-            let leafTex = createPixelTexture(16, 16, '#15803d', 8, (ctx, w, h) => {
+            let leafTex = createPixelTexture(16, 16, '#15803d', 6, (ctx, w, h) => {
                 ctx.fillStyle = '#166534'; // darker green spots
                 ctx.fillRect(2, 2, 4, 4);
                 ctx.fillRect(10, 8, 4, 4);
-            });
+            }, true);
 
             // 11. Procedural Mutant (Zombie Dog/Wolf) skin - decayed grey-brown fur with dark patches
-            let mutantSkinTex = createPixelTexture(32, 32, '#4b4843', 15, (ctx, w, h) => {
+            let mutantSkinTex = createPixelTexture(32, 32, '#4b4843', 10, (ctx, w, h) => {
                 ctx.fillStyle = '#2d2b28'; // Dark fur patches
                 ctx.fillRect(4, 4, 12, 8);
                 ctx.fillRect(18, 12, 10, 10);
                 ctx.fillStyle = '#7c2d12'; // Decayed exposed red flesh
                 ctx.fillRect(2, 20, 6, 4);
                 ctx.fillRect(24, 4, 4, 6);
-            });
+            }, true);
 
             // 12. Procedural Hazard barrel
-            let radBarrelTex = createPixelTexture(16, 16, '#ca8a04', 6, (ctx, w, h) => {
+            let radBarrelTex = createPixelTexture(16, 16, '#ca8a04', 4, (ctx, w, h) => {
                 ctx.fillStyle = '#0f172a'; // black warning stripes
                 ctx.fillRect(0, 3, 16, 3);
                 ctx.fillRect(0, 10, 16, 3);
-            });
+            }, true);
 
             // 13. Procedural Boss metal
-            let bossMetalTex = createPixelTexture(32, 32, '#1e293b', 12, (ctx, w, h) => {
+            let bossMetalTex = createPixelTexture(32, 32, '#1e293b', 8, (ctx, w, h) => {
                 ctx.fillStyle = '#451a03'; // rust spots
                 ctx.fillRect(2, 6, 6, 6);
                 ctx.fillRect(20, 18, 8, 6);
+                
                 ctx.strokeStyle = '#0f172a'; // borders
                 ctx.strokeRect(0.5, 0.5, 31, 31);
-            });
+                
+                // Metallic highlights
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.beginPath();
+                ctx.moveTo(1.5, 29.5); ctx.lineTo(1.5, 1.5); ctx.lineTo(29.5, 1.5);
+                ctx.stroke();
+            }, true);
 
             // 14. Procedural blood splatter texture
             let bloodSplatterTex = createPixelTexture(16, 16, '#991b1b', 12, (ctx, w, h) => {
@@ -4620,74 +4768,74 @@
             });
 
             // 15. Procedural broken slab texture
-            let slabTex = createPixelTexture(32, 32, '#52525b', 15, (ctx, w, h) => {
+            let slabTex = createPixelTexture(32, 32, '#52525b', 10, (ctx, w, h) => {
                 ctx.strokeStyle = '#27272a'; // cracks
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.moveTo(4, 4); ctx.lineTo(16, 12); ctx.lineTo(28, 6);
                 ctx.moveTo(10, 20); ctx.lineTo(22, 22); ctx.lineTo(26, 28);
                 ctx.stroke();
-            });
+            }, true);
 
             // 15. Procedural broken slab textures (4 variations)
-            let slabTex1 = createPixelTexture(32, 32, '#383a3d', 15, (ctx, w, h) => {
+            let slabTex1 = createPixelTexture(32, 32, '#383a3d', 10, (ctx, w, h) => {
                 ctx.strokeStyle = '#1d1e21'; // cracks
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.moveTo(4, 4); ctx.lineTo(16, 12); ctx.lineTo(28, 6);
                 ctx.moveTo(10, 20); ctx.lineTo(22, 22); ctx.lineTo(26, 28);
                 ctx.stroke();
-            });
-            let slabTex2 = createPixelTexture(32, 32, '#454840', 12, (ctx, w, h) => {
+            }, true);
+            let slabTex2 = createPixelTexture(32, 32, '#454840', 8, (ctx, w, h) => {
                 ctx.strokeStyle = '#20231b'; // mossy cracks
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.moveTo(2, 8); ctx.lineTo(12, 18); ctx.lineTo(24, 26);
                 ctx.stroke();
-            });
-            let slabTex3 = createPixelTexture(32, 32, '#473e35', 10, (ctx, w, h) => {
+            }, true);
+            let slabTex3 = createPixelTexture(32, 32, '#473e35', 8, (ctx, w, h) => {
                 ctx.fillStyle = '#2b2520'; // gravel spots
                 for (let i = 0; i < 20; i++) {
                     ctx.fillRect(Math.random()*30, Math.random()*30, 2, 2);
                 }
-            });
-            let slabTex4 = createPixelTexture(32, 32, '#5c3d2e', 14, (ctx, w, h) => {
+            }, true);
+            let slabTex4 = createPixelTexture(32, 32, '#5c3d2e', 10, (ctx, w, h) => {
                 ctx.strokeStyle = '#2b1b14'; // rust plates division
                 ctx.strokeRect(0.5, 0.5, 31, 31);
                 ctx.fillStyle = '#2b1b14'; // dark spots
                 ctx.fillRect(4, 4, 3, 3);
                 ctx.fillRect(24, 24, 3, 3);
-            });
+            }, true);
 
             // Use gritty desaturated colors for skins and props
             materials.playerSkin = new THREE.MeshStandardMaterial({ color: 0xc0b19f, roughness: 0.75 });
-            materials.playerSkinTextured = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#c0b19f', 4), roughness: 0.75 });
-            materials.playerSkinFace = new THREE.MeshStandardMaterial({ map: playerFaceTex, roughness: 0.75 });
-            materials.playerTorso = new THREE.MeshStandardMaterial({ map: playerTorsoTex, roughness: 0.85 });
-            materials.playerLegs = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#1a1c1e', 8), roughness: 0.9 });
+            materials.playerSkinTextured = createMaterialWithBump(createPixelTexture(32, 32, '#c0b19f', 4, null, true), 0.03, { roughness: 0.75 });
+            materials.playerSkinFace = createMaterialWithBump(playerFaceTex, 0.03, { roughness: 0.75 });
+            materials.playerTorso = createMaterialWithBump(playerTorsoTex, 0.05, { roughness: 0.85 });
+            materials.playerLegs = createMaterialWithBump(createPixelTexture(32, 32, '#1a1c1e', 8, null, true), 0.04, { roughness: 0.9 });
             
-            materials.zombieSkin = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#3a3f35', 6), roughness: 0.8 });
-            materials.zombieSkinFace = new THREE.MeshStandardMaterial({ map: zombieFaceTex, roughness: 0.8 });
-            materials.zombieTorso = new THREE.MeshStandardMaterial({ map: zombieTorsoTex, roughness: 0.85 });
+            materials.zombieSkin = createMaterialWithBump(createPixelTexture(32, 32, '#3a3f35', 6, null, true), 0.04, { roughness: 0.8 });
+            materials.zombieSkinFace = createMaterialWithBump(zombieFaceTex, 0.04, { roughness: 0.8 });
+            materials.zombieTorso = createMaterialWithBump(zombieTorsoTex, 0.05, { roughness: 0.85 });
             
-            materials.zombieFastSkin = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#5f3c25', 8), roughness: 0.8 });
-            materials.zombieFatTorso = new THREE.MeshStandardMaterial({ map: createPixelTexture(32, 32, '#2e3a1f', 12), roughness: 0.85 });
+            materials.zombieFastSkin = createMaterialWithBump(createPixelTexture(32, 32, '#5f3c25', 8, null, true), 0.04, { roughness: 0.8 });
+            materials.zombieFatTorso = createMaterialWithBump(createPixelTexture(32, 32, '#2e3a1f', 12, null, true), 0.05, { roughness: 0.85 });
             
-            materials.raiderArmor = new THREE.MeshStandardMaterial({ map: raiderTorsoTex, roughness: 0.5, metalness: 0.5 });
-            materials.raiderSkinFace = new THREE.MeshStandardMaterial({ map: raiderFaceTex, roughness: 0.5 });
-            materials.mutantBody = new THREE.MeshStandardMaterial({ map: mutantSkinTex, roughness: 0.9, metalness: 0.1 });
-            materials.bossMetal = new THREE.MeshStandardMaterial({ map: bossMetalTex, roughness: 0.45, metalness: 0.75 });
+            materials.raiderArmor = createMaterialWithBump(raiderTorsoTex, 0.06, { roughness: 0.5, metalness: 0.5 });
+            materials.raiderSkinFace = createMaterialWithBump(raiderFaceTex, 0.05, { roughness: 0.5 });
+            materials.mutantBody = createMaterialWithBump(mutantSkinTex, 0.06, { roughness: 0.9, metalness: 0.1 });
+            materials.bossMetal = createMaterialWithBump(bossMetalTex, 0.08, { roughness: 0.45, metalness: 0.75 });
             materials.redGlow = new THREE.MeshBasicMaterial({ color: 0xef4444 });
-            materials.trainMetal = new THREE.MeshStandardMaterial({ map: trainMetalTex, roughness: 0.4, metalness: 0.8 });
+            materials.trainMetal = createMaterialWithBump(trainMetalTex, 0.07, { roughness: 0.4, metalness: 0.8 });
             // Dark glass for cabin windshield/windows instead of gold glowing yellow!
             materials.goldGlow = new THREE.MeshStandardMaterial({ color: 0x181a1c, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.85 });
             // Separate basic material for actual glowing headlights/indicators
             materials.headlightGlow = new THREE.MeshBasicMaterial({ color: 0xffedd5 });
-            materials.wood = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.9 });
-            materials.leaf = new THREE.MeshStandardMaterial({ map: leafTex, roughness: 0.95 });
+            materials.wood = createMaterialWithBump(woodTex, 0.06, { roughness: 0.9 });
+            materials.leaf = createMaterialWithBump(leafTex, 0.03, { roughness: 0.95 });
             materials.scrap = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.5, metalness: 0.75 });
-            materials.radBarrel = new THREE.MeshStandardMaterial({ map: radBarrelTex, roughness: 0.35, metalness: 0.5 });
-            materials.wall = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.75, metalness: 0.2 });
+            materials.radBarrel = createMaterialWithBump(radBarrelTex, 0.07, { roughness: 0.35, metalness: 0.5 });
+            materials.wall = createMaterialWithBump(wallTex, 0.08, { roughness: 0.75, metalness: 0.2 });
             materials.bloodSplatter = new THREE.MeshStandardMaterial({ map: bloodSplatterTex, transparent: true, opacity: 0.85, depthWrite: false, roughness: 0.9, metalness: 0.1 });
             
             // Pre-generate shared SpriteMaterials for all 7 loot types to avoid runtime Canvas texture generation & GPU texture upload lags
@@ -4783,6 +4931,16 @@
                     if (!mesh) return;
                     mesh.traverse(child => {
                         if (child.isMesh && child.material) {
+                            // Lazy-clone material on hit so each enemy flashes individually
+                            if (!child.userData.materialCloned) {
+                                if (Array.isArray(child.material)) {
+                                    child.material = child.material.map(m => m.clone());
+                                } else {
+                                    child.material = child.material.clone();
+                                }
+                                child.userData.materialCloned = true;
+                            }
+                            
                             let mats = Array.isArray(child.material) ? child.material : [child.material];
                             mats.forEach((mat, idx) => {
                                 if (mat && mat.color) {
@@ -5264,6 +5422,9 @@
             let kick = (currentActiveWeapon === 'shotgun') ? 0.45 : (currentActiveWeapon === 'rifle') ? 0.12 : 0.08;
             screenShake = Math.min(1.2, screenShake + kick);
             
+            // Apply visual arm recoil angle
+            gunRecoilAngle = (currentActiveWeapon === 'shotgun') ? 0.55 : (currentActiveWeapon === 'rifle') ? 0.22 : 0.28;
+            
             // Spawn bullet
             let bulletDir = worldMousePoint.clone().sub(playerGroup.position);
             bulletDir.y = 0; // lock to horizontal plane
@@ -5284,12 +5445,40 @@
             // timers from earlier shots would otherwise switch the shared light off mid-burst.
             if (muzzleFlashLight) {
                 muzzleFlashLight.position.copy(spawnPos);
-                muzzleFlashLight.intensity = 4.0;
+                muzzleFlashLight.intensity = 8.0;
+                muzzleFlashLight.distance = 9.5;
                 if (muzzleFlashTimer) clearTimeout(muzzleFlashTimer);
                 muzzleFlashTimer = setTimeout(() => {
                     if (muzzleFlashLight) muzzleFlashLight.intensity = 0.0;
                     muzzleFlashTimer = null;
                 }, 40);
+            }
+
+            // Spawn dynamic bouncing brass shell casing
+            if (graphicsQuality !== 'low') {
+                let shellGeo = new THREE.BoxGeometry(0.04, 0.04, 0.12);
+                let shellMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.3, metalness: 0.9 });
+                let shell = new THREE.Mesh(shellGeo, shellMat);
+                
+                // Casing eject port (slightly offset right/back of muzzle)
+                let ejectOffset = new THREE.Vector3(-0.4, 1.1, 0.15).applyQuaternion(playerGroup.quaternion);
+                shell.position.copy(playerGroup.position).add(ejectOffset);
+                scene.add(shell);
+                
+                shell.userData.isPhysical = true;
+                // Eject velocity vector (flying right/backwards and upward)
+                let rightDir = new THREE.Vector3(-1.0, 0, -0.4).applyQuaternion(playerGroup.quaternion);
+                let ejectVel = rightDir.multiplyScalar(THREE.MathUtils.randFloat(1.5, 2.8));
+                ejectVel.y = THREE.MathUtils.randFloat(2.5, 4.2);
+                
+                shell.userData.velocity = ejectVel;
+                shell.userData.rotationSpeed = new THREE.Vector3(
+                    THREE.MathUtils.randFloat(-12, 12),
+                    THREE.MathUtils.randFloat(-12, 12),
+                    THREE.MathUtils.randFloat(-12, 12)
+                );
+                shell.userData.spawnTime = Date.now();
+                physicalParts.push(shell);
             }
             
             if (currentActiveWeapon === 'shotgun') {
@@ -5529,6 +5718,7 @@
             activeLights = [];
             flickeringLights = [];
             flickeringMeshes = [];
+            shockwaves = [];
             
             // Helper function to recursively dispose of mesh memory
             const disposeNode = (node) => {
@@ -5574,7 +5764,7 @@
             let instancedMeshes = [];
             
             for (let i = 0; i < 4; i++) {
-                let tileMat = new THREE.MeshStandardMaterial({ map: groundTexs[i], roughness: 0.9 });
+                let tileMat = createMaterialWithBump(groundTexs[i], 0.08, { roughness: 0.9 });
                 let instMesh = new THREE.InstancedMesh(tileGeo, tileMat, N * N);
                 instMesh.receiveShadow = true;
                 instancedMeshes.push(instMesh);
@@ -7808,8 +7998,6 @@
                             spawnFootprint(playerGroup.position.x, playerGroup.position.z, playerGroup.rotation.y);
                         }
                     }
-                    // Gun arm points forward while walking
-                    playerGroup.userData.armR.rotation.x = -Math.PI / 2.0;
                     
                     // Spawn dust particles
                     if (Math.random() < 0.25) {
@@ -7821,8 +8009,12 @@
                     playerGroup.userData.legL.rotation.x = 0;
                     playerGroup.userData.legR.rotation.x = 0;
                     playerGroup.userData.armL.rotation.x = 0;
-                    // Gun arm always faces forward (ready to shoot)
-                    playerGroup.userData.armR.rotation.x = -Math.PI / 2.0;
+                }
+
+                // Update gun recoil angle and apply to right gun arm
+                gunRecoilAngle = Math.max(0, gunRecoilAngle - dt * 3.5);
+                if (playerGroup.userData.armR) {
+                    playerGroup.userData.armR.rotation.x = -Math.PI / 2.0 + gunRecoilAngle;
                 }
                 
                 // Update Spotlight Target pos
@@ -7971,6 +8163,59 @@
                 
                 // 6. Update Loot collection
                 update3DLootCollection(dt);
+                
+                // 6b. Update Boss ground-slam shockwaves
+                for (let i = shockwaves.length - 1; i >= 0; i--) {
+                    let sw = shockwaves[i];
+                    sw.radius += sw.speed * dt;
+                    
+                    // Update scale of the ring geometry mesh
+                    let scaleVal = sw.radius;
+                    sw.mesh.scale.set(scaleVal, scaleVal, 1);
+                    
+                    // Fade out as it expands
+                    let lifeRatio = sw.radius / sw.maxRadius;
+                    if (sw.mesh.material) {
+                        sw.mesh.material.opacity = Math.max(0, 0.8 * (1.0 - lifeRatio));
+                    }
+                    
+                    // Collision check with player
+                    if (!sw.hasHitPlayer && playerGroup) {
+                        let distToPlayer = playerGroup.position.distanceTo(sw.mesh.position);
+                        // Hit if player is in the ring's current thickness zone (approx ± 0.6 units)
+                        if (Math.abs(distToPlayer - sw.radius) < 0.6) {
+                            sw.hasHitPlayer = true;
+                            // Check if player is currently dodge-rolling (dashing)
+                            let isPlayerDashing = Date.now() < dashActiveUntil;
+                            if (isPlayerDashing) {
+                                addLogMessage("🛡️ Dodged the shockwave!", "info");
+                            } else {
+                                damagePlayer(sw.dmg, "a boss ground slam shockwave");
+                                // Knockback player away from shockwave center
+                                let kbDir = playerGroup.position.clone().sub(sw.mesh.position);
+                                kbDir.y = 0;
+                                if (kbDir.lengthSq() < 0.01) kbDir.set(0, 0, 1);
+                                kbDir.normalize().multiplyScalar(4.0); // 4 units push
+                                
+                                let nextX = playerGroup.position.x + kbDir.x;
+                                let nextZ = playerGroup.position.z + kbDir.z;
+                                if (!checkAABBCollision(nextX, playerGroup.position.z)) playerGroup.position.x = nextX;
+                                if (!checkAABBCollision(playerGroup.position.x, nextZ)) playerGroup.position.z = nextZ;
+                                
+                                spawnBoxSparks(playerGroup.position, 0x22c55e, 10, 0.15);
+                                addLogMessage(`💥 Ground slam hit you for ${sw.dmg} damage!`, "danger");
+                            }
+                        }
+                    }
+                    
+                    // Remove if expired
+                    if (sw.radius >= sw.maxRadius) {
+                        scene.remove(sw.mesh);
+                        if (sw.mesh.geometry) sw.mesh.geometry.dispose();
+                        if (sw.mesh.material) sw.mesh.material.dispose();
+                        shockwaves.splice(i, 1);
+                    }
+                }
                 
                 // 7. Update survival stats
                 updateLifeStats(dt, isMoving, isSprinting);
@@ -8419,7 +8664,16 @@
                             let speed = e.userData.speed * walkDir;
                             let nextX = e.position.x + Math.sin(angle) * speed * dt;
                             let nextZ = e.position.z + Math.cos(angle) * speed * dt;
-                            e.position.set(nextX, 0, nextZ);
+                            
+                            // AABB collision check for raiders to prevent walking through walls
+                            _scratchBoxMin.set(nextX - 0.35, 0.05, nextZ - 0.35);
+                            _scratchBoxMax.set(nextX + 0.35, 1.8, nextZ + 0.35);
+                            _scratchColBox.set(_scratchBoxMin, _scratchBoxMax);
+                            let collided = false;
+                            for (let col of colliders) {
+                                if (_scratchColBox.intersectsBox(col)) { collided = true; break; }
+                            }
+                            if (!collided) e.position.set(nextX, 0, nextZ);
                             
                             let t = Date.now() * 0.01;
                             e.userData.legL.rotation.x = Math.sin(t) * 0.5;
@@ -8515,18 +8769,91 @@
                     }
                 }
                 else if (e.userData.type === 'boss') {
-                    // Boss core logic
+                    // Boss core logic (chase player slowly, shoot plasma, slam ground)
                     let now = Date.now();
+                    
+                    // Slow movement directly towards the player
+                    let speed = e.userData.speed;
+                    let stepX = Math.sin(angle) * speed * dt;
+                    let stepZ = Math.cos(angle) * speed * dt;
+                    let nextX = e.position.x + stepX;
+                    let nextZ = e.position.z + stepZ;
+                    
+                    // Collision check (Boss bounding box is larger)
+                    _scratchBoxMin.set(nextX - 1.2, 0.05, nextZ - 1.2);
+                    _scratchBoxMax.set(nextX + 1.2, 2.5, nextZ + 1.2);
+                    _scratchColBox.set(_scratchBoxMin, _scratchBoxMax);
+                    let collided = false;
+                    for (let col of colliders) {
+                        if (_scratchColBox.intersectsBox(col)) { collided = true; break; }
+                    }
+                    if (!collided) {
+                        let targetDist = 1.8;
+                        _scratchNextPos.set(nextX, 0, nextZ);
+                        if (_scratchNextPos.distanceTo(playerGroup.position) >= targetDist) {
+                            e.position.set(nextX, 0, nextZ);
+                        }
+                    }
+                    
+                    // Plasma Spit Attack
                     if (now > e.userData.lastShot + 1800 && dist < 16.0) {
                         e.userData.lastShot = now;
                         let shotDir = playerGroup.position.clone().sub(e.position).normalize();
                         spawnBossPlasma(e.position.clone().add(new THREE.Vector3(0, 1.8, 0)), shotDir);
                     }
                     
+                    // Minion Summon
                     if (now > e.userData.lastSummon + 8000 && dist < 18.0) {
                         e.userData.lastSummon = now;
                         spawn3DEnemy(e.position.x + THREE.MathUtils.randFloat(-3, 3), e.position.z + 4.0, 'zombie_fast');
                         addLogMessage("🧟‍♂️ Boss summoned a minion!", "danger");
+                    }
+                    
+                    // Ground Slam Shockwave Attack (Every 7.5 seconds)
+                    if (now > (e.userData.lastSlam || 0) + 7500 && dist < 12.0) {
+                        e.userData.lastSlam = now;
+                        let startY = e.position.y;
+                        let jumpHeight = 1.5;
+                        let duration = 600; // ms
+                        let slamStart = Date.now();
+                        let bossRef = e;
+                        
+                        addLogMessage("⚠️ The Super Mutant prepares a Ground Slam!", "danger");
+                        
+                        let jumpAnim = setInterval(() => {
+                            let elapsed = Date.now() - slamStart;
+                            let tRatio = elapsed / duration;
+                            if (tRatio >= 1.0) {
+                                clearInterval(jumpAnim);
+                                bossRef.position.y = startY;
+                                
+                                // Slam Impact
+                                sound.playHit();
+                                screenShake = Math.min(1.5, screenShake + 1.0);
+                                spawnBoxSparks(bossRef.position, 0x22c55e, 35, 0.22); // green acid fire particles
+                                
+                                // Spawn visual flat shockwave ring
+                                let ringGeo = new THREE.RingGeometry(0.9, 1.1, 32);
+                                ringGeo.rotateX(-Math.PI / 2);
+                                let ringMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+                                let ringMesh = new THREE.Mesh(ringGeo, ringMat);
+                                ringMesh.position.copy(bossRef.position);
+                                ringMesh.position.y = 0.05;
+                                scene.add(ringMesh);
+                                
+                                shockwaves.push({
+                                    mesh: ringMesh,
+                                    radius: 1.0,
+                                    maxRadius: 11.0,
+                                    speed: 16.0,
+                                    dmg: 30,
+                                    hasHitPlayer: false
+                                });
+                            } else {
+                                let height = Math.sin(tRatio * Math.PI) * jumpHeight;
+                                bossRef.position.y = startY + height;
+                            }
+                        }, 16);
                     }
                 }
             }
@@ -8676,6 +9003,7 @@
             activeLights = [];
             flickeringLights = [];
             flickeringMeshes = [];
+            shockwaves = [];
             
             rainParticles = null;
             renderer = null;

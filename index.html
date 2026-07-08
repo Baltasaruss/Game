@@ -6,6 +6,13 @@
     <title>Last SUV: Apocalypse Survival</title>
     <!-- Three.js 3D CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Post-processing pipeline (matched r128 examples/js builds; attach to THREE global). Only used on 'high' graphics tier. -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
@@ -50,18 +57,20 @@
             -webkit-user-select: none;
         }
 
-        /* Game interface styling */
+        /* Game interface styling — gritty post-apocalyptic palette, tuned to match the in-game
+           color grade (teal shadows / warm amber highlights). Amber-hazard replaces the old lime. */
         :root {
-            --bg-dark: #09090b;
-            --panel-bg: rgba(20, 20, 25, 0.85);
-            --border-glow: rgba(163, 230, 53, 0.3);
-            --primary-accent: #a3e635; /* Lime green */
-            --danger-accent: #f43f5e; /* Crimson red */
-            --cyan-accent: #38bdf8; /* Sky blue */
-            --orange-accent: #f97316; /* Orange/Fuel */
-            --gold-accent: #fbbf24; /* Gold */
-            --text-main: #f4f4f5;
-            --text-muted: #a1a1aa;
+            --bg-dark: #0a0906;             /* warm-black, matches graded frame */
+            --panel-bg: rgba(24, 21, 16, 0.86);
+            --border-glow: rgba(217, 160, 74, 0.32);
+            --primary-accent: #d9a04a;      /* Weathered amber / hazard brass */
+            --primary-bright: #f0c274;      /* Lighter amber for hover fills */
+            --danger-accent: #d13a2f;       /* Rust red */
+            --cyan-accent: #4bb3a8;         /* Muted survival teal */
+            --orange-accent: #d97a2b;       /* Fuel orange */
+            --gold-accent: #c9a24b;         /* Tarnished gold */
+            --text-main: #ece5d8;           /* Warm bone white */
+            --text-muted: #9a917f;          /* Faded khaki grey */
         }
 
         * {
@@ -102,10 +111,13 @@
         }
 
         .glass-panel {
-            background: var(--panel-bg);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 0, 0, 0.3);
+            background:
+                linear-gradient(rgba(217, 160, 74, 0.04), rgba(217, 160, 74, 0.04)),
+                var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-top: 2px solid rgba(217, 160, 74, 0.55); /* hazard-brass top edge */
+            border-radius: 10px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), inset 0 0 40px rgba(0, 0, 0, 0.35);
             padding: 2rem;
             max-width: 90%;
             text-align: center;
@@ -124,7 +136,7 @@
             font-family: 'Press Start 2P', monospace;
             font-size: 2.2rem;
             color: var(--danger-accent);
-            text-shadow: 0 0 10px rgba(244, 63, 94, 0.8), 0 0 20px rgba(244, 63, 94, 0.3);
+            text-shadow: 0 2px 0 #3a0f0b, 0 0 12px rgba(209, 58, 47, 0.75), 0 0 28px rgba(209, 58, 47, 0.25);
             margin-bottom: 0.5rem;
             line-height: 1.2;
         }
@@ -158,7 +170,7 @@
             background: var(--primary-accent);
             color: #000;
             border-color: var(--primary-accent);
-            box-shadow: 0 0 15px rgba(163, 230, 53, 0.4);
+            box-shadow: 0 0 15px rgba(217, 160, 74, 0.4);
             transform: translateY(-2px);
         }
 
@@ -175,7 +187,7 @@
             background: var(--danger-accent);
             color: white;
             border-color: var(--danger-accent);
-            box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
+            box-shadow: 0 0 15px rgba(209, 58, 47, 0.4);
         }
 
         /* HUD - In-game player stats display */
@@ -368,8 +380,8 @@
 
         .inv-slot.active {
             border-color: var(--primary-accent);
-            background: rgba(163, 230, 53, 0.1);
-            box-shadow: 0 0 8px rgba(163, 230, 53, 0.2);
+            background: rgba(217, 160, 74, 0.1);
+            box-shadow: 0 0 8px rgba(217, 160, 74, 0.2);
         }
 
         .inv-slot-icon {
@@ -542,7 +554,7 @@
 
         .tab-btn.active {
             color: var(--primary-accent);
-            background: rgba(163, 230, 53, 0.08);
+            background: rgba(217, 160, 74, 0.08);
             border-left: 3px solid var(--primary-accent);
             border-radius: 0 6px 6px 0;
             padding-left: 13px;
@@ -613,7 +625,7 @@
 
         .badge-low { background: rgba(16, 185, 129, 0.2); color: #10b981; }
         .badge-med { background: rgba(249, 115, 22, 0.2); color: #f97316; }
-        .badge-high { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
+        .badge-high { background: rgba(209, 58, 47, 0.2); color: #d13a2f; }
 
         /* Crafting tab */
         .craft-grid {
@@ -722,7 +734,7 @@
 
         .craft-mats-pill.insufficient {
             color: var(--danger-accent);
-            background: rgba(244, 63, 94, 0.1);
+            background: rgba(209, 58, 47, 0.1);
         }
 
         .craft-btn {
@@ -906,7 +918,7 @@
 
         .route-step.current {
             border-color: var(--primary-accent);
-            background: rgba(163, 230, 53, 0.05);
+            background: rgba(217, 160, 74, 0.05);
         }
 
         .route-step.passed {
@@ -1150,7 +1162,7 @@
         .gameover-title {
             font-family: 'Press Start 2P', monospace;
             color: var(--danger-accent);
-            text-shadow: 0 0 15px rgba(244, 63, 94, 0.7);
+            text-shadow: 0 0 15px rgba(209, 58, 47, 0.7);
             font-size: 2rem;
             margin-bottom: 1rem;
         }
@@ -1707,20 +1719,22 @@
             z-index: 99;
         }
 
-        /* CRT scanlines effect for retro gaming juice */
+        /* Dusty scanline + warm haze overlay — grounds the whole screen in the survival mood
+           without the old RGB-split CRT look that fought the gritty direction. */
         #scanline-overlay {
             position: absolute;
             top: 0; left: 0; width: 100vw; height: 100vh;
             background: linear-gradient(
-                rgba(18, 16, 16, 0) 50%, 
-                rgba(0, 0, 0, 0.12) 50%
-            ), linear-gradient(
-                90deg,
-                rgba(255, 0, 0, 0.03),
-                rgba(0, 255, 0, 0.01),
-                rgba(0, 0, 255, 0.03)
+                rgba(0, 0, 0, 0) 50%,
+                rgba(0, 0, 0, 0.10) 50%
+            ), radial-gradient(
+                circle at 50% 20%,
+                rgba(217, 160, 74, 0.05),
+                rgba(10, 9, 6, 0) 60%
             );
-            background-size: 100% 3px, 6px 100%;
+            background-size: 100% 3px, 100% 100%;
+            mix-blend-mode: multiply;
+            opacity: 0.85;
             pointer-events: none;
             z-index: 98;
         }
@@ -2218,7 +2232,7 @@
     <!-- 9. PAUSE MENU (ESC) -->
     <div id="pause-overlay" class="overlay">
         <div class="glass-panel menu-content">
-            <h2 class="game-title" style="color: var(--primary-accent); text-shadow: 0 0 10px rgba(163,230,53,0.5);">GAME PAUSED</h2>
+            <h2 class="game-title" style="color: var(--primary-accent); text-shadow: 0 0 10px rgba(217, 160, 74,0.5);">GAME PAUSED</h2>
             <p class="game-subtitle" style="margin-bottom: 2rem;">Sortie suspended</p>
             <button class="menu-btn" onclick="resumeGameFromPause()">Resume Fight</button>
             <button class="menu-btn" onclick="retreatToTrain()">Retreat to SUV (Lose 20% gas/scrap)</button>
@@ -4187,6 +4201,8 @@
         // =========================================================================
         
         let scene, camera, renderer;
+        // Post-processing (created only on 'high' graphics tier; null otherwise -> direct render)
+        let composer = null, bloomPass = null, gradePass = null;
         // activeGameScene declared above in global scope
         // Prevent pinch-to-zoom on mobile devices (multi-touch zoom prevention)
         document.addEventListener('touchstart', (e) => {
@@ -4341,7 +4357,7 @@
         let materials = {};
         
         // Helper to generate pixelated textures on the fly
-        function createPixelTexture(width, height, baseColorHex, noiseVal = 12, patternFunc = null, useGradient = false) {
+        function createPixelTexture(width, height, baseColorHex, noiseVal = 12, patternFunc = null, useGradient = false, weather = true) {
             let canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
@@ -4377,7 +4393,32 @@
                     ctx.fillRect(x, y, 1, 1);
                 }
             }
-            
+
+            // Unified weathering pass: soft grime blotches + a couple of drip streaks under the
+            // detail layer, so every surface in the world reads as worn/abandoned. Kept faint and
+            // drawn BEFORE patternFunc so faces, symbols and decals stay crisp on top.
+            if (weather) {
+                let blotches = Math.round((width * height) / 340); // ~3 on 32px, ~12 on 64px
+                for (let i = 0; i < blotches; i++) {
+                    let bx = Math.random() * width, by = Math.random() * height;
+                    let br = 1 + Math.random() * (width / 10);
+                    let dark = Math.random() < 0.7;
+                    ctx.fillStyle = dark ? `rgba(10,9,7,${0.10 + Math.random() * 0.16})`
+                                         : `rgba(70,58,42,${0.06 + Math.random() * 0.10})`;
+                    ctx.beginPath();
+                    ctx.arc(bx, by, br, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // Occasional vertical grime drips
+                let drips = Math.round(width / 22);
+                for (let i = 0; i < drips; i++) {
+                    let dx = Math.floor(Math.random() * width);
+                    let dh = height * (0.3 + Math.random() * 0.5);
+                    ctx.fillStyle = `rgba(8,7,6,${0.05 + Math.random() * 0.07})`;
+                    ctx.fillRect(dx, Math.random() * height * 0.3, 1, dh);
+                }
+            }
+
             if (patternFunc) {
                 patternFunc(ctx, width, height);
             }
@@ -4446,7 +4487,96 @@
             }
             return new THREE.MeshStandardMaterial(params);
         }
-        
+
+        // Custom filmic color-grade shader: the single unifying "look" applied over the whole frame.
+        // Desaturates toward a survival palette, split-tones (teal shadows / amber highlights),
+        // lifts contrast, then adds a soft vignette + faint animated film grain.
+        const GradeShader = {
+            uniforms: {
+                tDiffuse:   { value: null },
+                uTime:      { value: 0.0 },
+                uSaturation:{ value: 0.82 },
+                uContrast:  { value: 1.08 },
+                uBrightness:{ value: 1.02 },
+                uVignette:  { value: 0.62 },
+                uGrain:     { value: 0.055 },
+                uShadowTint:{ value: new THREE.Color(0x0b1a1f) }, // cool teal in the darks
+                uHighTint:  { value: new THREE.Color(0x1a1206) }  // warm amber in the lights
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float uTime, uSaturation, uContrast, uBrightness, uVignette, uGrain;
+                uniform vec3 uShadowTint, uHighTint;
+                varying vec2 vUv;
+
+                float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+
+                void main() {
+                    vec4 tex = texture2D(tDiffuse, vUv);
+                    vec3 c = tex.rgb;
+
+                    // Luma-based desaturation toward the survival palette
+                    float luma = dot(c, vec3(0.299, 0.587, 0.114));
+                    c = mix(vec3(luma), c, uSaturation);
+
+                    // Split-tone: push teal into shadows, amber into highlights
+                    c += uShadowTint * (1.0 - smoothstep(0.0, 0.5, luma));
+                    c += uHighTint  * smoothstep(0.5, 1.0, luma);
+
+                    // Contrast around mid-grey, then brightness
+                    c = (c - 0.5) * uContrast + 0.5;
+                    c *= uBrightness;
+
+                    // Vignette
+                    vec2 d = vUv - 0.5;
+                    float vig = smoothstep(0.85, 0.35, dot(d, d) * uVignette * 4.0);
+                    c *= mix(1.0, vig, 0.9);
+
+                    // Animated film grain
+                    float g = hash(vUv * vec2(1920.0, 1080.0) + fract(uTime)) - 0.5;
+                    c += g * uGrain;
+
+                    gl_FragColor = vec4(clamp(c, 0.0, 1.0), tex.a);
+                }
+            `
+        };
+
+        function setupPostProcessing() {
+            // Tear down any previous composer (e.g. when the player changes graphics quality mid-run)
+            composer = null; bloomPass = null; gradePass = null;
+
+            // Only run the heavy pipeline on High, and only if the example libs actually loaded from CDN
+            if (graphicsQuality !== 'high') return;
+            if (typeof THREE.EffectComposer !== 'function' ||
+                typeof THREE.RenderPass !== 'function' ||
+                typeof THREE.ShaderPass !== 'function' ||
+                typeof THREE.UnrealBloomPass !== 'function') {
+                return; // Gracefully fall back to direct renderer.render()
+            }
+
+            let w = window.innerWidth, h = window.innerHeight;
+            composer = new THREE.EffectComposer(renderer);
+            composer.setPixelRatio(renderer.getPixelRatio());
+            composer.setSize(w, h);
+
+            composer.addPass(new THREE.RenderPass(scene, camera));
+
+            // Restrained bloom so emissive elements (muzzle flash, glow stripes, fire, rad glow) bleed light
+            bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 0.55, 0.45, 0.82);
+            composer.addPass(bloomPass);
+
+            gradePass = new THREE.ShaderPass(GradeShader);
+            gradePass.renderToScreen = true;
+            composer.addPass(gradePass);
+        }
+
         function initThreeEngine() {
             // Setup Three.js scene
             scene = new THREE.Scene();
@@ -4477,7 +4607,12 @@
             const container = document.getElementById('game-container');
             container.innerHTML = '';
             container.appendChild(renderer.domElement);
-            
+
+            // Post-processing composer (High tier only): bloom for emissive glow + a filmic color-grade
+            // pass (desaturate, cool-shadow / warm-highlight split-tone, contrast, subtle vignette + grain).
+            // This is the unifying grade that ties every material into one gritty post-apocalyptic look.
+            setupPostProcessing();
+
             // Generate procedural pixel textures
             // Generate procedural pixel textures
             // 1. Player face (gritty desaturated dirty skin, neutral grim mouth)
@@ -4825,7 +4960,8 @@
             materials.raiderSkinFace = createMaterialWithBump(raiderFaceTex, 0.05, { roughness: 0.5 });
             materials.mutantBody = createMaterialWithBump(mutantSkinTex, 0.06, { roughness: 0.9, metalness: 0.1 });
             materials.bossMetal = createMaterialWithBump(bossMetalTex, 0.08, { roughness: 0.45, metalness: 0.75 });
-            materials.redGlow = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+            // Hot self-lit red (>bloom threshold) so enemy eyes & laser sight actually bleed light on High
+            materials.redGlow = new THREE.MeshBasicMaterial({ color: 0xff1a1a });
             materials.trainMetal = createMaterialWithBump(trainMetalTex, 0.07, { roughness: 0.4, metalness: 0.8 });
             // Dark glass for cabin windshield/windows instead of gold glowing yellow!
             materials.goldGlow = new THREE.MeshStandardMaterial({ color: 0x181a1c, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.85 });
@@ -4992,7 +5128,14 @@
                     let pixelRatioLimit = (graphicsQuality === 'low') ? 1.0 : (graphicsQuality === 'medium' ? 1.4 : 2.0);
                     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioLimit));
                     renderer.setSize(w, h);
-                    
+
+                    // Keep the post-processing composer in sync with the viewport
+                    if (composer) {
+                        composer.setPixelRatio(renderer.getPixelRatio());
+                        composer.setSize(w, h);
+                        if (bloomPass && bloomPass.setSize) bloomPass.setSize(w, h);
+                    }
+
                     // Force redraw of dynamic elements that depend on layout size (like minimap)
                     let canvas = document.getElementById('minimap-canvas');
                     if (canvas && typeof drawMinimap === 'function') {
@@ -5222,7 +5365,62 @@
                 
                 armR.rotation.x = -Math.PI / 2.0;
             }
-            
+
+            // ---- Low-poly detailing: grounds the blocky figure without touching the swing rig ----
+            // Attached to rigged parts (legs/arms) so they animate along; static bits parent to torso.
+            let bootMat = materials.playerLegs;              // dark boots read on every variant
+            let gearMat = isRaider ? materials.raiderArmor : (isEnemy ? torsoMat : materials.playerTorso);
+
+            // Neck filler so the head doesn't float off the torso
+            let neck = new THREE.Mesh(new THREE.BoxGeometry(0.24 * scale, 0.18 * scale, 0.24 * scale), skinMat);
+            neck.position.y = 1.42 * scale;
+            neck.castShadow = true;
+            group.add(neck);
+
+            // Boots at the bottom of each leg (children -> swing with the walk cycle)
+            let bootGeo = new THREE.BoxGeometry(0.4 * scale, 0.22 * scale, 0.46 * scale);
+            let bootL = new THREE.Mesh(bootGeo, bootMat);
+            bootL.position.set(0, -0.34 * scale, 0.05 * scale);
+            bootL.castShadow = true; legL.add(bootL);
+            let bootR = new THREE.Mesh(bootGeo, bootMat);
+            bootR.position.set(0, -0.34 * scale, 0.05 * scale);
+            bootR.castShadow = true; legR.add(bootR);
+
+            // Hands at the end of each arm (children -> swing with the arms)
+            let handGeo = new THREE.BoxGeometry(0.32 * scale, 0.2 * scale, 0.32 * scale);
+            let handL = new THREE.Mesh(handGeo, skinMat);
+            handL.position.set(0, -0.72 * scale, 0);
+            handL.castShadow = true; armL.add(handL);
+            let handR = new THREE.Mesh(handGeo, skinMat);
+            handR.position.set(0, -0.72 * scale, 0);
+            handR.castShadow = true; armR.add(handR);
+
+            // Shoulder pads for humanoids (skip the fat brute silhouette)
+            if (!isFat) {
+                let padGeo = new THREE.BoxGeometry(0.34 * scale, 0.16 * scale, 0.44 * scale);
+                let padL = new THREE.Mesh(padGeo, gearMat);
+                padL.position.set(0.02 * scale, 0.34 * scale, 0);
+                padL.castShadow = true; armL.add(padL);
+                let padR = new THREE.Mesh(padGeo, gearMat);
+                padR.position.set(-0.02 * scale, 0.34 * scale, 0);
+                padR.castShadow = true; armR.add(padR);
+            }
+
+            // Survival backpack for the player and raiders (parented to torso)
+            if (!isEnemy || isRaider) {
+                let packMat = isRaider ? materials.raiderArmor : materials.playerLegs;
+                let pack = new THREE.Mesh(new THREE.BoxGeometry(0.5 * scale, 0.72 * scale, 0.28 * scale), packMat);
+                pack.position.set(0, 0.02 * scale, -0.32 * scale);
+                pack.castShadow = true;
+                torso.add(pack);
+                // Bedroll strapped on top of the pack
+                let roll = new THREE.Mesh(new THREE.BoxGeometry(0.52 * scale, 0.16 * scale, 0.18 * scale),
+                    isRaider ? materials.zombieTorso : materials.wood);
+                roll.position.set(0, 0.42 * scale, -0.34 * scale);
+                roll.castShadow = true;
+                torso.add(roll);
+            }
+
             return group;
         }
         
@@ -5241,7 +5439,7 @@
             div.style.left = `${x}px`;
             div.style.top = `${y}px`;
             div.style.transform = 'translate(-50%, -50%)';
-            div.style.color = isCrit ? '#facc15' : (isHeal ? '#22c55e' : '#f43f5e');
+            div.style.color = isCrit ? '#facc15' : (isHeal ? '#22c55e' : '#d13a2f');
             div.style.fontFamily = "'Press Start 2P', monospace";
             div.style.fontSize = isCrit ? '18px' : '12px';
             div.style.fontWeight = 'bold';
@@ -7687,7 +7885,7 @@
                 div.style.width = '200px';
                 div.style.height = '16px';
                 div.style.background = 'rgba(0,0,0,0.6)';
-                div.style.border = '2px solid #a3e635';
+                div.style.border = '2px solid #d9a04a';
                 div.style.borderRadius = '8px';
                 div.style.overflow = 'hidden';
                 
@@ -7695,7 +7893,7 @@
                 fill.id = 'harvest-progress-bar';
                 fill.style.width = '0%';
                 fill.style.height = '100%';
-                fill.style.background = '#a3e635';
+                fill.style.background = '#d9a04a';
                 
                 div.appendChild(fill);
                 document.body.appendChild(div);
@@ -8369,11 +8567,14 @@
             // Render 2D tactical radar minimap
             drawMinimap();
 
-            // 10. Render
-            if (renderer) {
+            // 10. Render — through the post-processing composer on High, else direct
+            if (composer) {
+                if (gradePass) gradePass.uniforms.uTime.value = (timestamp || 0) * 0.001;
+                composer.render();
+            } else if (renderer) {
                 renderer.render(scene, camera);
             }
-            
+
             // Loop
             if (renderer) {
                 animationFrameId = requestAnimationFrame(animate3D);

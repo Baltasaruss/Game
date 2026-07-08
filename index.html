@@ -1775,7 +1775,8 @@
     </style>
 </head>
 <body>
-    <!-- Aesthetic screen overlays removed (retro scanline + vignette) for a clean, brighter frame -->
+    <!-- Aesthetic Screen Overlays (Vignette restored, scanline/retro lines removed) -->
+    <div id="vignette-overlay"></div>
 
     <!-- Portrait Orientation Enforcement Overlay -->
     <div id="orientation-overlay">
@@ -4999,10 +5000,13 @@
             composer.addPass(new THREE.RenderPass(scene, camera));
 
             // Restrained bloom so emissive elements (muzzle flash, glow stripes, fire, rad glow) bleed light.
-            // (The retro color-grade pass was removed — it desaturated/darkened the whole frame.)
+            // (The filmic color-grade pass was restored, while the scanline/retro lines overlay remains removed.)
             bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 0.55, 0.45, 0.82);
-            bloomPass.renderToScreen = true;
             composer.addPass(bloomPass);
+
+            gradePass = new THREE.ShaderPass(GradeShader);
+            gradePass.renderToScreen = true;
+            composer.addPass(gradePass);
         }
 
         function initThreeEngine() {

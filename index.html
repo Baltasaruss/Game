@@ -2660,76 +2660,147 @@
                 osc.stop(t + 0.14);
             }
 
-            // Procedural background music beat (Tense survival horror arpeggiator & heartbeat kick)
-            playMusicBeat(step, freq) {
+            // ---- Cyberpunk / darksynth drum & synth voices (used by the driving BGM engine) ----
+
+            // Punchy analog-style kick: pitch-swept sine body + a tiny noise transient click.
+            _kick(t, vol = 0.9) {
+                let k = this.ctx.createOscillator();
+                let kg = this.ctx.createGain();
+                k.type = 'sine';
+                k.frequency.setValueAtTime(150, t);
+                k.frequency.exponentialRampToValueAtTime(45, t + 0.09);
+                kg.gain.setValueAtTime(vol, t);
+                kg.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+                k.connect(kg); kg.connect(this.masterGain);
+                k.start(t); k.stop(t + 0.19);
+            }
+
+            // Layered clap/snare: filtered noise burst for the backbeat snap.
+            _clap(t, vol = 0.35) {
+                let len = Math.floor(this.ctx.sampleRate * 0.18);
+                let buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+                let d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+                let n = this.ctx.createBufferSource(); n.buffer = buf;
+                let bp = this.ctx.createBiquadFilter();
+                bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 0.8;
+                let g = this.ctx.createGain();
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+                n.connect(bp); bp.connect(g); g.connect(this.masterGain);
+                if (this.reverbSend) g.connect(this.reverbSend);
+                n.start(t); n.stop(t + 0.18);
+            }
+
+            // Crisp hi-hat: highpassed white noise. `open` lengthens the tail for drive accents.
+            _hat(t, open = false, vol = 0.14) {
+                let dur = open ? 0.16 : 0.045;
+                let len = Math.floor(this.ctx.sampleRate * dur);
+                let buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+                let d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1);
+                let n = this.ctx.createBufferSource(); n.buffer = buf;
+                let hp = this.ctx.createBiquadFilter();
+                hp.type = 'highpass'; hp.frequency.value = 7500;
+                let g = this.ctx.createGain();
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+                n.connect(hp); hp.connect(g); g.connect(this.masterGain);
+                n.start(t); n.stop(t + dur + 0.01);
+            }
+
+            // Rolling synthwave bass: detuned saws through a resonant lowpass with a plucky
+            // filter+amp envelope — the driving 16th-note engine of the track.
+            _bass(t, freq, vol = 0.34) {
+                let o1 = this.ctx.createOscillator();
+                let o2 = this.ctx.createOscillator();
+                o1.type = 'sawtooth'; o2.type = 'sawtooth';
+                o1.frequency.value = freq; o2.frequency.value = freq;
+                o2.detune.value = 8; // subtle thickening
+                let lp = this.ctx.createBiquadFilter();
+                lp.type = 'lowpass'; lp.Q.value = 9;
+                lp.frequency.setValueAtTime(900, t);
+                lp.frequency.exponentialRampToValueAtTime(180, t + 0.14);
+                let g = this.ctx.createGain();
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+                o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(this.masterGain);
+                o1.start(t); o2.start(t); o1.stop(t + 0.17); o2.stop(t + 0.17);
+            }
+
+            // Bright arp pluck for the neon lead line.
+            _pluck(t, freq, vol = 0.13) {
+                let o = this.ctx.createOscillator();
+                o.type = 'square';
+                o.frequency.value = freq;
+                let lp = this.ctx.createBiquadFilter();
+                lp.type = 'lowpass'; lp.frequency.value = 3200; lp.Q.value = 2;
+                let g = this.ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+                o.connect(lp); lp.connect(g); g.connect(this.masterGain);
+                if (this.reverbSend) g.connect(this.reverbSend);
+                o.start(t); o.stop(t + 0.24);
+            }
+
+            // Wide detuned supersaw chord pad, held for a full bar — the atmospheric backdrop.
+            _pad(t, freqs, dur, vol = 0.05) {
+                let g = this.ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.linearRampToValueAtTime(vol, t + 0.25);
+                g.gain.setValueAtTime(vol, t + dur - 0.25);
+                g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+                let lp = this.ctx.createBiquadFilter();
+                lp.type = 'lowpass'; lp.frequency.value = 2200;
+                lp.connect(g); g.connect(this.masterGain);
+                if (this.reverbSend) g.connect(this.reverbSend);
+                freqs.forEach(f => {
+                    [-6, 6].forEach(det => {
+                        let o = this.ctx.createOscillator();
+                        o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+                        o.connect(lp); o.start(t); o.stop(t + dur + 0.05);
+                    });
+                });
+            }
+
+            // Driving cyberpunk / darksynth BGM. Step-sequenced at 16th notes over a 4-bar,
+            // 64-step loop through a dark i–VI–III–VII minor progression (Am–F–C–G).
+            playMusicBeat(step) {
                 this.init();
                 if (!this.ctx) return;
-                let t = this.ctx.currentTime;
-                
-                // 1. Deep Sub-Bass Rumble (Low-pass sawtooth arpeggiator)
-                let osc = this.ctx.createOscillator();
-                let gain = this.ctx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(freq, t);
-                
-                let filter = this.ctx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(140, t); // Dark, heavy, low-frequency rumble
-                
-                gain.gain.setValueAtTime(0.20, t);
-                gain.gain.linearRampToValueAtTime(0.001, t + 0.25);
-                
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(this.masterGain);
-                osc.start(t);
-                osc.stop(t + 0.26);
-                
-                // 2. Heartbeat Kick (Double-thump organic kick on beats 0 and 1 of every 8 steps)
-                let isHeartbeat = (step % 8 === 0 || step % 8 === 1);
-                if (isHeartbeat) {
-                    let kick = this.ctx.createOscillator();
-                    let kickGain = this.ctx.createGain();
-                    kick.type = 'sine';
-                    kick.frequency.setValueAtTime(80, t);
-                    kick.frequency.linearRampToValueAtTime(30, t + 0.15);
-                    
-                    // Double thump volume velocity
-                    let vol = (step % 8 === 0) ? 0.45 : 0.28;
-                    kickGain.gain.setValueAtTime(vol, t);
-                    kickGain.gain.linearRampToValueAtTime(0.001, t + 0.15);
-                    
-                    kick.connect(kickGain);
-                    kickGain.connect(this.masterGain);
-                    kick.start(t);
-                    kick.stop(t + 0.16);
-                }
-                
-                // 3. Spooky Wind Ambient noise (replaces techno snare on beat 4)
-                if (step % 8 === 4) {
-                    let bufferSize = this.ctx.sampleRate * 0.3; // longer wind release
-                    let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                    let data = buffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-                    
-                    let noise = this.ctx.createBufferSource();
-                    noise.buffer = buffer;
-                    
-                    let band = this.ctx.createBiquadFilter();
-                    band.type = 'bandpass';
-                    band.frequency.setValueAtTime(600, t);
-                    band.Q.value = 0.5; // wide atmospheric sweep
-                    
-                    let windGain = this.ctx.createGain();
-                    windGain.gain.setValueAtTime(0.08, t);
-                    windGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-                    
-                    noise.connect(band);
-                    band.connect(windGain);
-                    windGain.connect(this.masterGain);
-                    noise.start(t);
-                    noise.stop(t + 0.28);
-                }
+                const t = this.ctx.currentTime;
+                const bar = Math.floor(step / 16) % 4;   // which chord we're on
+                const s = step % 16;                     // 16th-note position within the bar
+
+                // Per-bar harmony: [bass root, chord tones for arp, pad chord]
+                const CHORDS = [
+                    { bass: 55.00, arp: [220.00, 261.63, 329.63, 440.00], pad: [220.00, 261.63, 329.63] }, // Am
+                    { bass: 43.65, arp: [174.61, 220.00, 261.63, 349.23], pad: [174.61, 220.00, 261.63] }, // F
+                    { bass: 65.41, arp: [261.63, 329.63, 392.00, 523.25], pad: [261.63, 329.63, 392.00] }, // C
+                    { bass: 49.00, arp: [196.00, 246.94, 293.66, 392.00], pad: [196.00, 246.94, 293.66] }, // G
+                ];
+                const chord = CHORDS[bar];
+
+                // --- Drums ---
+                // Four-on-the-floor kick with a syncopated ghost push before beat 4.
+                if (s % 4 === 0) this._kick(t, s === 0 ? 1.0 : 0.85);
+                if (s === 14) this._kick(t, 0.4);
+                // Backbeat clap on 2 and 4.
+                if (s === 4 || s === 12) this._clap(t);
+                // Closed hats on every off-8th, open hat to pull into the next bar.
+                if (s % 2 === 1) this._hat(t, false, s % 4 === 3 ? 0.18 : 0.11);
+                if (s === 14) this._hat(t, true, 0.12);
+
+                // --- Rolling bass: every 16th, with an octave lift on the "and" for movement. ---
+                this._bass(t, s % 2 === 1 ? chord.bass * 2 : chord.bass, s % 4 === 0 ? 0.4 : 0.3);
+
+                // --- Neon arp: 16th-note run cycling the chord tones (up-down). ---
+                const arpSeq = [0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 3, 2, 1, 0, 1, 2];
+                this._pluck(t, chord.arp[arpSeq[s]], s % 4 === 0 ? 0.15 : 0.1);
+
+                // --- Pad: retrigger the chord backdrop at the top of each bar. ---
+                if (s === 0) this._pad(t, chord.pad, 16 * 0.115, 0.045);
             }
         }
 
@@ -3389,16 +3460,15 @@
             updateHudVisuals();
         }
 
-        // Procedural background music controls (Atmospheric survival minor-third arpeggios)
+        // Procedural background music controls (driving cyberpunk / darksynth, ~130 BPM)
         function startMusic() {
             if (bgmTimer) clearInterval(bgmTimer);
-            let notes = [55, 55, 58, 58, 55, 55, 49, 49]; // A1, A1, Bb1, Bb1, A1, A1, G#1, G#1 (creepy drone pads)
             let step = 0;
             bgmTimer = setInterval(() => {
                 if (!gameActive || !scene) return;
-                sound.playMusicBeat(step, notes[step % notes.length]);
+                sound.playMusicBeat(step);
                 step++;
-            }, 280); // Mellow, atmospheric tempo for deep survival tension!
+            }, 115); // 16th notes at ~130 BPM — pulse for a survival timekiller
         }
         
         function stopMusic() {

@@ -2862,21 +2862,42 @@
         // =========================================================================
         const LOCATIONS = [
             {
-                name: "Camp Dawn",
-                description: "Safe zone. You found an abandoned SUV here. Gather basic supplies and gasoline to start moving.",
-                type: "station",
-                theme: "grass",
-                timeOfDay: "evening",
+                name: "Genesis Lab",
+                description: "Ground zero. The bio-lab where the outbreak began. Alarms still wail down the containment halls. Grab an emergency kit and fuel the motor-pool SUV to escape before the doors seal for good.",
+                type: "lab",
+                theme: "lab",
+                timeOfDay: "night",
                 size: 32, // 32x32 grid size
                 radiation: 0,
                 fuelCost: 0,
-                npc: { 
-                    name: "Grandpa Stepan", 
-                    text: "Hey, kid! SUV runs, but needs fuel. Head east into the woods, find gasoline (approach canisters and collect with Space). We need to fill up!",
+                isSafeZone: true,
+                threat: { label: "Minimal", cls: "badge-low" },
+                rad: { label: "None", cls: "badge-low" },
+                mats: "Fuel Cells, Emergency Rations, Water",
+                npc: {
+                    name: "Dr. Stepan",
+                    text: "The specimen breached containment! Kid — the SUV in the motor bay runs, but it's bone dry. Grab the fuel cells (approach and press Space) and get us OUT of here!",
                     questItem: null
                 },
                 enemies: { zombie: 2, zombie_fast: 0, zombie_fat: 0, raider: 0, mutant: 0 },
                 resources: { wood: 8, food: 3, water: 3, scrap: 4, ammo: 25, medkit: 1, gasmask: 0 }
+            },
+            {
+                name: "Camp Dawn",
+                description: "A survivor camp on the forest edge. First breath of fresh air since the lab. Patch up, restock, and plan the road ahead.",
+                type: "station",
+                theme: "grass",
+                timeOfDay: "evening",
+                size: 34,
+                radiation: 0,
+                fuelCost: 12,
+                isSafeZone: true,
+                threat: { label: "Minimal", cls: "badge-low" },
+                rad: { label: "None", cls: "badge-low" },
+                mats: "Gasoline, Canned Food, Water",
+                npc: null,
+                enemies: { zombie: 3, zombie_fast: 1, zombie_fat: 0, raider: 0, mutant: 0 },
+                resources: { wood: 10, food: 4, water: 4, scrap: 5, ammo: 25, medkit: 1, gasmask: 0 }
             },
             {
                 name: "Quiet Forest",
@@ -2887,9 +2908,29 @@
                 size: 40,
                 radiation: 0,
                 fuelCost: 15,
+                threat: { label: "Medium (Zombies)", cls: "badge-med" },
+                rad: { label: "None", cls: "badge-low" },
+                mats: "Lots of Gasoline, Berries (Food), Water",
                 npc: null,
                 enemies: { zombie: 10, zombie_fast: 4, zombie_fat: 1, raider: 0, mutant: 0 },
                 resources: { wood: 24, food: 6, water: 3, scrap: 6, ammo: 30, medkit: 2, gasmask: 1 }
+            },
+            {
+                name: "Abandoned Supermarket",
+                description: "A collapsed big-box store. Toppled aisles and dead fluorescents. A holdout trader squats by the checkout lanes — the shelves still hide canned goods and scrap worth digging for.",
+                type: "supermarket",
+                theme: "supermarket",
+                timeOfDay: "night",
+                size: 42,
+                radiation: 0.3,
+                fuelCost: 20,
+                hasTrader: true,
+                threat: { label: "High (Shamblers in the aisles)", cls: "badge-high" },
+                rad: { label: "Weak background (0.3 rad/s)", cls: "badge-med" },
+                mats: "Canned Food, Water, Scrap, Trader Deals",
+                npc: null,
+                enemies: { zombie: 12, zombie_fast: 6, zombie_fat: 3, raider: 0, mutant: 0 },
+                resources: { wood: 3, food: 12, water: 10, scrap: 14, ammo: 40, medkit: 5, gasmask: 2 }
             },
             {
                 name: "Contaminated City",
@@ -2900,9 +2941,35 @@
                 size: 45,
                 radiation: 1.5, // Radiation strength per second
                 fuelCost: 25,
+                threat: { label: "High (Zombie Hordes)", cls: "badge-high" },
+                rad: { label: "Dangerous background (1.5 rad/s)", cls: "badge-high" },
+                mats: "Scrap, Filters, Military Medkits",
                 npc: null,
                 enemies: { zombie: 14, zombie_fast: 8, zombie_fat: 4, raider: 0, mutant: 0 },
                 resources: { wood: 4, food: 5, water: 4, scrap: 15, ammo: 50, medkit: 6, gasmask: 3 }
+            },
+            {
+                name: "Ruined Amusement Park",
+                description: "A rusted carnival frozen mid-scream. A broken Ferris wheel groans over the midway, paint peeling from the carousel. A wounded survivor is pinned somewhere among the booths.",
+                type: "amusement",
+                theme: "amusement",
+                timeOfDay: "twilight",
+                size: 44,
+                radiation: 0.4,
+                fuelCost: 28,
+                threat: { label: "High (Roaming Freaks)", cls: "badge-high" },
+                rad: { label: "Weak background (0.4 rad/s)", cls: "badge-med" },
+                mats: "Scrap, Ammo, Oddities",
+                npc: {
+                    name: "Wounded Survivor",
+                    text: "Cough... my leg's crushed under the coaster track. Give me a Medkit and I'll cut you in on the scrap I've been hoarding down here!",
+                    questItem: "medkit",
+                    rewardScrap: 18,
+                    rewardXp: 150
+                },
+                quest: { item: "medkit", rewardScrap: 18, rewardXp: 150 },
+                enemies: { zombie: 6, zombie_fast: 4, zombie_fat: 2, raider: 6, mutant: 0 },
+                resources: { wood: 4, food: 5, water: 4, scrap: 16, ammo: 45, medkit: 3, gasmask: 2 }
             },
             {
                 name: "Rusty Wasteland",
@@ -2913,13 +2980,10 @@
                 size: 40,
                 radiation: 0,
                 fuelCost: 30,
-                npc: {
-                    name: "Wounded Trader",
-                    text: "Cough... Raiders cornered me. Give me a Medkit and I'll share valuable scrap for your blueprints!",
-                    questItem: "medkit",
-                    rewardScrap: 18,
-                    rewardXp: 150
-                },
+                threat: { label: "High (Raiders)", cls: "badge-high" },
+                rad: { label: "None", cls: "badge-low" },
+                mats: "Scrap metal (Scrap), Ammo",
+                npc: null,
                 enemies: { zombie: 4, zombie_fast: 2, zombie_fat: 0, raider: 11, mutant: 0 },
                 resources: { wood: 5, food: 4, water: 4, scrap: 20, ammo: 40, medkit: 3, gasmask: 1 }
             },
@@ -2932,6 +2996,9 @@
                 size: 45,
                 radiation: 0.5,
                 fuelCost: 35,
+                threat: { label: "Extreme (Hounds in the dark)", cls: "badge-high" },
+                rad: { label: "Weak background (0.5 rad/s)", cls: "badge-med" },
+                mats: "Ammo, Scrap metal",
                 npc: null,
                 enemies: { zombie: 3, zombie_fast: 3, zombie_fat: 0, raider: 0, mutant: 12 },
                 resources: { wood: 2, food: 3, water: 3, scrap: 14, ammo: 60, medkit: 5, gasmask: 2 }
@@ -2945,6 +3012,9 @@
                 size: 50,
                 radiation: 0,
                 fuelCost: 40,
+                threat: { label: "Extreme (Military Raiders)", cls: "badge-high" },
+                rad: { label: "None", cls: "badge-low" },
+                mats: "Lots of Ammo, Weapons, Armor",
                 npc: null,
                 enemies: { zombie: 0, zombie_fast: 0, zombie_fat: 0, raider: 16, mutant: 3 },
                 resources: { wood: 2, food: 7, water: 7, scrap: 22, ammo: 80, medkit: 6, gasmask: 3 }
@@ -2958,14 +3028,107 @@
                 size: 45,
                 radiation: 1.2,
                 fuelCost: 45,
+                isFinal: true,
+                threat: { label: "DEADLY (BOSS)", cls: "badge-high" },
+                rad: { label: "Dangerous background (1.2 rad/s)", cls: "badge-high" },
+                mats: "Survival only",
                 npc: null,
                 enemies: { zombie: 8, zombie_fast: 4, zombie_fat: 2, raider: 0, mutant: 4, boss: 1 },
                 resources: { wood: 0, food: 5, water: 5, scrap: 10, ammo: 90, medkit: 8, gasmask: 4 }
             }
         ];
 
+        // Central per-location visual theme config. Every visual decision (ground, walls,
+        // atmosphere, props, enemy/NPC mix, water) reads from here instead of scattered
+        // `if (theme === ...)` branches. Ground textures are referenced by STRING KEY and
+        // resolved at runtime via materials[groundKey] — the materials cache doesn't exist
+        // until initThreeEngine runs, so we must never hold direct texture refs here.
+        // atmosphere:null means "derive lighting/fog from timeOfDay" (backward compatible).
+        const THEMES = {
+            grass: {
+                groundKey: 'grassTexs', wallStyle: 'tree', isIndoor: false,
+                accentColor: 0x15803d, waterColor: 0x14b8a6, npcType: 'campfire',
+                enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_slime','zombie_acid','zombie_bomber'],
+                innerStructure: 'ruins', manholes: false, atmosphere: null
+            },
+            city: {
+                groundKey: 'cityTexs', wallStyle: 'concrete', isIndoor: false,
+                accentColor: 0x84cc16, waterColor: 0x14b8a6, npcType: 'wounded',
+                enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_slime','zombie_acid','zombie_bomber','raider'],
+                innerStructure: 'ruins', manholes: true, atmosphere: null
+            },
+            sand: {
+                groundKey: 'sandTexs', wallStyle: 'concrete', isIndoor: false,
+                accentColor: 0xf59e0b, waterColor: 0x0284c7, npcType: 'wounded',
+                enemyPool: ['zombie','zombie_fast','mutant'],
+                innerStructure: 'ruins', manholes: false, atmosphere: null
+            },
+            tunnel: {
+                groundKey: 'tunnelTexs', wallStyle: 'concrete', isIndoor: true,
+                accentColor: 0x38bdf8, waterColor: 0x475569, npcType: 'guard',
+                enemyPool: ['zombie','zombie_fast','mutant'],
+                innerStructure: 'corridor', manholes: false, atmosphere: null
+            },
+            asphalt: {
+                groundKey: 'militaryTexs', wallStyle: 'concrete', isIndoor: false,
+                accentColor: 0x475569, waterColor: 0x475569, npcType: 'guard',
+                enemyPool: ['zombie','zombie_fast','mutant','raider'],
+                innerStructure: 'ruins', manholes: true, atmosphere: null
+            },
+            bunker: {
+                groundKey: 'bunkerTexs', wallStyle: 'concrete', isIndoor: true,
+                accentColor: 0x38bdf8, waterColor: 0x475569, npcType: 'guard',
+                enemyPool: ['zombie','zombie_fast','zombie_fat','mutant'],
+                innerStructure: 'chambers', manholes: false, atmosphere: null
+            },
+            // NEW THEMES
+            lab: {
+                groundKey: 'labTexs', wallStyle: 'lab', isIndoor: true,
+                accentColor: 0x22d3ee, waterColor: 0x22d3ee, npcType: 'campfire',
+                enemyPool: ['zombie','zombie_slime','zombie_acid'],
+                innerStructure: 'chambers', manholes: false,
+                atmosphere: {
+                    skyColor: 0x0e2a33, groundColor: 0x06141a, hemiIntensity: 0.35,
+                    ambientColor: 0x0a1f26, ambientIntensity: 0.22,
+                    sunColor: 0x22d3ee, sunIntensity: 0.0, sunPos: [0, 12, 0],
+                    fogColor: '#04141a', fogDensity: 0.018
+                }
+            },
+            supermarket: {
+                groundKey: 'marketTexs', wallStyle: 'shelf', isIndoor: true,
+                accentColor: 0xfbbf24, waterColor: 0x475569, npcType: 'wounded',
+                enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_slime'],
+                innerStructure: 'aisles', manholes: false,
+                atmosphere: {
+                    skyColor: 0x1a1a20, groundColor: 0x0a0a0d, hemiIntensity: 0.28,
+                    ambientColor: 0x14140f, ambientIntensity: 0.16,
+                    sunColor: 0xfef3c7, sunIntensity: 0.0, sunPos: [0, 12, 0],
+                    fogColor: '#0a0a08', fogDensity: 0.02
+                }
+            },
+            amusement: {
+                groundKey: 'parkTexs', wallStyle: 'fence', isIndoor: false,
+                accentColor: 0xec4899, waterColor: 0x0ea5e9, npcType: 'wounded',
+                enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_bomber','raider'],
+                innerStructure: 'midway', manholes: false,
+                atmosphere: {
+                    skyColor: 0x4c1d4b, groundColor: 0x1a0f1a, hemiIntensity: 0.3,
+                    ambientColor: 0x1a0d18, ambientIntensity: 0.06,
+                    sunColor: 0xec4899, sunIntensity: 0.28, sunPos: [20, 7, -14],
+                    fogColor: '#0d060c', fogDensity: 0.016
+                }
+            }
+        };
+
+        // Crash-safe theme accessor — an unknown/missing theme falls back to grass.
+        function getTheme(name) { return THEMES[name] || THEMES.grass; }
+
+        // Bump when the LOCATIONS roster changes shape so old saves migrate safely (see loadGameData).
+        const SAVE_VERSION = 2;
+
         // Global state object
         let gameState = {
+            saveVersion: SAVE_VERSION,
             currentLocationIndex: 0,
             
             // Vital stats
@@ -3073,6 +3236,15 @@
             if (raw) {
                 try {
                     gameState = JSON.parse(raw);
+                    // Save migration: the location roster was reordered/expanded (lab tutorial +
+                    // new maps). Old saves store a currentLocationIndex that now points at a
+                    // different map, so on a version mismatch we send the player back to the
+                    // start rather than loading a mismatched location.
+                    if (gameState.saveVersion !== SAVE_VERSION) {
+                        gameState.currentLocationIndex = 0;
+                        gameState.questMedkitDelivered = false;
+                        gameState.saveVersion = SAVE_VERSION;
+                    }
                     // Validation for structural integrity
                     if (!gameState.skills) gameState.skills = { strength:0, agility:0, survival:0 };
                     if (!gameState.trainUpgrades) gameState.trainUpgrades = { engine:0, armor:0, storage:0 };
@@ -3711,48 +3883,26 @@
             let radBadge = document.getElementById('panel-loc-rad');
             let matsText = document.getElementById('panel-loc-mats');
             
-            if (gameState.currentLocationIndex === 0) {
-                threatBadge.className = "loc-badge badge-low"; threatBadge.innerText = "Minimal";
-                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "None";
-                matsText.innerText = "Gasoline, Canned Food, Water";
-            } else if (loc.type === 'forest') {
-                threatBadge.className = "loc-badge badge-med"; threatBadge.innerText = "Medium (Zombies)";
-                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "None";
-                matsText.innerText = "Lots of Gasoline, Berries (Food), Water";
-            } else if (loc.type === 'city') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "High (Zombie Hordes)";
-                radBadge.className = "loc-badge badge-high"; radBadge.innerText = "Dangerous background (1.5 rad/s)";
-                matsText.innerText = "Scrap, Filters, Military Medkits";
-            } else if (loc.type === 'wasteland') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "High (Raiders)";
-                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "None";
-                matsText.innerText = "Scrap metal (Scrap), Ammo";
-            } else if (loc.type === 'tunnel') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Extreme (Hounds in the dark)";
-                radBadge.className = "loc-badge badge-med"; radBadge.innerText = "Weak background (0.5 rad/s)";
-                matsText.innerText = "Ammo, Scrap metal";
-            } else if (loc.type === 'military') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "Extreme (Military Raiders)";
-                radBadge.className = "loc-badge badge-low"; radBadge.innerText = "None";
-                matsText.innerText = "Lots of Ammo, Weapons, Armor";
-            } else if (loc.type === 'bunker') {
-                threatBadge.className = "loc-badge badge-high"; threatBadge.innerText = "DEADLY (BOSS)";
-                radBadge.className = "loc-badge badge-high"; radBadge.innerText = "Dangerous background (1.2 rad/s)";
-                matsText.innerText = "Survival only";
-            }
+            // Threat / radiation / materials badges are declared per-location in LOCATIONS
+            // (loc.threat, loc.rad, loc.mats), with safe fallbacks for any older entry.
+            let threatInfo = loc.threat || { label: "Unknown", cls: "badge-med" };
+            let radInfo = loc.rad || { label: (loc.radiation > 0 ? "Present" : "None"), cls: loc.radiation > 0 ? "badge-high" : "badge-low" };
+            threatBadge.className = "loc-badge " + threatInfo.cls; threatBadge.innerText = threatInfo.label;
+            radBadge.className = "loc-badge " + radInfo.cls; radBadge.innerText = radInfo.label;
+            matsText.innerText = loc.mats || "Assorted supplies";
 
             // Reset and show NPC tabs
             document.getElementById('tab-trader').style.display = 'none';
             document.getElementById('tab-dialog').style.display = 'none';
-            
-            // If trader is at this location (index 2 - City)
-            if (gameState.currentLocationIndex === 2) {
+
+            // Show the local trader tab wherever a location flags hasTrader
+            if (loc.hasTrader) {
                 document.getElementById('tab-trader').style.display = 'block';
                 setupTraderTab();
             }
 
-            // If wounded survivor (quest) at this location (index 3 - Wasteland)
-            if (gameState.currentLocationIndex === 3 && !gameState.questMedkitDelivered) {
+            // Show the wounded-survivor quest wherever a location defines an unfinished quest
+            if (loc.quest && !gameState.questMedkitDelivered) {
                 document.getElementById('tab-dialog').style.display = 'block';
                 setupQuestTab();
             }
@@ -4146,7 +4296,7 @@
         }
 
         function updateTraderButtons() {
-            if (gameState.currentLocationIndex !== 2) return;
+            if (!LOCATIONS[gameState.currentLocationIndex].hasTrader) return;
             document.getElementById('trade-btn-1').disabled = gameState.inventory.wood < 1;
             document.getElementById('trade-btn-2').disabled = gameState.inventory.scrap < 3;
             document.getElementById('trade-btn-3').disabled = gameState.inventory.scrap < 2;
@@ -4209,6 +4359,7 @@
         function startNewGame() {
             // Init start params for New Game
             gameState = {
+                saveVersion: SAVE_VERSION,
                 currentLocationIndex: 0,
                 // Rogue-like perks collected during the run
                 runPerks: {
@@ -4890,7 +5041,149 @@
             });
             materials.asphaltTexs = [asphalt1, asphalt2, asphalt3, asphalt4];
             materials.asphaltTex = asphalt1;
-            
+
+            // 7b. Per-location ground palettes. Each is a length-4 variation set (the ground
+            // instancer hardcodes 4). Splitting the old shared "asphalt" into distinct bases +
+            // patternFuncs is what gives city / military / tunnel / bunker their own read.
+
+            // City — warm sooty asphalt with faded road markings
+            let city1 = createPixelTexture(64, 64, '#1c1b1a', 6, (ctx, w, h) => {
+                ctx.fillStyle = '#6b5f2e'; ctx.fillRect(30, 0, 3, 64); // faded double yellow line
+                ctx.fillRect(36, 0, 3, 64);
+            });
+            let city2 = createPixelTexture(64, 64, '#232120', 12, (ctx, w, h) => {
+                ctx.strokeStyle = '#0f0e0d'; ctx.lineWidth = 1; ctx.beginPath();
+                ctx.moveTo(0, 18); ctx.lineTo(64, 30); ctx.moveTo(28, 0); ctx.lineTo(38, 64); ctx.stroke();
+            });
+            let city3 = createPixelTexture(64, 64, '#191817', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#2b2724';
+                for (let i = 0; i < 18; i++) ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 3, 3);
+            });
+            let city4 = createPixelTexture(64, 64, '#141312', 10, (ctx, w, h) => {
+                ctx.fillStyle = '#0b0a09';
+                for (let i = 0; i < 10; i++) ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 7, 7); // oil stains
+            });
+            materials.cityTexs = [city1, city2, city3, city4];
+
+            // Military — cold steel-grey plating with painted stencils
+            let mil1 = createPixelTexture(64, 64, '#242528', 8, (ctx, w, h) => {
+                ctx.strokeStyle = '#d1d5db'; ctx.lineWidth = 2; ctx.beginPath(); // white chevrons
+                for (let i = -16; i < 64; i += 16) { ctx.moveTo(i, 0); ctx.lineTo(i + 12, 12); ctx.lineTo(i, 24); }
+                ctx.stroke();
+            });
+            let mil2 = createPixelTexture(64, 64, '#2b2d30', 10, (ctx, w, h) => {
+                ctx.strokeStyle = '#1a1a1c'; ctx.lineWidth = 2; ctx.beginPath();
+                for (let i = 0; i <= 64; i += 16) { ctx.moveTo(i, 0); ctx.lineTo(i, 64); ctx.moveTo(0, i); ctx.lineTo(64, i); }
+                ctx.stroke();
+            });
+            let mil3 = createPixelTexture(64, 64, '#1f2023', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#3a3d40'; // bolt rivets
+                for (let gx = 8; gx < 64; gx += 16) for (let gz = 8; gz < 64; gz += 16) ctx.fillRect(gx, gz, 2, 2);
+            });
+            let mil4 = createPixelTexture(64, 64, '#26282b', 12, (ctx, w, h) => {
+                ctx.fillStyle = '#17181a';
+                for (let i = 0; i < 12; i++) ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 5, 5);
+            });
+            materials.militaryTexs = [mil1, mil2, mil3, mil4];
+
+            // Tunnel — near-black wet concrete with drainage channels
+            let tun1 = createPixelTexture(64, 64, '#141416', 5, (ctx, w, h) => {
+                ctx.fillStyle = '#0a0a0c'; ctx.fillRect(20, 0, 2, 64); ctx.fillRect(44, 0, 2, 64); // drainage channels
+            });
+            let tun2 = createPixelTexture(64, 64, '#1a1a1d', 8, (ctx, w, h) => {
+                ctx.fillStyle = 'rgba(120,140,160,0.10)'; // puddle sheen
+                for (let i = 0; i < 8; i++) ctx.beginPath(), ctx.arc(Math.random()*w, Math.random()*h, 2 + Math.random()*4, 0, 6.28), ctx.fill();
+            });
+            let tun3 = createPixelTexture(64, 64, '#111113', 6, (ctx, w, h) => {
+                ctx.strokeStyle = '#060607'; ctx.lineWidth = 1; ctx.beginPath();
+                ctx.moveTo(0, 32); ctx.lineTo(64, 40); ctx.stroke();
+            });
+            let tun4 = createPixelTexture(64, 64, '#0e0e10', 7, (ctx, w, h) => {
+                ctx.fillStyle = '#050506';
+                for (let i = 0; i < 14; i++) ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 2, 2);
+            });
+            materials.tunnelTexs = [tun1, tun2, tun3, tun4];
+
+            // Bunker — riveted steel floor plate
+            let bnk1 = createPixelTexture(64, 64, '#2a2c2f', 6, (ctx, w, h) => {
+                ctx.strokeStyle = '#17181a'; ctx.lineWidth = 2; ctx.beginPath();
+                for (let i = 0; i <= 64; i += 16) { ctx.moveTo(i, 0); ctx.lineTo(i, 64); ctx.moveTo(0, i); ctx.lineTo(64, i); }
+                ctx.stroke();
+                ctx.fillStyle = '#3d4044';
+                for (let gx = 4; gx < 64; gx += 16) for (let gz = 4; gz < 64; gz += 16) ctx.fillRect(gx, gz, 3, 3); // corner rivets
+            });
+            let bnk2 = createPixelTexture(64, 64, '#25272a', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#1a1b1d';
+                for (let i = 0; i < 20; i++) ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 2, 2);
+            });
+            let bnk3 = createPixelTexture(64, 64, '#202225', 7, (ctx, w, h) => {
+                ctx.strokeStyle = '#121315'; ctx.lineWidth = 3; ctx.strokeRect(2, 2, 60, 60); // plate seam
+            });
+            let bnk4 = createPixelTexture(64, 64, '#282a2d', 10, (ctx, w, h) => {
+                ctx.fillStyle = '#8a6d1e'; // faint rust bleed
+                for (let i = 0; i < 6; i++) ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 4, 2);
+            });
+            materials.bunkerTexs = [bnk1, bnk2, bnk3, bnk4];
+
+            // Lab — sterile white-cyan tile with grout grid (low noise = clinically clean)
+            let lab1 = createPixelTexture(64, 64, '#c8d4d6', 4, (ctx, w, h) => {
+                ctx.strokeStyle = '#7f9aa0'; ctx.lineWidth = 1;
+                ctx.strokeRect(0, 0, 32, 32); ctx.strokeRect(32, 0, 32, 32);
+                ctx.strokeRect(0, 32, 32, 32); ctx.strokeRect(32, 32, 32, 32);
+            });
+            let lab2 = createPixelTexture(64, 64, '#bcc9cc', 4, (ctx, w, h) => {
+                ctx.strokeStyle = '#7f9aa0'; ctx.lineWidth = 1; ctx.strokeRect(0.5, 0.5, 63, 63);
+                ctx.fillStyle = 'rgba(34,211,238,0.35)'; ctx.fillRect(0, 28, 64, 8); // cyan hazard stripe
+            });
+            let lab3 = createPixelTexture(64, 64, '#c2cfd1', 5, (ctx, w, h) => {
+                ctx.strokeStyle = '#7f9aa0'; ctx.lineWidth = 1;
+                for (let i = 0; i <= 64; i += 16) { ctx.moveTo(i, 0); ctx.lineTo(i, 64); ctx.moveTo(0, i); ctx.lineTo(64, i); }
+                ctx.stroke();
+            });
+            let lab4 = createPixelTexture(64, 64, '#b3c0c3', 4, (ctx, w, h) => {
+                ctx.fillStyle = '#5f7a80'; // quad biohazard-ish dot cluster
+                ctx.fillRect(28, 24, 3, 3); ctx.fillRect(34, 24, 3, 3); ctx.fillRect(31, 30, 3, 3);
+            });
+            materials.labTexs = [lab1, lab2, lab3, lab4];
+
+            // Supermarket — off-white linoleum checkerboard
+            let mkt1 = createPixelTexture(64, 64, '#b9b3a4', 6, (ctx, w, h) => {
+                ctx.fillStyle = '#9a9484'; // checkerboard
+                ctx.fillRect(0, 0, 32, 32); ctx.fillRect(32, 32, 32, 32);
+            });
+            let mkt2 = createPixelTexture(64, 64, '#c0baab', 6, (ctx, w, h) => {
+                ctx.strokeStyle = 'rgba(80,74,64,0.4)'; ctx.lineWidth = 2; ctx.beginPath();
+                ctx.arc(32, 40, 20, Math.PI, Math.PI * 1.7); ctx.stroke(); // scuff arc
+            });
+            let mkt3 = createPixelTexture(64, 64, '#b3ad9e', 6, (ctx, w, h) => {
+                ctx.fillStyle = 'rgba(180,140,40,0.5)'; // faded painted arrow
+                ctx.beginPath(); ctx.moveTo(24, 20); ctx.lineTo(40, 32); ctx.lineTo(24, 44); ctx.closePath(); ctx.fill();
+            });
+            let mkt4 = createPixelTexture(64, 64, '#aca695', 8, (ctx, w, h) => {
+                ctx.fillStyle = '#8a8474';
+                ctx.fillRect(32, 0, 32, 32); ctx.fillRect(0, 32, 32, 32);
+            });
+            materials.marketTexs = [mkt1, mkt2, mkt3, mkt4];
+
+            // Amusement park — sun-bleached concrete with peeling painted midway tiles
+            let park1 = createPixelTexture(64, 64, '#6b5f52', 8, (ctx, w, h) => {
+                let cols = ['rgba(194,65,12,0.5)', 'rgba(14,116,144,0.5)', 'rgba(161,98,7,0.5)'];
+                for (let i = 0; i < 14; i++) { ctx.fillStyle = cols[i % 3]; ctx.fillRect(Math.floor(Math.random()*8)*8, Math.floor(Math.random()*8)*8, 8, 8); }
+            });
+            let park2 = createPixelTexture(64, 64, '#5f5449', 10, (ctx, w, h) => {
+                ctx.fillStyle = '#243b1e'; // weeds through cracks
+                for (let i = 0; i < 30; i++) ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 2, 3);
+            });
+            let park3 = createPixelTexture(64, 64, '#726657', 8, (ctx, w, h) => {
+                ctx.strokeStyle = 'rgba(219,39,119,0.4)'; ctx.lineWidth = 2; // faded pink guide line
+                ctx.beginPath(); ctx.moveTo(0, 20); ctx.lineTo(64, 28); ctx.stroke();
+            });
+            let park4 = createPixelTexture(64, 64, '#645848', 10, (ctx, w, h) => {
+                ctx.strokeStyle = '#3f382d'; ctx.lineWidth = 1; ctx.beginPath();
+                ctx.moveTo(16, 0); ctx.lineTo(20, 64); ctx.moveTo(48, 0); ctx.lineTo(44, 64); ctx.stroke(); // cracks
+            });
+            materials.parkTexs = [park1, park2, park3, park4];
+
             // 8. Train metal (bolted armored plates with weld/rust marks)
             let trainMetalTex = createPixelTexture(32, 32, '#2d2f33', 4, (ctx, w, h) => {
                 ctx.strokeStyle = '#1c1d1f'; // dark plate borders
@@ -6015,17 +6308,16 @@
             let loc = LOCATIONS[gameState.currentLocationIndex];
             let N = loc.size;
             
-            // Restore player stats at Safe Station
-            if (gameState.currentLocationIndex === 0) {
+            // Restore player stats at any safe zone (tutorial lab, camp, etc.)
+            if (loc.isSafeZone) {
                 gameState.hp = getMaxHp();
                 gameState.hunger = 100;
                 gameState.thirst = 100;
             }
-            
-            // Baseplate Ground Plane (Roblox style studs grid) - Prevent tiling monotony using 4 variations via InstancedMesh
-            let groundTexs = materials.grassTexs;
-            if (loc.theme === 'sand') groundTexs = materials.sandTexs;
-            else if (loc.theme === 'city' || loc.theme === 'asphalt' || loc.theme === 'tunnel' || loc.theme === 'bunker') groundTexs = materials.asphaltTexs;
+
+            // Baseplate Ground Plane (Roblox style studs grid) - Prevent tiling monotony using 4 variations via InstancedMesh.
+            // Ground palette is selected per-theme via THEMES[theme].groundKey (resolved against the runtime materials cache).
+            let groundTexs = materials[getTheme(loc.theme).groundKey] || materials.grassTexs;
             
             let tileSize = 4.0;
             let tileGeo = new THREE.PlaneGeometry(tileSize, tileSize);
@@ -6065,14 +6357,29 @@
             
                         // Dynamic Time of Day and Global Illumination settings (Dramatic sunset, violet dusk, and pitch black night)
             let timeOfDay = loc.timeOfDay || 'evening'; // Default to evening dusk
-            let isIndoor = (loc.theme === 'tunnel' || loc.theme === 'bunker');
-            
+            let themeCfg = getTheme(loc.theme);
+            let isIndoor = themeCfg.isIndoor;
+            let themeAtmo = themeCfg.atmosphere; // explicit per-theme override, or null to derive from timeOfDay
+
             let skyColor, groundColor, hemiIntensity;
             let ambientColor, ambientIntensity;
             let sunColor, sunIntensity, sunPos;
             let fogColor, fogDensity;
-            
-            if (isIndoor) {
+
+            if (themeAtmo) {
+                // Explicit theme atmosphere (lab / supermarket / amusement) — a bespoke look
+                // that doesn't fit the generic time-of-day palettes.
+                skyColor = themeAtmo.skyColor;
+                groundColor = themeAtmo.groundColor;
+                hemiIntensity = themeAtmo.hemiIntensity;
+                ambientColor = themeAtmo.ambientColor;
+                ambientIntensity = themeAtmo.ambientIntensity;
+                sunColor = themeAtmo.sunColor;
+                sunIntensity = themeAtmo.sunIntensity;
+                sunPos = new THREE.Vector3(themeAtmo.sunPos[0], themeAtmo.sunPos[1], themeAtmo.sunPos[2]);
+                fogColor = themeAtmo.fogColor;
+                fogDensity = themeAtmo.fogDensity;
+            } else if (isIndoor) {
                 // Pitch black underground bunker/tunnel
                 skyColor = 0x0f172a;
                 groundColor = 0x020617;
@@ -6593,6 +6900,76 @@
             }
         }
 
+        // Easter eggs — tasteful modern parody riffs in the spirit of Fallout's world notes.
+        // Text-only references (no trademarked logos), scattered rarely (1-2 per map).
+        const EASTER_EGGS = [
+            { kind: 'note', title: 'WAR NEVER CHANGES', body: 'so we stopped keeping score.' },
+            { kind: 'note', title: 'THE CAKE', body: 'was a lie. obviously.' },
+            { kind: 'note', title: 'DAY 0', body: 'patch notes: added zombies. wont fix.' },
+            { kind: 'note', title: 'PRESS F', body: 'to pay respects.' },
+            { kind: 'sign', text: 'NUKA-BREAK COLA', color: '#7f1d2b' },
+            { kind: 'sign', text: 'VAULT 4 THIS WAY', color: '#0e3a52' },
+            { kind: 'sign', text: 'DINKY THE DINO', color: '#14532d' },
+            { kind: 'sign', text: 'FREE HUGS 5 SCRAP', color: '#4a2540' },
+            { kind: 'object', build: 'duck', color: 0xfacc15 },
+            { kind: 'object', build: 'gnome', color: 0xdc2626 }
+        ];
+
+        function spawnEasterEgg(x, z) {
+            let egg = EASTER_EGGS[Math.floor(Math.random() * EASTER_EGGS.length)];
+            let group = new THREE.Group();
+            group.position.set(x, 0, z);
+
+            if (egg.kind === 'note' || egg.kind === 'sign') {
+                // Small readable placard rendered from a pixel texture, mounted on a post.
+                let tex = createPixelTexture(128, 64, egg.color || '#1f2937', 3, (ctx, w, h) => {
+                    ctx.fillStyle = '#fef3c7';
+                    ctx.font = 'bold 11px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText((egg.title || egg.text || '').slice(0, 17), w / 2, egg.kind === 'note' ? 22 : 38);
+                    if (egg.body) {
+                        ctx.font = '8px monospace';
+                        ctx.fillStyle = '#e5e7eb';
+                        ctx.fillText(egg.body.slice(0, 24), w / 2, 44);
+                    }
+                }, false, false);
+                let plane = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.55),
+                    new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }));
+                plane.position.y = 1.15;
+                plane.rotation.y = Math.random() * Math.PI * 2;
+                group.add(plane);
+                let post = new THREE.Mesh(new THREE.BoxGeometry(0.07, 1.15, 0.07), materials.wall);
+                post.position.y = 0.575;
+                post.castShadow = true;
+                group.add(post);
+            } else {
+                // Small referential blocky prop
+                let body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.4),
+                    new THREE.MeshStandardMaterial({ color: egg.color || 0xdc2626, roughness: 0.6 }));
+                body.position.y = 0.25;
+                body.castShadow = true;
+                group.add(body);
+                if (egg.build === 'duck') {
+                    // little head + beak
+                    let head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.22), body.material);
+                    head.position.set(0, 0.6, 0.05);
+                    group.add(head);
+                    let beak = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.08, 0.12),
+                        new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.6 }));
+                    beak.position.set(0, 0.58, 0.2);
+                    group.add(beak);
+                } else if (egg.build === 'gnome') {
+                    // pointed hat
+                    let hat = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.35, 8),
+                        new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.7 }));
+                    hat.position.y = 0.68;
+                    group.add(hat);
+                }
+            }
+            scene.add(group);
+            group.updateMatrixWorld(true);
+        }
+
         function spawnRuinedBuilding(x, z) {
             let group = new THREE.Group();
             group.position.set(x * 2.0, 0, z * 2.0);
@@ -6717,25 +7094,28 @@
                 spawnWallMesh(-N * 2.0, i * 2.0, wallGeo);
             }
             
-            // Inner structures (Bunker/Tunnels)
-            if (theme === 'tunnel') {
-                // narrow paths
+            // Inner structures — chosen per-theme via THEMES[theme].innerStructure.
+            let themeCfg = getTheme(theme);
+            let innerStructure = themeCfg.innerStructure;
+
+            if (innerStructure === 'corridor') {
+                // narrow paths (tunnel)
                 for (let x = -N; x <= N; x++) {
                     for (let z = -N; z <= N; z++) {
                         if (z < -8 || z > 16) {
                             // Leave rail corridor open
-                            if (x > -14 && x < 14) continue; 
+                            if (x > -14 && x < 14) continue;
                             spawnWallMesh(x * 2.0, z * 2.0, wallGeo);
                         }
                     }
                 }
-            } else if (theme === 'bunker') {
-                // Blocky grid chambers
+            } else if (innerStructure === 'chambers') {
+                // Blocky grid chambers (bunker, lab — rendered with the theme's wall style)
                 for (let x = -N + 4; x < N - 4; x += 10) {
                     for (let z = -N + 4; z < N - 4; z += 10) {
                         // Skip spawn zone around train
                         if (x < 2 && z < 2) continue;
-                        
+
                         // Spawn block rooms
                         for (let k = 0; k < 8; k++) {
                             if (k !== 4) { // Doorway opening
@@ -6745,16 +7125,48 @@
                         }
                     }
                 }
+            } else if (innerStructure === 'aisles') {
+                // Supermarket: long parallel rows of shelving forming shoppable aisles,
+                // with gaps so the player can weave between them.
+                for (let x = -N + 8; x < N - 8; x += 8) {
+                    for (let z = -N + 6; z < N - 6; z += 2) {
+                        // Skip spawn zone around the entrance
+                        if (x < 4 && z > -18 && z < 6) continue;
+                        // Periodic cross-aisle gaps
+                        if (Math.abs(z % 14) < 2) continue;
+                        spawnWallMesh(x * 2.0, z * 2.0, wallGeo);
+                    }
+                }
+            } else if (innerStructure === 'midway') {
+                // Amusement park: fence-lined lanes plus scattered ruined attractions/booths.
+                let laneCount = Math.round(N / 3);
+                for (let l = 0; l < laneCount; l++) {
+                    let lx = THREE.MathUtils.randInt(-N + 6, N - 6);
+                    let lz0 = THREE.MathUtils.randInt(-N + 6, 0);
+                    let len = THREE.MathUtils.randInt(3, 6);
+                    for (let z = lz0; z < lz0 + len && z < N - 4; z++) {
+                        if (lx > -12 && lx < 6 && z > -18 && z < 6) continue; // spawn zone
+                        spawnWallMesh(lx * 2.0, z * 2.0, wallGeo);
+                    }
+                }
+                // Ruined attractions dotted across the midway
+                let boothCount = Math.round(N / 4);
+                for (let b = 0; b < boothCount; b++) {
+                    let rx = THREE.MathUtils.randInt(-N + 8, N - 8);
+                    let rz = THREE.MathUtils.randInt(-N + 8, N - 8);
+                    if (rx > -12 && rx < 6 && rz > -18 && rz < 6) continue;
+                    (Math.random() < 0.5) ? spawnRuinedBuilding(rx, rz) : spawnStreetDebris(rx * 2.0, rz * 2.0);
+                }
             } else {
-                // For grass, sand, city, asphalt: spawn ruined buildings, burning barrels, cars, and trash!
+                // Ruins (grass, sand, city, asphalt): ruined buildings, burning barrels, cars, and trash!
                 let ruinCount = Math.round(N / 2.5); // e.g. 10 to 18 clusters
                 for (let r = 0; r < ruinCount; r++) {
                     let rx = THREE.MathUtils.randInt(-N + 8, N - 8);
                     let rz = THREE.MathUtils.randInt(-N + 8, N - 8);
-                    
+
                     // Skip spawn zone around starting SUV
                     if (rx > -12 && rx < 6 && rz > -18 && rz < 6) continue;
-                    
+
                     let roll = Math.random();
                     if (roll < 0.35) {
                         // 1. Spawn Ruined Building (modular concrete structure with windows & doors)
@@ -6769,9 +7181,9 @@
                         // 4. Spawn Street Trash / Crate piles
                         spawnStreetDebris(rx * 2.0, rz * 2.0);
                     }
-                    
-                    // On city/asphalt streets, occasionally spawn a manhole cover
-                    if ((theme === 'city' || theme === 'asphalt') && Math.random() < 0.3) {
+
+                    // On themes with manholes (city/asphalt), occasionally spawn a manhole cover
+                    if (themeCfg.manholes && Math.random() < 0.3) {
                         spawnManhole((rx + THREE.MathUtils.randFloat(-2, 2)) * 2.0, (rz + THREE.MathUtils.randFloat(-2, 2)) * 2.0);
                     }
                 }
@@ -6786,15 +7198,16 @@
             wallGroup.position.set(x, 0, z);
             
             let colliderBox;
-            
-            if (theme === 'grass') {
+            let wallStyle = getTheme(theme).wallStyle;
+
+            if (wallStyle === 'tree') {
                 // Spawn a tall blocky forest tree as the wall!
                 let trunk = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.6, 0.6), materials.wood);
                 trunk.position.y = 0.8;
                 trunk.castShadow = true;
                 trunk.receiveShadow = true;
                 wallGroup.add(trunk);
-                
+
                 let leaves1 = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.0, 1.8), materials.leaf);
                 leaves1.position.y = 1.9;
                 leaves1.castShadow = true;
@@ -6806,13 +7219,116 @@
                 leaves2.castShadow = true;
                 leaves2.receiveShadow = true;
                 wallGroup.add(leaves2);
-                
+
                 scene.add(wallGroup);
                 wallGroup.updateMatrixWorld(true);
-                
+
                 colliderBox = new THREE.Box3(
                     new THREE.Vector3(x - 0.7, 0, z - 0.7),
                     new THREE.Vector3(x + 0.7, 3.2, z + 0.7)
+                );
+            } else if (wallStyle === 'lab') {
+                // Lab: metal base + translucent cyan glass panel; occasionally a containment pod.
+                if (Math.random() < 0.15) {
+                    // Containment pod — a glowing green specimen tube on a metal base
+                    let podBase = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.4, 1.4), materials.wall);
+                    podBase.position.y = 0.2;
+                    podBase.castShadow = true; podBase.receiveShadow = true;
+                    wallGroup.add(podBase);
+                    let tube = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.5, 0.5, 2.4, 12),
+                        new THREE.MeshStandardMaterial({ color: 0x22c55e, transparent: true, opacity: 0.4, roughness: 0.1, metalness: 0.4, emissive: 0x064e3b, emissiveIntensity: 0.6 })
+                    );
+                    tube.position.y = 1.6;
+                    wallGroup.add(tube);
+                } else {
+                    // Metal lower panel
+                    let base = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.0, 0.4), materials.wall);
+                    base.position.y = 0.5;
+                    base.castShadow = true; base.receiveShadow = true;
+                    wallGroup.add(base);
+                    // Translucent cyan glass upper panel
+                    let glass = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.0, 0.15),
+                        new THREE.MeshStandardMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.35, roughness: 0.1, metalness: 0.6, emissive: 0x0e7490, emissiveIntensity: 0.35 }));
+                    glass.position.y = 2.0;
+                    wallGroup.add(glass);
+                    // Emissive frame beam
+                    let frameMat = new THREE.MeshStandardMaterial({ color: 0x155e75, roughness: 0.4, metalness: 0.8, emissive: 0x22d3ee, emissiveIntensity: 0.4 });
+                    let beam = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.2, 0.45), frameMat);
+                    beam.position.y = 2.95;
+                    wallGroup.add(beam);
+                }
+                scene.add(wallGroup);
+                wallGroup.updateMatrixWorld(true);
+                colliderBox = new THREE.Box3(
+                    new THREE.Vector3(x - 1.0, 0, z - 1.0),
+                    new THREE.Vector3(x + 1.0, 3.0, z + 1.0)
+                );
+            } else if (wallStyle === 'shelf') {
+                // Supermarket: retail shelving unit, sometimes toppled onto its side.
+                let toppled = Math.random() < 0.2;
+                // Corner uprights
+                let upGeo = new THREE.BoxGeometry(0.12, 2.0, 0.12);
+                for (let sx = -1; sx <= 1; sx += 2) {
+                    for (let sz = -1; sz <= 1; sz += 2) {
+                        let up = new THREE.Mesh(upGeo, materials.scrap);
+                        up.position.set(sx * 0.9, 1.0, sz * 0.45);
+                        up.castShadow = true;
+                        wallGroup.add(up);
+                    }
+                }
+                // Two shelf planks
+                let plankGeo = new THREE.BoxGeometry(2.0, 0.12, 1.0);
+                [0.6, 1.4].forEach(py => {
+                    let plank = new THREE.Mesh(plankGeo, materials.scrap);
+                    plank.position.set(0, py, 0);
+                    plank.castShadow = true; plank.receiveShadow = true;
+                    wallGroup.add(plank);
+                });
+                // Scattered product boxes on top
+                let boxColors = [0xdc2626, 0x2563eb, 0xf59e0b, 0x16a34a, 0xdb2777];
+                let prodCount = THREE.MathUtils.randInt(2, 3);
+                for (let p = 0; p < prodCount; p++) {
+                    let box = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3),
+                        new THREE.MeshStandardMaterial({ color: boxColors[Math.floor(Math.random() * boxColors.length)], roughness: 0.7 }));
+                    box.position.set(THREE.MathUtils.randFloat(-0.7, 0.7), 1.6, THREE.MathUtils.randFloat(-0.3, 0.3));
+                    box.castShadow = true;
+                    wallGroup.add(box);
+                }
+                if (toppled) wallGroup.rotation.z = Math.PI / 2.2;
+                scene.add(wallGroup);
+                wallGroup.updateMatrixWorld(true);
+                colliderBox = new THREE.Box3(
+                    new THREE.Vector3(x - 1.0, 0, z - 1.0),
+                    new THREE.Vector3(x + 1.0, 2.2, z + 1.0)
+                );
+            } else if (wallStyle === 'fence') {
+                // Amusement park: chain-link fence panel with end posts and a mesh panel.
+                let postGeo = new THREE.BoxGeometry(0.15, 3.0, 0.15);
+                let postMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 0.5, metalness: 0.7 });
+                for (let sx = -1; sx <= 1; sx += 2) {
+                    let post = new THREE.Mesh(postGeo, postMat);
+                    post.position.set(sx * 0.95, 1.5, 0);
+                    post.castShadow = true;
+                    wallGroup.add(post);
+                }
+                // Horizontal rails
+                let railGeo = new THREE.BoxGeometry(2.0, 0.1, 0.1);
+                [1.0, 2.4].forEach(ry => {
+                    let rail = new THREE.Mesh(railGeo, postMat);
+                    rail.position.set(0, ry, 0);
+                    wallGroup.add(rail);
+                });
+                // Semi-transparent chain-link mesh panel
+                let mesh = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.2, 0.05),
+                    new THREE.MeshStandardMaterial({ color: 0x9ca3af, transparent: true, opacity: 0.25, roughness: 0.6, metalness: 0.5 }));
+                mesh.position.set(0, 1.6, 0);
+                wallGroup.add(mesh);
+                scene.add(wallGroup);
+                wallGroup.updateMatrixWorld(true);
+                colliderBox = new THREE.Box3(
+                    new THREE.Vector3(x - 0.9, 0, z - 0.9),
+                    new THREE.Vector3(x + 0.9, 3.0, z + 0.9)
                 );
             } else {
                 // Concrete wall for city, asphalt, tunnel, bunker
@@ -6821,22 +7337,22 @@
                 block.castShadow = true;
                 block.receiveShadow = true;
                 wallGroup.add(block);
-                
+
                 // Add concrete detail line/beam to make it look like concrete blocks
                 let ironMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.5, metalness: 0.8 });
                 let beam = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.25, 2.05), ironMat);
                 beam.position.y = 2.85;
                 wallGroup.add(beam);
-                
+
                 scene.add(wallGroup);
                 wallGroup.updateMatrixWorld(true);
-                
+
                 colliderBox = new THREE.Box3(
                     new THREE.Vector3(x - 1.0, 0, z - 1.0),
                     new THREE.Vector3(x + 1.0, 3.0, z + 1.0)
                 );
             }
-            
+
             walls.push(wallGroup);
             colliders.push(colliderBox);
         }
@@ -6881,7 +7397,7 @@
             worldMousePoint.set(0, 0, -8.0);    // Aim North by default
             
             // Flashlight SpotLight for dark themes (move slightly forward to z=0.4 and add bias to prevent self-shadowing from head/torso)
-            let flashlight = new THREE.SpotLight(0xffffff, loc.theme === 'tunnel' ? 8.0 : 2.0, 30.0, Math.PI / 7, 0.5, 1);
+            let flashlight = new THREE.SpotLight(0xffffff, getTheme(loc.theme).isIndoor ? 8.0 : 2.0, 30.0, Math.PI / 7, 0.5, 1);
             flashlight.position.set(0, 1.6, 0.4);
             flashlight.castShadow = (graphicsQuality === 'high');
             flashlight.shadow.mapSize.width = 512;
@@ -6918,19 +7434,23 @@
             }
             
             // 3. Harvestables (Canisters / Scrap) and Decorative Forest Trees
-            if (loc.theme === 'grass') {
-                // Harvestable fuel canisters (spawned as jerrycans)
+            // Harvestable fuel canisters (spawned as jerrycans) — anywhere the location holds
+            // wood/fuel resources, so the indoor lab tutorial gets collectibles too.
+            if (loc.resources.wood > 0) {
                 let woodCount = loc.resources.wood * 1.5;
                 for (let i = 0; i < woodCount; i++) {
                     let rx = THREE.MathUtils.randFloat(-sizeRange, sizeRange);
                     let rz = THREE.MathUtils.randFloat(-sizeRange, sizeRange);
-                    
+
                     if (rx > -12 && rx < 6 && rz > -18 && rz < 6) continue; // Skip safe zone
                     if (isInsideWall(rx, rz)) continue;
-                    
+
                     spawn3DTree(rx, rz);
                 }
-                
+            }
+
+            // Decorative forest tree clusters only on tree-styled (grass) themes
+            if (getTheme(loc.theme).wallStyle === 'tree') {
                 // Spawn decorative forest tree clusters (lonely trees or clusters of 3-5 trees)
                 let clusterCount = Math.round(N / 1.6); // e.g. 20 to 28 clusters
                 for (let c = 0; c < clusterCount; c++) {
@@ -7006,8 +7526,8 @@
             
             // 4. Enemies
             for (let [eType, qty] of Object.entries(loc.enemies)) {
-                // Use a balanced 3x multiplier for enemies (except starting tutorial map) to make the game action-packed and fun
-                let actualQty = (gameState.currentLocationIndex === 0) ? qty : Math.round(qty * 3.0);
+                // Use a balanced 3x multiplier for enemies (except at safe zones like the tutorial) to make the game action-packed and fun
+                let actualQty = loc.isSafeZone ? qty : Math.round(qty * 3.0);
                 for (let i = 0; i < actualQty; i++) {
                     let rx = 0, rz = 0;
                     let found = false;
@@ -7036,13 +7556,7 @@
                         // Mix in different enemy types for variety!
                         let finalType = eType;
                         if (eType !== 'boss' && Math.random() < 0.35) {
-                            let choices = ['zombie', 'zombie_fast', 'zombie_fat', 'zombie_slime', 'zombie_acid', 'zombie_bomber'];
-                            if (loc.theme === 'city' || loc.theme === 'asphalt') {
-                                choices.push('raider');
-                            }
-                            if (loc.theme === 'sand' || loc.theme === 'tunnel' || loc.theme === 'bunker') {
-                                choices.push('mutant');
-                            }
+                            let choices = getTheme(loc.theme).enemyPool;
                             finalType = choices[Math.floor(Math.random() * choices.length)];
                         }
                         spawn3DEnemy(rx, rz, finalType);
@@ -7053,15 +7567,15 @@
             // 4b. Clear and Spawn Atmospheric NPCs
             speechBubbles = [];
             
-            if (gameState.currentLocationIndex === 0) {
-                // Spawn grandfather Stepan sitting next to campfire on the first tutorial map
+            if (loc.isSafeZone) {
+                // Spawn the tutorial giver (Dr. Stepan / camp elder) next to the campfire, plus guards
                 spawn3DNpc(4.0, -3.0, 'campfire');
-                // Spawn patrolling guard stalkers at the camp entrance blockpost
+                // Spawn patrolling guard stalkers at the entrance blockpost
                 spawn3DNpc(10.0, -8.0, 'guard');
                 spawn3DNpc(8.0, -11.0, 'guard');
             } else {
-                // Spawn more flavor NPCs to make locations populated (2 in tunnels, 3-5 in open maps)
-                let npcCount = (theme === 'tunnel' || theme === 'bunker') ? 2 : THREE.MathUtils.randInt(3, 5);
+                // Spawn more flavor NPCs to make locations populated (2 indoors, 3-5 in open maps)
+                let npcCount = getTheme(theme).isIndoor ? 2 : THREE.MathUtils.randInt(3, 5);
                 for (let i = 0; i < npcCount; i++) {
                     let rx = 0, rz = 0;
                     let found = false;
@@ -7075,13 +7589,7 @@
                         }
                     }
                     if (found) {
-                        let npcType = 'campfire';
-                        if (theme === 'city' || theme === 'sand') {
-                            npcType = 'wounded';
-                        } else if (theme === 'tunnel' || theme === 'bunker') {
-                            npcType = 'guard';
-                        }
-                        spawn3DNpc(rx, rz, npcType);
+                        spawn3DNpc(rx, rz, getTheme(theme).npcType);
                     }
                 }
             }
@@ -7117,13 +7625,21 @@
                 spawnBloodDecal(rx, rz);
             }
 
+            // 5c. Scatter 1-2 tasteful easter eggs per map, well away from the spawn safe-zone
+            let eggCount = THREE.MathUtils.randInt(1, 2);
+            for (let e = 0; e < eggCount; e++) {
+                let rx = THREE.MathUtils.randFloat(-sizeRange + 8, sizeRange - 8);
+                let rz = THREE.MathUtils.randFloat(-sizeRange + 8, sizeRange - 8);
+                if (rx > -15 && rx < 10 && rz > -20 && rz < 10) continue;
+                if (isInsideWall(rx, rz)) continue;
+                spawnEasterEgg(rx, rz);
+            }
+
             // 6. Spawn procedural puddles, lakes, and decorative shore reeds (outdoor themes only)
-            if (theme !== 'tunnel' && theme !== 'bunker') {
-                // Style water color dynamically based on theme/time of day
-                let waterColor = 0x14b8a6; // Teal/cyan radioactive water
-                if (theme === 'sand') waterColor = 0x0284c7; // Sandy blue oasis
-                else if (theme === 'asphalt') waterColor = 0x475569; // Slate rain puddles
-                
+            if (!getTheme(theme).isIndoor) {
+                // Water color comes from the theme config (teal radioactive, blue oasis, slate rain, etc.)
+                let waterColor = getTheme(theme).waterColor;
+
                 let puddleMaterial = new THREE.MeshStandardMaterial({
                     color: waterColor,
                     roughness: 0.05,

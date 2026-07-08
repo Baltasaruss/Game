@@ -7327,107 +7327,153 @@
             group.updateMatrixWorld(true);
         }
 
+        // A proper ruined building: a solid multi-storey shell with a real facade —
+        // continuous concrete walls, a grid of windows (blown-out / broken glass / intact),
+        // a doorway, a roof slab with parapet, a foundation plinth, and rubble. NOT a wire frame.
         function spawnRuinedBuilding(x, z) {
             let group = new THREE.Group();
             group.position.set(x * 2.0, 0, z * 2.0);
-            
-            let width = THREE.MathUtils.randInt(3, 5);
-            let length = THREE.MathUtils.randInt(3, 5);
-            
+            // Keep to axis-aligned quarter turns so wall colliders stay tight.
+            group.rotation.y = (Math.random() < 0.5) ? 0 : Math.PI / 2;
+
+            let w = THREE.MathUtils.randFloat(5.5, 9.0);   // footprint width (m)
+            let d = THREE.MathUtils.randFloat(5.5, 9.0);   // footprint depth (m)
+            let floors = THREE.MathUtils.randInt(1, 3);
+            let fh = 2.6;                                   // storey height
+            let H = floors * fh;
+            let wallT = 0.4;
             let wallMat = materials.wall;
-            let meshesToCollide = [];
-            
-            for (let wx = 0; wx < width; wx++) {
-                for (let wz = 0; wz < length; wz++) {
-                    let isPerimeter = (wx === 0 || wx === width - 1 || wz === 0 || wz === length - 1);
-                    if (!isPerimeter) continue;
-                    
-                    // Ruined wall gaps
-                    if (Math.random() < 0.28) {
-                        let rubCount = THREE.MathUtils.randInt(2, 4);
-                        for (let r = 0; r < rubCount; r++) {
-                            let rh = THREE.MathUtils.randFloat(0.15, 0.45);
-                            let rubGeo = new THREE.BoxGeometry(THREE.MathUtils.randFloat(0.4, 0.9), rh, THREE.MathUtils.randFloat(0.4, 0.9));
-                            let rub = new THREE.Mesh(rubGeo, materials.scrap);
-                            rub.position.set(wx * 2.0 + THREE.MathUtils.randFloat(-0.5, 0.5), rh/2, wz * 2.0 + THREE.MathUtils.randFloat(-0.5, 0.5));
-                            rub.rotation.set(Math.random()*0.3, Math.random()*3.14, Math.random()*0.3);
-                            rub.castShadow = true;
-                            group.add(rub);
-                        }
-                        continue;
-                    }
-                    
-                    // Windows cutouts
-                    let hasWindow = Math.random() > 0.45;
-                    if (hasWindow) {
-                        // Base support
-                        let lowGeo = new THREE.BoxGeometry(2.0, 0.8, 0.4);
-                        let lowWall = new THREE.Mesh(lowGeo, wallMat);
-                        lowWall.position.set(wx * 2.0, 0.4, wz * 2.0);
-                        if (wz === 0 || wz === length - 1) lowWall.rotation.y = Math.PI / 2;
-                        lowWall.castShadow = true;
-                        lowWall.receiveShadow = true;
-                        group.add(lowWall);
-                        meshesToCollide.push(lowWall);
-                        
-                        // Header beam
-                        let topGeo = new THREE.BoxGeometry(2.0, 0.4, 0.4);
-                        let topWall = new THREE.Mesh(topGeo, wallMat);
-                        topWall.position.set(wx * 2.0, 2.4, wz * 2.0);
-                        if (wz === 0 || wz === length - 1) topWall.rotation.y = Math.PI / 2;
-                        topWall.castShadow = true;
-                        group.add(topWall);
-                        
-                        // Pillars
-                        let pilGeo = new THREE.BoxGeometry(0.4, 1.2, 0.4);
-                        let leftPil = new THREE.Mesh(pilGeo, wallMat);
-                        let rightPil = new THREE.Mesh(pilGeo, wallMat);
-                        if (wx === 0 || wx === width - 1) {
-                            leftPil.position.set(wx * 2.0, 1.4, wz * 2.0 - 0.75);
-                            rightPil.position.set(wx * 2.0, 1.4, wz * 2.0 + 0.75);
+            let colMeshes = [];
+
+            // Facade detail materials (shared per building)
+            let paneMat = new THREE.MeshStandardMaterial({ color: 0x08090b, roughness: 0.95 }); // blown-out dark opening
+            let glassMat = new THREE.MeshStandardMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.4, roughness: 0.1, metalness: 0.3 });
+            let frameMat = new THREE.MeshStandardMaterial({ color: 0x24272b, roughness: 0.7, metalness: 0.3 });
+
+            // One wall may be partially collapsed for a ruined silhouette.
+            let hSide = { front: H, back: H, left: H, right: H };
+            if (Math.random() < 0.35) {
+                let sides = ['front', 'back', 'left', 'right'];
+                hSide[sides[Math.floor(Math.random() * 4)]] *= THREE.MathUtils.randFloat(0.4, 0.72);
+            }
+
+            // Foundation plinth (grounds the building)
+            let plinth = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, 0.3, d + 0.4), wallMat);
+            plinth.position.y = 0.15;
+            plinth.receiveShadow = true;
+            group.add(plinth);
+
+            // Solid perimeter walls
+            function addWall(cx, cy, cz, sx, sy, sz) {
+                let m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), wallMat);
+                m.position.set(cx, cy, cz);
+                m.castShadow = true; m.receiveShadow = true;
+                group.add(m);
+                colMeshes.push(m);
+            }
+            addWall(0, hSide.back / 2, -d / 2, w, hSide.back, wallT);   // back  (-z)
+            addWall(0, hSide.front / 2, d / 2, w, hSide.front, wallT);  // front (+z)
+            addWall(-w / 2, hSide.left / 2, 0, wallT, hSide.left, d);   // left  (-x)
+            addWall(w / 2, hSide.right / 2, 0, wallT, hSide.right, d);  // right (+x)
+
+            // Window grid on one facade. `orient` = 'z' (front/back) or 'x' (left/right).
+            function addWindows(orient, sideSign, wallHeight, spanLen) {
+                let usableFloors = Math.floor(wallHeight / fh);
+                let cols = Math.max(1, Math.floor(spanLen / 2.4));
+                let colGap = spanLen / cols;
+                let outer = (orient === 'z' ? d : w) / 2 + wallT / 2 + 0.03;
+                for (let f = 0; f < usableFloors; f++) {
+                    let wy = f * fh + fh * 0.58;
+                    for (let c = 0; c < cols; c++) {
+                        let along = -spanLen / 2 + colGap * (c + 0.5);
+                        // Ground-floor centre of the front wall is the doorway — skip a window there.
+                        if (orient === 'z' && sideSign > 0 && f === 0 && Math.abs(along) < colGap * 0.5) continue;
+
+                        let ww = 1.0, wh = 1.15;
+                        // Frame (thin concrete surround) so the opening reads as a real window.
+                        let frameGeo = (orient === 'z')
+                            ? new THREE.BoxGeometry(ww + 0.22, wh + 0.22, 0.08)
+                            : new THREE.BoxGeometry(0.08, wh + 0.22, ww + 0.22);
+                        let frame = new THREE.Mesh(frameGeo, frameMat);
+                        // Pane state: mostly blown out / broken (ruined city)
+                        let r = Math.random();
+                        let paneGeo = (orient === 'z')
+                            ? new THREE.BoxGeometry(ww, wh, 0.05)
+                            : new THREE.BoxGeometry(0.05, wh, ww);
+                        let pane = new THREE.Mesh(paneGeo, (r < 0.7) ? paneMat : glassMat);
+
+                        if (orient === 'z') {
+                            frame.position.set(along, wy, sideSign * outer);
+                            pane.position.set(along, wy, sideSign * outer);
                         } else {
-                            leftPil.position.set(wx * 2.0 - 0.75, 1.4, wz * 2.0);
-                            rightPil.position.set(wx * 2.0 + 0.75, 1.4, wz * 2.0);
+                            frame.position.set(sideSign * outer, wy, along);
+                            pane.position.set(sideSign * outer, wy, along);
                         }
-                        leftPil.castShadow = true;
-                        rightPil.castShadow = true;
-                        group.add(leftPil);
-                        group.add(rightPil);
-                        meshesToCollide.push(leftPil);
-                        meshesToCollide.push(rightPil);
-                        
-                        // Broken cyan glass shards inside the window cutout
-                        if (Math.random() < 0.65) {
-                            let shardGeo = new THREE.BoxGeometry(0.35, 0.5, 0.02);
-                            let shard = new THREE.Mesh(shardGeo, new THREE.MeshStandardMaterial({ 
-                                color: 0x67e8f9, 
-                                transparent: true, 
-                                opacity: 0.45, 
-                                roughness: 0.1 
-                            }));
-                            shard.position.set(wx * 2.0, 1.3, wz * 2.0);
+                        group.add(frame);
+                        group.add(pane);
+
+                        // Broken-glass shard hanging in the opening
+                        if (r >= 0.35 && r < 0.7) {
+                            let shard = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.45, 0.02), glassMat);
                             shard.rotation.z = THREE.MathUtils.randFloat(-0.6, 0.6);
-                            if (wz === 0 || wz === length - 1) shard.rotation.y = Math.PI / 2;
+                            if (orient === 'z') shard.position.set(along + 0.15, wy + 0.1, sideSign * (outer + 0.01));
+                            else { shard.position.set(sideSign * (outer + 0.01), wy + 0.1, along + 0.15); shard.rotation.y = Math.PI / 2; }
                             group.add(shard);
                         }
-                    } else {
-                        // Solid Wall
-                        let h = THREE.MathUtils.randFloat(1.8, 2.6);
-                        let wGeo = new THREE.BoxGeometry(2.0, h, 0.4);
-                        let wall = new THREE.Mesh(wGeo, wallMat);
-                        wall.position.set(wx * 2.0, h/2, wz * 2.0);
-                        if (wz === 0 || wz === length - 1) wall.rotation.y = Math.PI / 2;
-                        wall.castShadow = true;
-                        wall.receiveShadow = true;
-                        group.add(wall);
-                        meshesToCollide.push(wall);
                     }
                 }
             }
+            addWindows('z', 1, hSide.front, w);
+            addWindows('z', -1, hSide.back, w);
+            addWindows('x', -1, hSide.left, d);
+            addWindows('x', 1, hSide.right, d);
+
+            // Doorway on the front wall (dark recessed opening + lintel)
+            let door = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.0, 0.06), paneMat);
+            door.position.set(0, 1.0, d / 2 + wallT / 2 + 0.03);
+            group.add(door);
+            let lintel = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.3, 0.14), frameMat);
+            lintel.position.set(0, 2.1, d / 2 + wallT / 2 + 0.03);
+            group.add(lintel);
+
+            // Roof slab + parapet (skip on heavily ruined buildings so they read as gutted)
+            let ruined = (hSide.front < H || hSide.back < H || hSide.left < H || hSide.right < H);
+            if (!ruined || Math.random() < 0.5) {
+                let roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.3, d + 0.5), wallMat);
+                roof.position.set(0, H + 0.15, 0);
+                roof.castShadow = true; roof.receiveShadow = true;
+                group.add(roof);
+                // Low parapet around the roof edge
+                let pT = 0.18, pH = 0.5;
+                let paraMat = wallMat;
+                let pf = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, pH, pT), paraMat);
+                pf.position.set(0, H + 0.3 + pH / 2, d / 2 + 0.25); group.add(pf);
+                let pb = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, pH, pT), paraMat);
+                pb.position.set(0, H + 0.3 + pH / 2, -d / 2 - 0.25); group.add(pb);
+                let pl = new THREE.Mesh(new THREE.BoxGeometry(pT, pH, d + 0.5), paraMat);
+                pl.position.set(-w / 2 - 0.25, H + 0.3 + pH / 2, 0); group.add(pl);
+                let pr = new THREE.Mesh(new THREE.BoxGeometry(pT, pH, d + 0.5), paraMat);
+                pr.position.set(w / 2 + 0.25, H + 0.3 + pH / 2, 0); group.add(pr);
+            }
+
+            // Rubble piles at the base
+            let rubCount = THREE.MathUtils.randInt(3, 6);
+            for (let r = 0; r < rubCount; r++) {
+                let rh = THREE.MathUtils.randFloat(0.2, 0.5);
+                let rub = new THREE.Mesh(new THREE.BoxGeometry(THREE.MathUtils.randFloat(0.4, 0.9), rh, THREE.MathUtils.randFloat(0.4, 0.9)), materials.scrap);
+                let edge = THREE.MathUtils.randFloat(-1, 1);
+                if (Math.random() < 0.5) rub.position.set(edge * w / 2 + THREE.MathUtils.randFloat(-0.4, 0.4), rh / 2, (d / 2 + THREE.MathUtils.randFloat(0.3, 1.2)) * (Math.random() < 0.5 ? 1 : -1));
+                else rub.position.set((w / 2 + THREE.MathUtils.randFloat(0.3, 1.2)) * (Math.random() < 0.5 ? 1 : -1), rh / 2, edge * d / 2 + THREE.MathUtils.randFloat(-0.4, 0.4));
+                rub.rotation.set(Math.random() * 0.3, Math.random() * 3.14, Math.random() * 0.3);
+                rub.castShadow = true;
+                group.add(rub);
+            }
+
             scene.add(group);
             group.updateMatrixWorld(true);
-            
-            for (let mesh of meshesToCollide) {
+
+            // Colliders on the solid perimeter walls (windows/door/roof are decorative)
+            for (let mesh of colMeshes) {
                 colliders.push(new THREE.Box3().setFromObject(mesh));
             }
         }

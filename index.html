@@ -1773,6 +1773,21 @@
             z-index: 98;
         }
     </style>
+    <!-- PWA Setup -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Last SUV">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('PWA Service Worker registered!', reg.scope))
+                    .catch(err => console.error('PWA Service Worker registration failed:', err));
+            });
+        }
+    </script>
 </head>
 <body>
     <!-- Aesthetic Screen Overlays (Vignette restored, scanline/retro lines removed) -->

@@ -2937,7 +2937,7 @@
                 description: "Ruined radioactive suburb. Radiation is lethal without gas mask filters! But the ruins are full of valuable military medical supplies.",
                 type: "city",
                 theme: "city",
-                timeOfDay: "night",
+                timeOfDay: "twilight",
                 size: 45,
                 radiation: 1.5, // Radiation strength per second
                 fuelCost: 25,
@@ -3008,7 +3008,7 @@
                 description: "Fortified outpost of the former regular army. Now captured by mercenary gangs. Heavy combat, but crates with the best gear lie here.",
                 type: "military",
                 theme: "asphalt",
-                timeOfDay: "night",
+                timeOfDay: "evening",
                 size: 50,
                 radiation: 0,
                 fuelCost: 40,
@@ -3088,10 +3088,10 @@
                 enemyPool: ['zombie','zombie_slime','zombie_acid'],
                 innerStructure: 'chambers', manholes: false,
                 atmosphere: {
-                    skyColor: 0x0e2a33, groundColor: 0x06141a, hemiIntensity: 0.35,
-                    ambientColor: 0x0a1f26, ambientIntensity: 0.22,
-                    sunColor: 0x22d3ee, sunIntensity: 0.0, sunPos: [0, 12, 0],
-                    fogColor: '#04141a', fogDensity: 0.018
+                    skyColor: 0x1b4a57, groundColor: 0x123038, hemiIntensity: 0.65,
+                    ambientColor: 0x184049, ambientIntensity: 0.5,
+                    sunColor: 0x67e8f9, sunIntensity: 0.45, sunPos: [0, 16, 0],
+                    fogColor: '#123038', fogDensity: 0.013
                 }
             },
             supermarket: {
@@ -3100,10 +3100,10 @@
                 enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_slime'],
                 innerStructure: 'aisles', manholes: false,
                 atmosphere: {
-                    skyColor: 0x1a1a20, groundColor: 0x0a0a0d, hemiIntensity: 0.28,
-                    ambientColor: 0x14140f, ambientIntensity: 0.16,
-                    sunColor: 0xfef3c7, sunIntensity: 0.0, sunPos: [0, 12, 0],
-                    fogColor: '#0a0a08', fogDensity: 0.02
+                    skyColor: 0x33332e, groundColor: 0x1c1c16, hemiIntensity: 0.6,
+                    ambientColor: 0x2b2a20, ambientIntensity: 0.48,
+                    sunColor: 0xfef3c7, sunIntensity: 0.45, sunPos: [0, 16, 0],
+                    fogColor: '#1c1c16', fogDensity: 0.014
                 }
             },
             amusement: {
@@ -3112,10 +3112,10 @@
                 enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_bomber','raider'],
                 innerStructure: 'midway', manholes: false,
                 atmosphere: {
-                    skyColor: 0x4c1d4b, groundColor: 0x1a0f1a, hemiIntensity: 0.3,
-                    ambientColor: 0x1a0d18, ambientIntensity: 0.06,
-                    sunColor: 0xec4899, sunIntensity: 0.28, sunPos: [20, 7, -14],
-                    fogColor: '#0d060c', fogDensity: 0.016
+                    skyColor: 0x7a3179, groundColor: 0x2e1a2d, hemiIntensity: 0.62,
+                    ambientColor: 0x341f33, ambientIntensity: 0.44,
+                    sunColor: 0xf472b6, sunIntensity: 0.6, sunPos: [20, 9, -14],
+                    fogColor: '#1e0f1c', fogDensity: 0.013
                 }
             }
         };
@@ -6380,53 +6380,53 @@
                 fogColor = themeAtmo.fogColor;
                 fogDensity = themeAtmo.fogDensity;
             } else if (isIndoor) {
-                // Pitch black underground bunker/tunnel
-                skyColor = 0x0f172a;
-                groundColor = 0x020617;
-                hemiIntensity = 0.02;
-                ambientColor = 0x020617;
-                ambientIntensity = 0.005;
-                sunColor = 0x38bdf8;
-                sunIntensity = 0.0; // no sun
-                sunPos = new THREE.Vector3(0, 10, 0);
-                fogColor = '#010102';
-                fogDensity = 0.025;
-            } else if (timeOfDay === 'twilight') {
-                // Dusty crimson-orange sunset (very dramatic, Mad Max style)
-                skyColor = 0x9a3412; // dim rust orange sky
-                groundColor = 0x270e0f; // dark red-brown ground bounce
-                hemiIntensity = 0.25;
-                ambientColor = 0x1c0d0a; // extremely low orange fill
-                ambientIntensity = 0.04;
-                sunColor = 0xb91c1c; // blood red sunset sun
-                sunIntensity = 0.25;
-                sunPos = new THREE.Vector3(25, 6, -15); // low sunset angle
-                fogColor = '#140905'; // dusty dark reddish-black fog
-                fogDensity = 0.016;
-            } else if (timeOfDay === 'night') {
-                // Starry pitch-black night
-                skyColor = 0x0f172a; // very dim slate blue sky
-                groundColor = 0x020617; // dark ground
-                hemiIntensity = 0.05;
-                ambientColor = 0x020617;
-                ambientIntensity = 0.005;
-                sunColor = 0x0ea5e9; // pale moon blue
-                sunIntensity = 0.08;
-                sunPos = new THREE.Vector3(-15, 20, -10);
-                fogColor = '#010103'; // deep pitch black night fog
-                fogDensity = 0.022; // slightly thicker to make flashlight beam stand out
-            } else {
-                // Default: 'evening' - Moody desaturated violet-indigo evening dusk
-                skyColor = 0x312e81; // dim indigo blue sky
-                groundColor = 0x0f172a; // dark slate grey ground bounce
-                hemiIntensity = 0.3;
-                ambientColor = 0x0f172a; // cool dark blue fill
-                ambientIntensity = 0.05;
-                sunColor = 0xc084fc; // pale purple sunset sun
-                sunIntensity = 0.35;
-                sunPos = new THREE.Vector3(-20, 10, 10); // low sun angle
-                fogColor = '#06070c'; // desaturated dark slate violet fog
+                // Dim interior lit by emergency/skylight bleed — dusk-level, never pitch black.
+                skyColor = 0x28323f;
+                groundColor = 0x141c26;
+                hemiIntensity = 0.55;
+                ambientColor = 0x1e2733;
+                ambientIntensity = 0.4;
+                sunColor = 0x93b4c9; // cool overhead fill standing in for ceiling lights
+                sunIntensity = 0.4;
+                sunPos = new THREE.Vector3(0, 16, 0);
+                fogColor = '#141b24';
                 fogDensity = 0.014;
+            } else if (timeOfDay === 'twilight') {
+                // Dusty amber-orange sunset (dramatic Mad Max look, but readable)
+                skyColor = 0xc2571a; // warm rust orange sky
+                groundColor = 0x3d1a18; // red-brown ground bounce
+                hemiIntensity = 0.6;
+                ambientColor = 0x3a251a; // warm orange fill
+                ambientIntensity = 0.42;
+                sunColor = 0xe0561f; // burnt-orange sunset sun
+                sunIntensity = 0.7;
+                sunPos = new THREE.Vector3(25, 8, -15); // low sunset angle
+                fogColor = '#2a150c'; // dusty warm haze
+                fogDensity = 0.012;
+            } else if (timeOfDay === 'night') {
+                // "Night" reframed as deep-blue dusk — moonlit, not black.
+                skyColor = 0x28304f; // dim blue dusk sky
+                groundColor = 0x141a2e; // cool ground bounce
+                hemiIntensity = 0.5;
+                ambientColor = 0x1c2438;
+                ambientIntensity = 0.38;
+                sunColor = 0x8fb3e0; // moon blue
+                sunIntensity = 0.5;
+                sunPos = new THREE.Vector3(-15, 18, -10);
+                fogColor = '#141a2b'; // deep blue haze
+                fogDensity = 0.014;
+            } else {
+                // Default: 'evening' - moody violet-indigo dusk, lifted so it reads clearly
+                skyColor = 0x413c93; // indigo blue sky
+                groundColor = 0x1d2740; // slate ground bounce
+                hemiIntensity = 0.62;
+                ambientColor = 0x232d47; // cool blue fill
+                ambientIntensity = 0.42;
+                sunColor = 0xd0a8fc; // pale purple sunset sun
+                sunIntensity = 0.7;
+                sunPos = new THREE.Vector3(-20, 12, 10); // low sun angle
+                fogColor = '#141527'; // desaturated violet haze
+                fogDensity = 0.011;
             }
             
             // Set Scene Background and Fog dynamically

@@ -1775,9 +1775,7 @@
     </style>
 </head>
 <body>
-    <!-- Aesthetic Screen Overlays -->
-    <div id="vignette-overlay"></div>
-    <div id="scanline-overlay"></div>
+    <!-- Aesthetic screen overlays removed (retro scanline + vignette) for a clean, brighter frame -->
 
     <!-- Portrait Orientation Enforcement Overlay -->
     <div id="orientation-overlay">
@@ -2803,43 +2801,134 @@
                 });
             }
 
-            // Driving cyberpunk / darksynth BGM. Step-sequenced at 16th notes over a 4-bar,
-            // 64-step loop through a dark i–VI–III–VII minor progression (Am–F–C–G).
+            // Shared soft-clip distortion curve for the aggressive horror voices (built once).
+            _distCurve() {
+                if (this._dc) return this._dc;
+                let n = 1024, c = new Float32Array(n), k = 9;
+                for (let i = 0; i < n; i++) { let x = (i / (n - 1)) * 2 - 1; c[i] = (1 + k) * x / (1 + k * Math.abs(x)); }
+                this._dc = c; return c;
+            }
+
+            // Heavy sub-bass pulse: pure low sine, the ominous floor of the mix.
+            _sub(t, freq, vol = 0.5) {
+                let o = this.ctx.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
+                let g = this.ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.linearRampToValueAtTime(vol, t + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+                o.connect(g); g.connect(this.masterGain);
+                o.start(t); o.stop(t + 0.52);
+            }
+
+            // Distorted dissonant stab: detuned saw cluster through a waveshaper — the "carnage" hit.
+            _stab(t, freqs, vol = 0.12) {
+                let ws = this.ctx.createWaveShaper(); ws.curve = this._distCurve(); ws.oversample = '2x';
+                let lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600; lp.Q.value = 3;
+                let g = this.ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+                ws.connect(lp); lp.connect(g); g.connect(this.masterGain);
+                if (this.reverbSend) g.connect(this.reverbSend);
+                freqs.forEach(f => {
+                    [-7, 7].forEach(det => {
+                        let o = this.ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+                        o.connect(ws); o.start(t); o.stop(t + 0.3);
+                    });
+                });
+            }
+
+            // Tribal tom for the driving high-intensity groove: pitch-swept sine with body.
+            _tom(t, freq = 120, vol = 0.3) {
+                let o = this.ctx.createOscillator(); o.type = 'sine';
+                o.frequency.setValueAtTime(freq * 1.6, t);
+                o.frequency.exponentialRampToValueAtTime(freq, t + 0.12);
+                let g = this.ctx.createGain();
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+                o.connect(g); g.connect(this.masterGain);
+                o.start(t); o.stop(t + 0.23);
+            }
+
+            // Dissonant high screech lead for peak dread: vibrato saw through a bandpass.
+            _screech(t, freq, vol = 0.06) {
+                let o = this.ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = freq;
+                let lfo = this.ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 7;
+                let lfg = this.ctx.createGain(); lfg.gain.value = freq * 0.02;
+                lfo.connect(lfg); lfg.connect(o.frequency);
+                let bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = 6;
+                let g = this.ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.linearRampToValueAtTime(vol, t + 0.08);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+                o.connect(bp); bp.connect(g); g.connect(this.masterGain);
+                if (this.reverbSend) g.connect(this.reverbSend);
+                lfo.start(t); o.start(t); o.stop(t + 0.62); lfo.stop(t + 0.62);
+            }
+
+            // Dynamic zombie-carnage BGM. A dark Aeolian loop in D (i–bVI–bVII–i: Dm–Bb–C–Dm)
+            // that layers up with combat intensity: a tense heartbeat + drone when the area is
+            // quiet, escalating to full distorted-stab, double-time percussion carnage in a swarm
+            // or boss fight. Step-sequenced at 16th notes over a 4-bar, 64-step loop.
             playMusicBeat(step) {
                 this.init();
                 if (!this.ctx) return;
                 const t = this.ctx.currentTime;
-                const bar = Math.floor(step / 16) % 4;   // which chord we're on
-                const s = step % 16;                     // 16th-note position within the bar
+                const bar = Math.floor(step / 16) % 4;
+                const s = step % 16;
 
-                // Per-bar harmony: [bass root, chord tones for arp, pad chord]
+                // --- Combat intensity (0..1), smoothed, driven by live threat around the player. ---
+                let target = 0;
+                try {
+                    if (typeof enemies !== 'undefined' && enemies) target = Math.min(1, enemies.length / 7);
+                    if (typeof activeBoss !== 'undefined' && activeBoss) target = 1;
+                } catch (e) { /* globals not ready yet */ }
+                if (this.musicIntensity === undefined) this.musicIntensity = 0;
+                this.musicIntensity += (target - this.musicIntensity) * 0.09;
+                const I = this.musicIntensity;
+                const mid = I > 0.28;   // some threat: groove kicks in
+                const hot = I > 0.62;   // swarm / boss: full carnage
+
+                // Per-bar harmony: [sub root, stab chord tones, pad chord] — dark natural minor in D.
                 const CHORDS = [
-                    { bass: 55.00, arp: [220.00, 261.63, 329.63, 440.00], pad: [220.00, 261.63, 329.63] }, // Am
-                    { bass: 43.65, arp: [174.61, 220.00, 261.63, 349.23], pad: [174.61, 220.00, 261.63] }, // F
-                    { bass: 65.41, arp: [261.63, 329.63, 392.00, 523.25], pad: [261.63, 329.63, 392.00] }, // C
-                    { bass: 49.00, arp: [196.00, 246.94, 293.66, 392.00], pad: [196.00, 246.94, 293.66] }, // G
+                    { root: 73.42, stab: [146.83, 174.61, 220.00], pad: [146.83, 220.00, 293.66] }, // Dm
+                    { root: 58.27, stab: [116.54, 146.83, 174.61], pad: [116.54, 174.61, 233.08] }, // Bb
+                    { root: 65.41, stab: [130.81, 164.81, 196.00], pad: [130.81, 196.00, 261.63] }, // C
+                    { root: 73.42, stab: [146.83, 174.61, 220.00], pad: [146.83, 220.00, 293.66] }, // Dm
                 ];
                 const chord = CHORDS[bar];
 
-                // --- Drums ---
-                // Four-on-the-floor kick with a syncopated ghost push before beat 4.
+                // --- Ever-present dread bed: low drone pad + sub pulse on each beat. ---
+                if (s === 0) this._pad(t, chord.pad, 16 * 0.115, 0.04 + I * 0.03);
+                if (s % 4 === 0) this._sub(t, chord.root, 0.42 + I * 0.2);
+
+                // --- Quiet layer: slow heartbeat kick (two thumps + rest) builds tension. ---
+                if (!mid) {
+                    if (s === 0 || s === 3) this._kick(t, s === 0 ? 0.9 : 0.6);
+                    if (s === 8) this._hat(t, false, 0.06);
+                    // Sparse, distant screech to keep the air uneasy.
+                    if (bar === 2 && s === 0) this._screech(t, chord.stab[2] * 2, 0.03);
+                    return;
+                }
+
+                // --- Groove layer (mid): driving four-on-floor + rolling bass + hats + clap. ---
                 if (s % 4 === 0) this._kick(t, s === 0 ? 1.0 : 0.85);
-                if (s === 14) this._kick(t, 0.4);
-                // Backbeat clap on 2 and 4.
-                if (s === 4 || s === 12) this._clap(t);
-                // Closed hats on every off-8th, open hat to pull into the next bar.
-                if (s % 2 === 1) this._hat(t, false, s % 4 === 3 ? 0.18 : 0.11);
+                if (s === 14) this._kick(t, 0.45);
+                if (s === 4 || s === 12) this._clap(t, 0.3 + I * 0.15);
+                if (s % 2 === 1) this._hat(t, false, s % 4 === 3 ? 0.16 : 0.1);
                 if (s === 14) this._hat(t, true, 0.12);
+                this._bass(t, s % 2 === 1 ? chord.root * 2 : chord.root, s % 4 === 0 ? 0.4 : 0.3);
 
-                // --- Rolling bass: every 16th, with an octave lift on the "and" for movement. ---
-                this._bass(t, s % 2 === 1 ? chord.bass * 2 : chord.bass, s % 4 === 0 ? 0.4 : 0.3);
+                // Off-beat distorted stabs mark the groove without the old neon arp.
+                if (s === 6 || s === 10) this._stab(t, chord.stab, 0.08 + I * 0.06);
 
-                // --- Neon arp: 16th-note run cycling the chord tones (up-down). ---
-                const arpSeq = [0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 3, 2, 1, 0, 1, 2];
-                this._pluck(t, chord.arp[arpSeq[s]], s % 4 === 0 ? 0.15 : 0.1);
-
-                // --- Pad: retrigger the chord backdrop at the top of each bar. ---
-                if (s === 0) this._pad(t, chord.pad, 16 * 0.115, 0.045);
+                // --- Carnage layer (hot): double-time kick, tom fills, screech lead, heavy stabs. ---
+                if (hot) {
+                    if (s % 2 === 0) this._kick(t, 0.55);              // double-time drive
+                    if (s === 7 || s === 11 || s === 15) this._tom(t, 110 + (s % 3) * 30, 0.26);
+                    if (s === 0 || s === 8) this._stab(t, chord.stab, 0.16);
+                    if (s === 0) this._screech(t, chord.stab[0] * 2, 0.05 + (I - 0.62) * 0.08);
+                }
             }
         }
 
@@ -3265,6 +3354,38 @@
             return 30 + gameState.trainUpgrades.storage * 25;
         }
 
+        // ---- Difficulty scaling ------------------------------------------------
+        // Player power compounds multiplicatively (perks + weapon upgrades + crit
+        // + fire-rate all stack without a natural cap), so without matching pressure
+        // the late game trivializes and bosses die in a single burst. Two levers:
+        //  1) enemies & bosses scale with location index (progression proxy);
+        //  2) the player's own multipliers get diminishing returns past a knee.
+        const DIFFICULTY = {
+            enemyHpBase: 1.11,     // ^index → idx9 ≈ 2.6x trash HP
+            enemyDmgBase: 1.085,   // ^index → idx9 ≈ 2.1x trash damage
+            bossDmgBase: 1.10,     // ^index → idx9 ≈ 2.4x boss damage
+            playerDmgKnee: 2.5,    // weapon dmg multiplier is full value up to here…
+            playerDmgFalloff: 0.4, // …then each extra point of multiplier counts this much
+            fireRateFloor: 0.5     // cooldown never drops below base * this
+        };
+        function getEnemyScale() {
+            let i = gameState.currentLocationIndex || 0;
+            return { hp: Math.pow(DIFFICULTY.enemyHpBase, i), dmg: Math.pow(DIFFICULTY.enemyDmgBase, i) };
+        }
+        function getBossStats() {
+            let i = gameState.currentLocationIndex || 0;
+            return {
+                hp: Math.round(560 + i * i * 250 + i * 180), // idx0≈560 … idx9≈22430
+                dmgReduction: Math.min(0.30, i * 0.035),     // blunts crit/pellet burst late
+                dmgMult: Math.pow(DIFFICULTY.bossDmgBase, i)
+            };
+        }
+        // Diminishing returns on the player's stacked damage multiplier.
+        function softcapMult(m) {
+            let k = DIFFICULTY.playerDmgKnee;
+            return m <= k ? m : k + (m - k) * DIFFICULTY.playerDmgFalloff;
+        }
+
         function getWeaponDamage(type) {
             let baseDmg = (type === 'pistol') ? 22 : (type === 'rifle') ? 16 : 14; // 14 per pellet (5 total)
             let upgMult = 1 + (gameState.weaponUpgrades[type] || 0) * 0.25;
@@ -3279,7 +3400,7 @@
                 if (gameState.runPerks.pistolDmgMod) skillMult *= gameState.runPerks.pistolDmgMod;
             }
             let perksDmg = (gameState.runPerks && gameState.runPerks.damageMod !== undefined) ? gameState.runPerks.damageMod : 1.0;
-            return Math.round(baseDmg * upgMult * skillMult * perksDmg);
+            return Math.round(baseDmg * softcapMult(upgMult * skillMult * perksDmg));
         }
 
         // =========================================================================
@@ -4877,13 +4998,11 @@
 
             composer.addPass(new THREE.RenderPass(scene, camera));
 
-            // Restrained bloom so emissive elements (muzzle flash, glow stripes, fire, rad glow) bleed light
+            // Restrained bloom so emissive elements (muzzle flash, glow stripes, fire, rad glow) bleed light.
+            // (The retro color-grade pass was removed — it desaturated/darkened the whole frame.)
             bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 0.55, 0.45, 0.82);
+            bloomPass.renderToScreen = true;
             composer.addPass(bloomPass);
-
-            gradePass = new THREE.ShaderPass(GradeShader);
-            gradePass.renderToScreen = true;
-            composer.addPass(gradePass);
         }
 
         function initThreeEngine() {
@@ -6002,7 +6121,8 @@
             if (type === 'pistol' && gameState.runPerks.pistolRateMod) {
                 cooldown *= gameState.runPerks.pistolRateMod;
             }
-            return cooldown;
+            // Floor the cooldown so stacked fire-rate perks can't drive DPS to infinity
+            return Math.max(base * DIFFICULTY.fireRateFloor, cooldown);
         }
 
         // Dodge-dash: a short, fast burst in the current movement (or facing) direction that
@@ -6187,14 +6307,14 @@
             bullets.push(b);
         }
         
-        function spawnBossPlasma(pos, dir) {
+        function spawnBossPlasma(pos, dir, dmg) {
             if (!scene) return; // Safety guard
             let b = new THREE.Mesh(plasmaGeo, plasmaMat);
             b.position.copy(pos);
             scene.add(b);
-            
+
             b.userData.velocity = dir.clone().multiplyScalar(8.0);
-            b.userData.damage = 25;
+            b.userData.damage = dmg || 25;
             b.userData.spawnTime = Date.now();
             b.userData.lifeTime = 1500;
             b.userData.isEnemy = true;
@@ -8724,6 +8844,7 @@
             } else if (type === 'boss') {
                 // Per-location boss — appearance and health scale with the location's boss config.
                 let bossCfg = (LOCATIONS[gameState.currentLocationIndex] || {}).boss || { name: "Super Mutant", hp: 1500, color: 0xff1a1a };
+                let bossStats = getBossStats(); // geometric HP + per-location damage scaling
                 let accentMat = new THREE.MeshStandardMaterial({ color: bossCfg.color, roughness: 0.5, metalness: 0.4, emissive: bossCfg.color, emissiveIntensity: 0.3 });
 
                 // Mega robot reactor
@@ -8750,8 +8871,9 @@
                 laser.position.set(0, 3.5, 0.52);
                 enemy.add(laser);
 
-                enemy.userData.hp = bossCfg.hp; enemy.userData.maxHp = bossCfg.hp;
-                enemy.userData.speed = 1.3; enemy.userData.dmg = 20;
+                enemy.userData.hp = bossStats.hp; enemy.userData.maxHp = bossStats.hp;
+                enemy.userData.speed = 1.3; enemy.userData.dmg = Math.round(20 * bossStats.dmgMult);
+                enemy.userData.dmgReduction = bossStats.dmgReduction;
                 enemy.userData.lastShot = 0;
                 enemy.userData.lastSummon = 0;
                 enemy.userData.bossName = bossCfg.name;
@@ -8763,9 +8885,17 @@
                 addLogMessage("☠️ BOSS: " + bossCfg.name + " blocks your escape!", "danger");
             }
             
+            // Scale trash mobs by location so late maps aren't trivial (bosses use getBossStats).
+            if (type !== 'boss') {
+                let sc = getEnemyScale();
+                enemy.userData.hp = Math.round(enemy.userData.hp * sc.hp);
+                enemy.userData.maxHp = enemy.userData.hp;
+                enemy.userData.dmg = Math.round(enemy.userData.dmg * sc.dmg);
+            }
+
             enemy.position.set(x, 0, z);
             scene.add(enemy);
-            
+
             enemy.userData.type = type;
             enemy.userData.lastAttack = 0;
             enemy.userData.lastHit = 0;
@@ -9354,6 +9484,8 @@
                                         let critChance = Math.min(0.75, 0.12 + gameState.skills.agility * 0.03 + bonusCrit);
                                         let isCrit = Math.random() < critChance;
                                         let dmg = isCrit ? Math.round(b.userData.damage * 2.2) : b.userData.damage;
+                                        // Bosses shrug off part of each hit late-game, so crit/pellet bursts don't one-shot them
+                                        if (e.userData.dmgReduction) dmg = Math.round(dmg * (1 - e.userData.dmgReduction));
 
                                         _scratchDamageTextPos.copy(e.position);
                                         if (isCrit) {
@@ -10066,7 +10198,7 @@
                     if (now > e.userData.lastShot + 1800 && dist < 16.0) {
                         e.userData.lastShot = now;
                         let shotDir = playerGroup.position.clone().sub(e.position).normalize();
-                        spawnBossPlasma(e.position.clone().add(new THREE.Vector3(0, 1.8, 0)), shotDir);
+                        spawnBossPlasma(e.position.clone().add(new THREE.Vector3(0, 1.8, 0)), shotDir, Math.round(25 * (e.userData.dmg / 20)));
                     }
                     
                     // Minion Summon
@@ -10113,7 +10245,7 @@
                                     radius: 1.0,
                                     maxRadius: 11.0,
                                     speed: 16.0,
-                                    dmg: 30,
+                                    dmg: Math.round(30 * (bossRef.userData.dmg / 20)),
                                     hasHitPlayer: false
                                 });
                             } else {

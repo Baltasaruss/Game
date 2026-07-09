@@ -2280,6 +2280,313 @@
                 width: min(420px, 80vw) !important;
             }
         }
+
+        /* =====================================================================
+           TASK 12 — UNIFIED HUD HEADER (single cohesive top bar)
+           Replaces the 4 scattered floating panels (stats top-left, boss-bar
+           top-center, weapon top-right, minimap bottom-right) with ONE flex
+           row at the top of the screen. The header itself is pointer-events:
+           none so clicks pass through to the 3D canvas; each cell re-enables
+           pointer-events:auto so the panels inside remain interactive.
+           Layout: [STATS] [BOSS] [spacer] [WEAPON] [MINIMAP]
+           ===================================================================== */
+        #hud-header {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            z-index: 50;
+            pointer-events: none; /* clicks pass through to canvas */
+        }
+        #hud-header .hud-header-cell {
+            pointer-events: auto;
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+        /* Boss-bar host: can shrink to 0 when boss-bar is hidden (display:none
+           inside means 0 content → 0 basis). When boss-bar shows, the cell
+           takes its content width (capped by max-width 420px). The .hud-spacer
+           (flex:1 1 auto) eats any remaining free space. */
+        #hud-header .hud-cell-boss {
+            flex: 0 1 auto;
+            max-width: 420px;
+        }
+        #hud-header .hud-spacer {
+            flex: 1 1 auto;
+            min-width: 0;
+            pointer-events: none;
+        }
+
+        /* When the 4 panels live inside #hud-header, strip their old
+           corner-anchored absolute positioning — they're flex children now. */
+        #hud-header .hud-stats-panel,
+        #hud-header .hud-weapon-panel,
+        #hud-header .hud-minimap-panel,
+        #hud-header #boss-bar {
+            position: static !important;
+            top: auto !important; left: auto !important;
+            right: auto !important; bottom: auto !important;
+            transform: none !important;
+        }
+
+        /* STATS CELL — compact for the header. Width 220px, tight padding.
+           Keeps the existing hazard-stripe left edge (.hud-stats-panel.hud-panel)
+           and the thin 4px stat bars. */
+        #hud-header .hud-stats-panel {
+            width: 220px !important;
+            padding: 0.5rem 0.5rem 0.5rem 0.8rem !important;
+        }
+        #hud-header .hud-stats-panel .stat-block {
+            margin-bottom: 0.35rem;
+        }
+        #hud-header .hud-stats-panel .stat-row {
+            margin-bottom: 0;
+        }
+        #hud-header .hud-stats-panel .stat-icon {
+            font-size: 0.95rem;
+            width: 20px;
+            margin-right: 6px;
+        }
+        #hud-header .hud-stats-panel .stat-value {
+            font-size: 0.65rem;
+        }
+        #hud-header .hud-stats-panel .stat-bar-thin {
+            margin-left: 26px;
+            height: 3px;
+            margin-top: 1px;
+        }
+
+        /* WEAPON CELL — single-column compact: emoji (large) + ammo (large) +
+           weapon-name (tiny, below). The AMMO label is hidden (redundant). */
+        #hud-header .hud-weapon-panel {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 1px !important;
+            padding: 0.4rem 0.5rem !important;
+            width: 90px !important;
+        }
+        #hud-header .hud-weapon-panel #hud-wpn-icon {
+            grid-row: auto !important;
+            grid-column: auto !important;
+            font-size: 1.5rem !important;
+            line-height: 1;
+            text-align: center;
+        }
+        #hud-header .hud-weapon-panel .weapon-ammo {
+            grid-row: auto !important;
+            grid-column: auto !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.7rem !important;
+            font-weight: bold !important;
+            color: var(--primary-accent) !important;
+            text-shadow: 1px 1px 0px #000;
+            line-height: 1.1;
+            text-align: center;
+        }
+        #hud-header .hud-wpn-name {
+            grid-row: auto !important;
+            grid-column: auto !important;
+            font-size: 0.5rem !important;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            text-align: center;
+            margin-top: 1px;
+        }
+        #hud-header .hud-wpn-ammo-label {
+            display: none !important;
+        }
+
+        /* MINIMAP CELL — compact padding. The canvas stays 100×100 desktop. */
+        #hud-header .hud-minimap-panel {
+            padding: 4px !important;
+            width: auto !important;
+            height: auto !important;
+        }
+
+        /* BOSS BAR — slim, integrated, not a banner. 8px track, 1px border.
+           No ⚠ warning prefix — just the boss name in small text above the bar. */
+        #hud-header #boss-bar {
+            width: 100%;
+            max-width: 380px;
+            text-align: left;
+            z-index: auto;
+        }
+        #hud-header #boss-bar-name {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.6rem;
+            letter-spacing: 0.5px;
+            color: #fca5a5;
+            text-shadow: 0 0 6px rgba(220,38,38,0.5), 0 1px 2px #000;
+            margin-bottom: 3px;
+            display: block;
+            text-align: left;
+        }
+        #hud-header #boss-bar-track {
+            height: 8px;
+            border: 1px solid #7f1d1d;
+            border-radius: 2px;
+            background: rgba(10,6,6,0.85);
+            box-shadow: inset 0 0 4px rgba(0,0,0,0.8);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        #hud-header #boss-bar-fill {
+            background: linear-gradient(90deg, #dc2626, #f87171);
+            transition: width 0.2s ease-out;
+        }
+        /* Low-HP glow: subtle (8px) instead of the old aggressive 22px banner glow. */
+        #hud-header #boss-bar.low-hp #boss-bar-track {
+            border-color: #ef4444;
+            box-shadow: 0 0 8px rgba(220, 38, 38, 0.7), inset 0 0 4px rgba(0,0,0,0.8);
+            animation: bossLowHpPulseSubtle 0.9s ease-in-out infinite;
+        }
+        @keyframes bossLowHpPulseSubtle {
+            0%, 100% { box-shadow: 0 0 8px rgba(220,38,38,0.6), inset 0 0 4px rgba(0,0,0,0.8); }
+            50%      { box-shadow: 0 0 12px rgba(220,38,38,0.85), inset 0 0 4px rgba(0,0,0,0.8); }
+        }
+
+        /* MOBILE (portrait + coarse pointer + short landscape) — switch to
+           CSS Grid for explicit row placement:
+              row 1: stats (left) + minimap (right)
+              row 2: boss bar (full width, only when active)
+              row 3: weapon (centered, compact horizontal) */
+        @media (max-width: 1366px) and (pointer: coarse), (max-width: 1024px), (max-height: 500px) {
+            #hud-header {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                grid-template-areas:
+                    "stats  minimap"
+                    "boss   boss"
+                    "weapon weapon";
+                gap: 0.25rem;
+                padding: 0.25rem;
+                align-items: start;
+            }
+            #hud-header .hud-cell-stats   { grid-area: stats; }
+            #hud-header .hud-cell-boss    { grid-area: boss; max-width: none; }
+            #hud-header .hud-cell-weapon  { grid-area: weapon; justify-self: center; }
+            #hud-header .hud-cell-minimap { grid-area: minimap; justify-self: end; }
+            #hud-header .hud-spacer       { display: none; }
+
+            /* Stats: horizontal strip — icon+value pairs in a row, hide bars. */
+            #hud-header .hud-stats-panel {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                align-items: center !important;
+                gap: 2px 8px !important;
+                width: auto !important;
+                padding: 0.3rem 0.4rem 0.3rem 0.6rem !important;
+            }
+            #hud-header .hud-stats-panel .stat-block {
+                margin-bottom: 0 !important;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 3px;
+            }
+            #hud-header .hud-stats-panel .stat-row {
+                margin-bottom: 0 !important;
+                gap: 2px;
+            }
+            #hud-header .hud-stats-panel .stat-bar-thin {
+                display: none !important;
+            }
+            #hud-header .hud-stats-panel .stat-icon {
+                font-size: 0.85rem !important;
+                width: auto !important;
+                margin-right: 0 !important;
+            }
+            #hud-header .hud-stats-panel .stat-value {
+                font-size: 0.6rem !important;
+            }
+
+            /* Boss bar: full width of its grid area. */
+            #hud-header #boss-bar {
+                width: 100%;
+                max-width: none;
+            }
+
+            /* Weapon: horizontal row (emoji + ammo), hide name. */
+            #hud-header .hud-weapon-panel {
+                flex-direction: row !important;
+                gap: 4px !important;
+                width: auto !important;
+                padding: 0.3rem 0.5rem !important;
+            }
+            #hud-header .hud-wpn-name {
+                display: none !important;
+            }
+            #hud-header .hud-weapon-panel #hud-wpn-icon {
+                font-size: 1.1rem !important;
+            }
+            #hud-header .hud-weapon-panel .weapon-ammo {
+                font-size: 0.65rem !important;
+            }
+
+            /* Minimap: smaller canvas on mobile. */
+            #hud-header .hud-minimap-panel {
+                padding: 2px !important;
+            }
+            #hud-header #minimap-canvas {
+                width: 58px !important;
+                height: 58px !important;
+            }
+            #hud-header .minimap-nameplate {
+                font-size: 0.38rem !important;
+            }
+            #hud-header .minimap-compass {
+                font-size: 0.42rem !important;
+            }
+        }
+
+        /* Landscape mobile (wide but short) — keep header in 1 row, very compact. */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #hud-header {
+                display: flex;
+                flex-wrap: nowrap;
+                align-items: flex-start;
+                gap: 0.25rem;
+                padding: 0.2rem;
+            }
+            #hud-header .hud-cell-boss { max-width: 320px; }
+            #hud-header .hud-stats-panel {
+                width: 190px !important;
+                padding: 0.25rem 0.3rem 0.25rem 0.6rem !important;
+            }
+            #hud-header .hud-stats-panel .stat-icon {
+                font-size: 0.8rem !important;
+            }
+            #hud-header .hud-stats-panel .stat-value {
+                font-size: 0.55rem !important;
+            }
+            #hud-header .hud-stats-panel .stat-block {
+                margin-bottom: 0.2rem !important;
+            }
+            #hud-header .hud-weapon-panel {
+                padding: 0.25rem 0.4rem !important;
+                width: 76px !important;
+            }
+            #hud-header .hud-weapon-panel #hud-wpn-icon {
+                font-size: 1.1rem !important;
+            }
+            #hud-header .hud-weapon-panel .weapon-ammo {
+                font-size: 0.55rem !important;
+            }
+            #hud-header .hud-wpn-name {
+                font-size: 0.42rem !important;
+            }
+            #hud-header .hud-minimap-panel {
+                padding: 2px !important;
+            }
+            #hud-header #minimap-canvas {
+                width: 46px !important;
+                height: 46px !important;
+            }
+        }
     </style>
     <!-- PWA Setup -->
     <link rel="manifest" href="manifest.json">
@@ -2416,11 +2723,7 @@
 
     <!-- 4. HUD (GAME INTERFACE) -->
     <div id="hud-container">
-        <!-- Boss health bar (top center, hidden until a boss spawns) -->
-        <div id="boss-bar" style="display:none;">
-            <div id="boss-bar-name">BOSS</div>
-            <div id="boss-bar-track"><div id="boss-bar-fill"></div></div>
-        </div>
+        <!-- Task 12 — boss bar moved into #hud-header (below stats cell) -->
         <!-- Task 11 — Mechanic 2: endless wave counter (shown only during endless runs). -->
         <div id="endless-wave-hud" class="hud-panel" style="display:none;">
             <span id="endless-wave-txt">WAVE 1</span>
@@ -2433,6 +2736,11 @@
         <!-- Task 11 — Mechanic 3: boss rage banner + screen flash overlays. -->
         <div id="boss-banner"></div>
         <div id="screen-flash"></div>
+        <!-- ===================================================================== -->
+        <!-- Task 12 — UNIFIED HUD HEADER: stats | boss | spacer | weapon | minimap -->
+        <!-- ===================================================================== -->
+        <div id="hud-header">
+        <div class="hud-header-cell hud-cell-stats">
         <!-- Stats (top left) — TASK 7: unified hud-panel + thin 4px stat bars -->
         <div class="hud-stats-panel hud-panel hud-element">
             <div class="stat-block">
@@ -2476,16 +2784,39 @@
                 <div class="stat-bar-fill bar-rad" id="hud-rad-bar"></div>
             </div>
         </div>
-
-        <!-- Level moved to stats block -->
-
-        <!-- Weapon (top right) — TASK 7: AMMO label + weapon-name + unified hud-panel -->
+        </div>
+        <div class="hud-header-cell hud-cell-boss" id="boss-bar-host">
+            <!-- Boss health bar (in header center, hidden until a boss spawns) -->
+            <div id="boss-bar" style="display:none;">
+                <div id="boss-bar-name">BOSS</div>
+                <div id="boss-bar-track"><div id="boss-bar-fill"></div></div>
+            </div>
+        </div>
+        <div class="hud-spacer"></div>
+        <div class="hud-header-cell hud-cell-weapon">
+        <!-- Weapon — TASK 7: AMMO label + weapon-name + unified hud-panel -->
         <div class="hud-weapon-panel hud-panel hud-element">
             <span id="hud-wpn-icon">🔫</span>
             <span class="hud-wpn-name" id="hud-wpn-name">PISTOL</span>
             <span class="hud-wpn-ammo-label">AMMO</span>
             <span class="weapon-ammo" id="hud-wpn-ammo">45 / ∞</span>
         </div>
+        </div>
+        <div class="hud-header-cell hud-cell-minimap">
+        <!-- Minimap (top right of header) — TASK 7: hud-panel + location nameplate + N compass -->
+        <div class="hud-minimap-panel hud-panel hud-element">
+            <div class="minimap-nameplate" id="minimap-nameplate">📍 CAMP</div>
+            <div class="minimap-canvas-wrap">
+                <canvas id="minimap-canvas" width="100" height="100"></canvas>
+                <div class="minimap-compass" id="minimap-compass">N</div>
+            </div>
+        </div>
+        </div>
+        </div> <!-- end #hud-header -->
+
+        <!-- Level moved to stats block -->
+
+        <!-- Task 12 — weapon panel moved into #hud-header above -->
 
         <!-- Log journal (bottom left) — TASK 7: wrapped with LOG header + separator -->
         <div id="game-log-wrap">
@@ -2590,14 +2921,7 @@
             </div>
         </div>
 
-        <!-- Minimap (bottom right) — TASK 7: hud-panel + location nameplate + N compass -->
-        <div class="hud-minimap-panel hud-panel hud-element">
-            <div class="minimap-nameplate" id="minimap-nameplate">📍 CAMP</div>
-            <div class="minimap-canvas-wrap">
-                <canvas id="minimap-canvas" width="100" height="100"></canvas>
-                <div class="minimap-compass" id="minimap-compass">N</div>
-            </div>
-        </div>
+        <!-- Task 12 — minimap panel moved into #hud-header above -->
     </div>
 
     <!-- 5. STATION MENU (VEHICLE, CRAFTING, UPGRADES) -->
@@ -4128,19 +4452,19 @@
             grass: {
                 groundKey: 'grassTexs', wallStyle: 'tree', isIndoor: false,
                 accentColor: 0x15803d, waterColor: 0x14b8a6, npcType: 'campfire',
-                enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_slime','zombie_acid','zombie_bomber'],
+                enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_slime','zombie_acid','zombie_bomber','zombie_flying'],
                 innerStructure: 'ruins', manholes: false, atmosphere: null
             },
             city: {
                 groundKey: 'cityTexs', wallStyle: 'concrete', isIndoor: false,
                 accentColor: 0x84cc16, waterColor: 0x14b8a6, npcType: 'wounded',
-                enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_slime','zombie_acid','zombie_bomber','raider'],
+                enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_slime','zombie_acid','zombie_bomber','raider','zombie_flying'],
                 innerStructure: 'ruins', manholes: true, atmosphere: null
             },
             sand: {
                 groundKey: 'sandTexs', wallStyle: 'concrete', isIndoor: false,
                 accentColor: 0xf59e0b, waterColor: 0x0284c7, npcType: 'wounded',
-                enemyPool: ['zombie','zombie_fast','mutant'],
+                enemyPool: ['zombie','zombie_fast','mutant','zombie_flying'],
                 innerStructure: 'ruins', manholes: false, atmosphere: null
             },
             tunnel: {
@@ -4152,7 +4476,7 @@
             asphalt: {
                 groundKey: 'militaryTexs', wallStyle: 'concrete', isIndoor: false,
                 accentColor: 0x475569, waterColor: 0x475569, npcType: 'guard',
-                enemyPool: ['zombie','zombie_fast','mutant','raider'],
+                enemyPool: ['zombie','zombie_fast','mutant','raider','zombie_flying'],
                 innerStructure: 'ruins', manholes: true, atmosphere: null
             },
             bunker: {
@@ -4189,7 +4513,7 @@
             amusement: {
                 groundKey: 'parkTexs', wallStyle: 'fence', isIndoor: false,
                 accentColor: 0xec4899, waterColor: 0x0ea5e9, npcType: 'wounded',
-                enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_bomber','raider'],
+                enemyPool: ['zombie','zombie_fast','zombie_fat','zombie_bomber','raider','zombie_flying'],
                 innerStructure: 'midway', manholes: false,
                 atmosphere: {
                     skyColor: 0x7a3179, groundColor: 0x2e1a2d, hemiIntensity: 0.62,
@@ -4973,8 +5297,10 @@
         // Boss health bar controls
         function showBossBar(name) {
             let bar = document.getElementById('boss-bar');
-            // TASK 7 — prefix with warning glyph so it reads "⚠ BOSS — <name>"
-            document.getElementById('boss-bar-name').innerText = '⚠ BOSS — ' + name;
+            // TASK 12 — boss bar now lives inside the unified HUD header as a
+            // slim integrated strip. Show just the boss name (no ⚠ prefix — the
+            // red bar is warning enough) so it reads cleanly in the header.
+            document.getElementById('boss-bar-name').innerText = name;
             document.getElementById('boss-bar-fill').style.width = '100%';
             bar.classList.remove('low-hp');
             bar.style.display = 'block';
@@ -6183,7 +6509,7 @@
             hideBossBar();
 
             let count = Math.min(60, 5 + wave * 2);
-            const pool = ['zombie', 'zombie_fast', 'zombie_fat', 'zombie_slime', 'zombie_acid', 'zombie_bomber', 'raider', 'mutant'];
+            const pool = ['zombie', 'zombie_fast', 'zombie_fat', 'zombie_slime', 'zombie_acid', 'zombie_bomber', 'raider', 'mutant', 'zombie_flying'];
 
             // Spawn in a ring around the player at radius 20-30.
             let px = (playerGroup ? playerGroup.position.x : 0);
@@ -7966,7 +8292,271 @@
             materials.warningSigns = warningSignTexs.map(t => new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }));
             // End Part 2 Stage 2 cached resources.
             // -----------------------------------------------------------------
-            
+
+            // -----------------------------------------------------------------
+            // Part 2 Stage 7 (Task 13) — location-themed enemy visuals.
+            // 10 face textures + 10 torso textures + 10 skin materials + 10 legs
+            // materials + a small palette of theme-accessory materials. All cached
+            // once at engine init so per-spawn lookups are O(1). Used by
+            // getEnemyThemeOverride() to swap the face/torso/skin/legs materials of
+            // the 7 Roblox-character enemy types based on the current location.
+            // Stats/AI are unchanged — only visuals.
+            // -----------------------------------------------------------------
+            materials.themeFaces = {};
+            materials.themeTorsos = {};
+            materials.themeSkin = {};
+            materials.themeLegs = {};
+            (function _buildThemeCaches() {
+                const makeFace = (hex, fn) => createMaterialWithBump(
+                    createPixelTexture(32, 32, hex, 4, fn, true, true), 0.04, { roughness: 0.8 });
+                const makeTorso = (hex, fn) => createMaterialWithBump(
+                    createPixelTexture(32, 32, hex, 8, fn, false, true), 0.05, { roughness: 0.85 });
+                const lam = (hex) => new THREE.MeshLambertMaterial({ color: hex });
+
+                // ---- 10 FACE TEXTURES (32×32 pixel-art faces with theme features) ----
+                // Lab: surgical mask + tired hollow eyes + blood stain on mask.
+                materials.themeFaces.lab = makeFace('#c0b19f', (ctx) => {
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(6, 9, 6, 6); ctx.fillRect(20, 9, 6, 6);
+                    ctx.fillStyle = '#660000'; ctx.fillRect(8, 11, 2, 2); ctx.fillRect(22, 11, 2, 2);
+                    ctx.fillStyle = '#f5f5f4'; ctx.fillRect(4, 18, 24, 11);
+                    ctx.fillStyle = '#9ca3af'; ctx.fillRect(4, 23, 24, 1);
+                    ctx.fillStyle = '#7f1d1d'; ctx.fillRect(15, 24, 4, 3);
+                });
+                // Camper: bandana on forehead + sunburnt cheeks + scared eyes.
+                materials.themeFaces.grass_camper = makeFace('#c0a080', (ctx) => {
+                    ctx.fillStyle = '#dc2626'; ctx.fillRect(6, 16, 4, 3); ctx.fillRect(22, 16, 4, 3);
+                    ctx.fillStyle = '#7f1d1d'; ctx.fillRect(0, 4, 32, 6);
+                    ctx.fillStyle = '#991b1b'; ctx.fillRect(0, 8, 32, 1);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(7, 11, 5, 5); ctx.fillRect(20, 11, 5, 5);
+                    ctx.fillStyle = '#ffffff'; ctx.fillRect(8, 12, 1, 1); ctx.fillRect(21, 12, 1, 1);
+                    ctx.fillStyle = '#3a1f1f'; ctx.fillRect(11, 23, 10, 2);
+                });
+                // Lumberjack: beanie shadow + thick beard + grim eyes.
+                materials.themeFaces.forest_lumberjack = makeFace('#b8865a', (ctx) => {
+                    ctx.fillStyle = '#1f2937'; ctx.fillRect(0, 0, 32, 8);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(7, 11, 5, 4); ctx.fillRect(20, 11, 5, 4);
+                    ctx.fillStyle = '#3a2418'; ctx.fillRect(2, 18, 28, 14);
+                    ctx.fillStyle = '#2b1a10'; ctx.fillRect(4, 22, 24, 1); ctx.fillRect(4, 26, 24, 1);
+                });
+                // Supermarket employee: cap shadow + dead eyes + pale mouth.
+                materials.themeFaces.supermarket = makeFace('#b5b3a8', (ctx) => {
+                    ctx.fillStyle = '#1e40af'; ctx.fillRect(0, 0, 32, 7);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(7, 11, 5, 5); ctx.fillRect(20, 11, 5, 5);
+                    ctx.fillStyle = '#991b1b'; ctx.fillRect(9, 13, 2, 2); ctx.fillRect(22, 13, 2, 2);
+                    ctx.fillStyle = '#374151'; ctx.fillRect(11, 23, 10, 2);
+                });
+                // Businessman: sunglasses + radiation burns + stern mouth.
+                materials.themeFaces.city = makeFace('#9ca3af', (ctx) => {
+                    ctx.fillStyle = '#1f2937'; ctx.fillRect(0, 0, 32, 9);
+                    ctx.fillStyle = '#0f172a'; ctx.fillRect(5, 11, 22, 4);
+                    ctx.fillStyle = '#475569'; ctx.fillRect(7, 12, 4, 2); ctx.fillRect(21, 12, 4, 2);
+                    ctx.fillStyle = '#84cc16'; ctx.fillRect(4, 18, 5, 4); ctx.fillRect(23, 18, 5, 4);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(11, 24, 10, 1);
+                });
+                // Clown: white face paint + crazy eyes + painted smile. (3D red nose accessory added on top.)
+                materials.themeFaces.amusement_clown = makeFace('#f5f5f4', (ctx) => {
+                    ctx.fillStyle = '#7f1d1d'; ctx.fillRect(6, 9, 6, 1); ctx.fillRect(20, 9, 6, 1);
+                    ctx.fillStyle = '#fef08a'; ctx.fillRect(6, 11, 7, 6); ctx.fillRect(19, 11, 7, 6);
+                    ctx.fillStyle = '#dc2626'; ctx.fillRect(8, 13, 3, 3); ctx.fillRect(21, 13, 3, 3);
+                    ctx.fillStyle = '#0f172a'; ctx.fillRect(9, 14, 1, 1); ctx.fillRect(22, 14, 1, 1);
+                    ctx.fillStyle = '#dc2626'; ctx.fillRect(8, 22, 16, 2); ctx.fillRect(10, 24, 12, 2); ctx.fillRect(13, 26, 6, 1);
+                });
+                // Raider: goggles + bandana over mouth + scar.
+                materials.themeFaces.wasteland_raider = makeFace('#b5a070', (ctx) => {
+                    ctx.fillStyle = '#0a0a0b'; ctx.fillRect(3, 9, 11, 7); ctx.fillRect(18, 9, 11, 7);
+                    ctx.fillStyle = '#1f2937'; ctx.fillRect(5, 10, 8, 5); ctx.fillRect(20, 10, 8, 5);
+                    ctx.fillStyle = '#9ca3af'; ctx.fillRect(6, 11, 2, 2); ctx.fillRect(21, 11, 2, 2);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(2, 19, 28, 11);
+                    ctx.fillStyle = '#374151'; ctx.fillRect(2, 24, 28, 1);
+                    ctx.fillStyle = '#7f1d1d'; ctx.fillRect(15, 17, 2, 4);
+                });
+                // Miner: soot smudges + headlamp reflection + tired eyes.
+                materials.themeFaces.tunnel_miner = makeFace('#6b7280', (ctx) => {
+                    ctx.fillStyle = '#1f2937'; ctx.fillRect(2, 2, 8, 6); ctx.fillRect(22, 4, 8, 6); ctx.fillRect(4, 24, 6, 5);
+                    ctx.fillStyle = '#fef08a'; ctx.fillRect(13, 4, 6, 4);
+                    ctx.fillStyle = '#facc15'; ctx.fillRect(14, 5, 4, 2);
+                    ctx.fillStyle = '#0f172a'; ctx.fillRect(7, 12, 5, 3); ctx.fillRect(20, 12, 5, 3);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(11, 23, 10, 2);
+                });
+                // Soldier: combat helmet dome + war paint + stern eyes.
+                materials.themeFaces.military_soldier = makeFace('#b8865a', (ctx) => {
+                    ctx.fillStyle = '#4d7c0f'; ctx.fillRect(2, 0, 28, 8);
+                    ctx.fillStyle = '#3a4a1f'; ctx.fillRect(2, 7, 28, 1);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(4, 16, 4, 2); ctx.fillRect(24, 16, 4, 2);
+                    ctx.fillRect(5, 19, 3, 2); ctx.fillRect(25, 19, 3, 2);
+                    ctx.fillStyle = '#0f172a'; ctx.fillRect(7, 11, 5, 3); ctx.fillRect(20, 11, 5, 3);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(11, 22, 10, 1);
+                });
+                // Bunker mutant: NVG green lenses + mutated skin blotches + jagged mouth.
+                materials.themeFaces.bunker_mutant = makeFace('#8fae7f', (ctx) => {
+                    ctx.fillStyle = '#22c55e'; ctx.fillRect(5, 10, 8, 6); ctx.fillRect(19, 10, 8, 6);
+                    ctx.fillStyle = '#86efac'; ctx.fillRect(7, 12, 3, 2); ctx.fillRect(21, 12, 3, 2);
+                    ctx.fillStyle = '#4d7c0f'; ctx.fillRect(2, 20, 6, 5); ctx.fillRect(24, 20, 6, 5);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(10, 24, 12, 2);
+                    ctx.fillStyle = '#7f1d1d'; ctx.fillRect(12, 25, 8, 1);
+                });
+
+                // ---- 10 TORSO TEXTURES (32×32 pixel-art clothing) ----
+                // Lab: white coat + lapels + pen pocket + blood stain.
+                materials.themeTorsos.lab = makeTorso('#e5e7eb', (ctx) => {
+                    ctx.fillStyle = '#9ca3af'; ctx.fillRect(14, 0, 4, 32);
+                    ctx.fillStyle = '#cbd5e1'; ctx.fillRect(11, 0, 2, 20); ctx.fillRect(19, 0, 2, 20);
+                    ctx.fillStyle = '#1f2937'; ctx.fillRect(7, 5, 1, 6);
+                    ctx.fillStyle = '#7f1d1d'; ctx.fillRect(18, 14, 6, 5);
+                    ctx.fillStyle = '#991b1b'; ctx.fillRect(20, 16, 3, 2);
+                });
+                // Camper: brown plaid + backpack straps + compass pin.
+                materials.themeTorsos.grass_camper = makeTorso('#5a3a1a', (ctx) => {
+                    ctx.fillStyle = '#3a2410';
+                    for (let y = 0; y < 32; y += 4) ctx.fillRect(0, y, 32, 1);
+                    for (let x = 0; x < 32; x += 4) ctx.fillRect(x, 0, 1, 32);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(8, 0, 3, 32); ctx.fillRect(21, 0, 3, 32);
+                    ctx.fillStyle = '#facc15'; ctx.fillRect(14, 5, 3, 3);
+                });
+                // Lumberjack: red/black plaid + suspenders + axe holster.
+                materials.themeTorsos.forest_lumberjack = makeTorso('#7f1d1d', (ctx) => {
+                    ctx.fillStyle = '#1c0a0a';
+                    for (let y = 0; y < 32; y += 3) ctx.fillRect(0, y, 32, 1);
+                    for (let x = 0; x < 32; x += 3) ctx.fillRect(x, 0, 1, 32);
+                    ctx.fillStyle = '#4a1515'; ctx.fillRect(0, 8, 32, 1); ctx.fillRect(0, 20, 32, 1);
+                    ctx.fillRect(8, 0, 1, 32); ctx.fillRect(22, 0, 1, 32);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(9, 0, 2, 32); ctx.fillRect(21, 0, 2, 32);
+                    ctx.fillStyle = '#3a2418'; ctx.fillRect(2, 12, 3, 14);
+                });
+                // Supermarket: blue vest + white shirt + name tag + EMPLOYEE bar.
+                materials.themeTorsos.supermarket = makeTorso('#1e40af', (ctx) => {
+                    ctx.fillStyle = '#f5f5f4'; ctx.fillRect(11, 0, 10, 32);
+                    ctx.fillStyle = '#1e3a8a'; ctx.fillRect(10, 0, 1, 32); ctx.fillRect(21, 0, 1, 32);
+                    ctx.fillStyle = '#facc15'; ctx.fillRect(13, 6, 6, 4);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(14, 8, 4, 1);
+                    ctx.fillStyle = '#fef08a'; ctx.fillRect(8, 22, 16, 3);
+                });
+                // Businessman: suit + white shirt + tie + pocket square + radiation burn.
+                materials.themeTorsos.city = makeTorso('#1f2937', (ctx) => {
+                    ctx.fillStyle = '#f5f5f4'; ctx.fillRect(12, 0, 8, 24);
+                    ctx.fillStyle = '#111827'; ctx.fillRect(11, 0, 2, 16); ctx.fillRect(19, 0, 2, 16);
+                    ctx.fillStyle = '#7f1d1d'; ctx.fillRect(14, 4, 4, 18);
+                    ctx.fillStyle = '#991b1b'; ctx.fillRect(15, 4, 2, 18);
+                    ctx.fillStyle = '#dc2626'; ctx.fillRect(22, 6, 4, 4);
+                    ctx.fillStyle = '#84cc16'; ctx.fillRect(2, 18, 5, 5);
+                    ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 26, 32, 4);
+                    ctx.fillStyle = '#9ca3af'; ctx.fillRect(14, 26, 4, 3);
+                });
+                // Clown: polka dots (3 colors) + ruffle collar + colorful buttons.
+                materials.themeTorsos.amusement_clown = makeTorso('#dc2626', (ctx) => {
+                    const dots = [
+                        {x:5,y:6,c:'#facc15'},{x:22,y:8,c:'#a855f7'},
+                        {x:8,y:18,c:'#f5f5f4'},{x:24,y:20,c:'#facc15'},
+                        {x:14,y:12,c:'#a855f7'},{x:4,y:22,c:'#a855f7'},
+                        {x:25,y:4,c:'#f5f5f4'},{x:15,y:24,c:'#facc15'}
+                    ];
+                    for (let d of dots) {
+                        ctx.fillStyle = d.c;
+                        ctx.beginPath(); ctx.arc(d.x, d.y, 3, 0, Math.PI * 2); ctx.fill();
+                    }
+                    ctx.fillStyle = '#f5f5f4'; ctx.fillRect(0, 28, 32, 4);
+                    ctx.fillStyle = '#cbd5e1';
+                    for (let i = 0; i < 32; i += 4) {
+                        ctx.beginPath(); ctx.arc(i + 2, 28, 2, 0, Math.PI * 2); ctx.fill();
+                    }
+                    ctx.fillStyle = '#facc15'; ctx.fillRect(14, 8, 2, 2);
+                    ctx.fillStyle = '#a855f7'; ctx.fillRect(14, 14, 2, 2);
+                    ctx.fillStyle = '#22c55e'; ctx.fillRect(14, 20, 2, 2);
+                });
+                // Raider: rust-brown armor + scrap plates + gang symbol + bullet belt.
+                materials.themeTorsos.wasteland_raider = makeTorso('#92400e', (ctx) => {
+                    ctx.fillStyle = '#1c1917';
+                    ctx.fillRect(3, 3, 10, 10); ctx.fillRect(19, 3, 10, 10); ctx.fillRect(8, 16, 16, 12);
+                    ctx.fillStyle = '#9ca3af';
+                    ctx.fillRect(5, 5, 1, 1); ctx.fillRect(11, 5, 1, 1);
+                    ctx.fillRect(5, 11, 1, 1); ctx.fillRect(11, 11, 1, 1);
+                    ctx.fillRect(21, 5, 1, 1); ctx.fillRect(27, 5, 1, 1);
+                    ctx.fillRect(21, 11, 1, 1); ctx.fillRect(27, 11, 1, 1);
+                    ctx.strokeStyle = '#ea580c'; ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(13, 17); ctx.lineTo(19, 23);
+                    ctx.moveTo(19, 17); ctx.lineTo(13, 23);
+                    ctx.stroke();
+                    ctx.fillStyle = '#0f0f10'; ctx.fillRect(0, 28, 32, 2);
+                });
+                // Miner: orange vest + reflective stripes + dark shirt + dust smudges.
+                materials.themeTorsos.tunnel_miner = makeTorso('#ea580c', (ctx) => {
+                    ctx.fillStyle = '#fef08a'; ctx.fillRect(0, 8, 32, 3); ctx.fillRect(0, 22, 32, 3);
+                    ctx.fillStyle = '#facc15'; ctx.fillRect(0, 9, 32, 1); ctx.fillRect(0, 23, 32, 1);
+                    ctx.fillStyle = '#1f2937'; ctx.fillRect(0, 0, 32, 4); ctx.fillRect(0, 14, 32, 6);
+                    ctx.fillStyle = 'rgba(40,30,20,0.6)';
+                    ctx.fillRect(4, 4, 4, 3); ctx.fillRect(22, 16, 5, 4);
+                });
+                // Soldier: olive camo + camo blotches + bullet belt + rank insignia.
+                materials.themeTorsos.military_soldier = makeTorso('#4d7c0f', (ctx) => {
+                    ctx.fillStyle = '#3a4a1f';
+                    ctx.fillRect(3, 4, 8, 6); ctx.fillRect(20, 8, 7, 7);
+                    ctx.fillRect(10, 18, 8, 6); ctx.fillRect(24, 22, 6, 5);
+                    ctx.fillStyle = '#1c1917'; ctx.fillRect(14, 6, 5, 5); ctx.fillRect(4, 22, 6, 5);
+                    ctx.fillStyle = '#0f0f10';
+                    for (let i = 0; i < 32; i += 3) ctx.fillRect(i, 12 + Math.floor(i * 0.3), 2, 2);
+                    ctx.fillStyle = '#b45309';
+                    for (let i = 0; i < 32; i += 3) ctx.fillRect(i, 12 + Math.floor(i * 0.3), 1, 1);
+                    ctx.fillStyle = '#facc15'; ctx.fillRect(26, 4, 3, 2);
+                });
+                // Bunker mutant: black tactical vest + green glow seams + armor plates + NVG mount.
+                materials.themeTorsos.bunker_mutant = makeTorso('#18181b', (ctx) => {
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(0, 5, 32, 1); ctx.fillRect(0, 15, 32, 1); ctx.fillRect(0, 25, 32, 1);
+                    ctx.fillRect(8, 0, 1, 32); ctx.fillRect(15, 0, 1, 32); ctx.fillRect(23, 0, 1, 32);
+                    ctx.fillStyle = '#27272a';
+                    ctx.fillRect(4, 8, 8, 6); ctx.fillRect(20, 8, 8, 6); ctx.fillRect(10, 18, 12, 6);
+                    ctx.fillStyle = '#3f3f46'; ctx.fillRect(13, 2, 6, 3);
+                    ctx.fillStyle = '#86efac'; ctx.fillRect(14, 19, 4, 4);
+                });
+
+                // ---- 10 SKIN MATERIALS (plain Lambert with theme skin tones) ----
+                const skinColors = {
+                    lab: 0xc0b19f, grass_camper: 0xb8865a, forest_lumberjack: 0xb8865a,
+                    supermarket: 0xb5b3a8, city: 0x9ca3af, amusement_clown: 0xf5f5f4,
+                    wasteland_raider: 0xb5a070, tunnel_miner: 0x6b7280,
+                    military_soldier: 0xb8865a, bunker_mutant: 0x8fae7f
+                };
+                for (let k in skinColors) materials.themeSkin[k] = lam(skinColors[k]);
+
+                // ---- 10 LEGS MATERIALS (plain Lambert with theme leg colors) ----
+                const legsColors = {
+                    lab: 0xe5e7eb, grass_camper: 0x4d3a1a, forest_lumberjack: 0x1e3a8a,
+                    supermarket: 0x1e40af, city: 0x1f2937, amusement_clown: 0xa855f7,
+                    wasteland_raider: 0x3a2a1a, tunnel_miner: 0x1f2937,
+                    military_soldier: 0x4d7c0f, bunker_mutant: 0x18181b
+                };
+                for (let k in legsColors) materials.themeLegs[k] = lam(legsColors[k]);
+            })();
+
+            // ---- THEME ACCESSORY MATERIALS (shared by every themed enemy) ----
+            materials.themeAcc = {
+                clownNose: new THREE.MeshBasicMaterial({ color: 0xef4444 }),
+                clownHair: [
+                    new THREE.MeshLambertMaterial({ color: 0xdc2626 }),
+                    new THREE.MeshLambertMaterial({ color: 0xfacc15 }),
+                    new THREE.MeshLambertMaterial({ color: 0xa855f7 }),
+                    new THREE.MeshLambertMaterial({ color: 0x22c55e }),
+                    new THREE.MeshLambertMaterial({ color: 0x3b82f6 })
+                ],
+                minerHelmet: new THREE.MeshLambertMaterial({ color: 0xfbbf24 }),
+                soldierHelmet: new THREE.MeshLambertMaterial({ color: 0x4d7c0f }),
+                beanie: new THREE.MeshLambertMaterial({ color: 0x1f2937 }),
+                cap: new THREE.MeshLambertMaterial({ color: 0x1e40af }),
+                beard: new THREE.MeshBasicMaterial({ color: 0x3a2418, side: THREE.DoubleSide }),
+                goggles: new THREE.MeshLambertMaterial({ color: 0x111827 }),
+                nvg: new THREE.MeshBasicMaterial({ color: 0x22c55e }),
+                mouthBandana: new THREE.MeshBasicMaterial({ color: 0x1f2937, side: THREE.DoubleSide }),
+                neckBandana: new THREE.MeshLambertMaterial({ color: 0x7c2d12 }),
+                nameTag: new THREE.MeshBasicMaterial({ color: 0xfacc15 }),
+                tie: new THREE.MeshLambertMaterial({ color: 0x7f1d1d }),
+                briefcase: new THREE.MeshLambertMaterial({ color: 0x4a2c1a }),
+                bulletBelt: new THREE.MeshLambertMaterial({ color: 0xb45309 }),
+                armorPlate: new THREE.MeshLambertMaterial({ color: 0x111827 })
+            };
+            // End Part 2 Stage 7 (Task 13) themed-enemy caches.
+            // -----------------------------------------------------------------
+
             // Pre-generate shared SpriteMaterials for all 7 loot types to avoid runtime Canvas texture generation & GPU texture upload lags
             let lootTypes = {
                 wood: "GASOLINE",
@@ -8328,6 +8918,28 @@
             
             let legsMat = materials.playerLegs;
             
+            // Part 2 Stage 7 (Task 13): location-themed enemy visuals. When variationOpts
+            // provides themeFace/themeTorso/themeSkin/themeLegs keys, override the base
+            // materials with the pre-built themed versions (cached in materials.themeFaces
+            // / themeTorsos / themeSkin / themeLegs at init). Only spawn3DEnemy sets these —
+            // player/NPC callers don't pass variationOpts.theme* fields, so legacy behavior
+            // is preserved.
+            if (isEnemy && variationOpts) {
+                if (variationOpts.themeFace && materials.themeFaces && materials.themeFaces[variationOpts.themeFace]) {
+                    faceMaterial = materials.themeFaces[variationOpts.themeFace];
+                }
+                if (variationOpts.themeTorso && materials.themeTorsos && materials.themeTorsos[variationOpts.themeTorso]) {
+                    torsoMat = materials.themeTorsos[variationOpts.themeTorso];
+                }
+                if (variationOpts.themeSkin && materials.themeSkin && materials.themeSkin[variationOpts.themeSkin]) {
+                    skinMat = materials.themeSkin[variationOpts.themeSkin];
+                    headSkinMaterial = skinMat; // head side/back/top also use the themed skin
+                }
+                if (variationOpts.themeLegs && materials.themeLegs && materials.themeLegs[variationOpts.themeLegs]) {
+                    legsMat = materials.themeLegs[variationOpts.themeLegs];
+                }
+            }
+            
             // Torso (Box)
             // PATCH 1.3: torso uses unitGeos.box + non-uniform scale. Box faces stay axis-aligned
             // under non-uniform scale (normals are (±1,0,0)/(0,±1,0)/(0,0,±1) → after inverse-transpose
@@ -8640,6 +9252,209 @@
                                 break;
                             }
                             // raider_rifle is handled in the gun-creation block above (var gunScaleZ).
+                        }
+                    }
+                }
+            }
+
+            // -----------------------------------------------------------------
+            // Part 2 Stage 7 (Task 13): theme-specific accessories. Spawned IN ADDITION
+            // to the random Task-9 accessories (so a clown still has random blood + a
+            // bandana, plus the theme-mandated red nose + wild hair). All use cached
+            // materials + unitGeos.* (geometry sharing preserved). castShadow=false on
+            // every theme accessory (small-detail rule). When variationOpts.themeAccessories
+            // is unset (player/NPC), this whole block is skipped — no behavior change.
+            // -----------------------------------------------------------------
+            if (isEnemy && variationOpts && Array.isArray(variationOpts.themeAccessories) && materials.themeAcc) {
+                for (let acc of variationOpts.themeAccessories) {
+                    switch (acc) {
+                        case 'surgical_mask': {
+                            // White plane on lower face — lab medic/surgeon.
+                            const mask = new THREE.Mesh(unitGeos.plane, materials.bandageWhite);
+                            mask.scale.set(0.75, 0.35, 1);
+                            mask.position.set(0, -0.25, 0.51);
+                            mask.castShadow = false;
+                            head.add(mask);
+                            break;
+                        }
+                        case 'clown_nose': {
+                            // Small red sphere on face front — clown.
+                            const nose = new THREE.Mesh(unitGeos.sphere, materials.themeAcc.clownNose);
+                            nose.scale.set(0.14, 0.14, 0.14);
+                            nose.position.set(0, -0.05, 0.36);
+                            nose.castShadow = false;
+                            head.add(nose);
+                            break;
+                        }
+                        case 'clown_hair': {
+                            // 3-5 colored cones on head — wild clown wig.
+                            const hairColors = materials.themeAcc.clownHair;
+                            const nCones = 3 + Math.floor(Math.random() * 3);
+                            for (let i = 0; i < nCones; i++) {
+                                const cone = new THREE.Mesh(unitGeos.cone, hairColors[Math.floor(Math.random() * hairColors.length)]);
+                                const a = (i / nCones) * Math.PI * 2;
+                                cone.scale.set(0.16, 0.40, 0.16);
+                                cone.position.set(Math.cos(a) * 0.32, 0.6 + Math.random() * 0.1, Math.sin(a) * 0.32);
+                                cone.rotation.z = (Math.random() - 0.5) * 0.4;
+                                cone.castShadow = false;
+                                head.add(cone);
+                            }
+                            break;
+                        }
+                        case 'miner_helmet': {
+                            // Helmet box + small emissive headlamp front — tunnel miner.
+                            const helmet = new THREE.Mesh(unitGeos.box, materials.themeAcc.minerHelmet);
+                            helmet.scale.set(0.95, 0.45, 0.95);
+                            helmet.position.set(0, 0.55, 0);
+                            helmet.castShadow = false;
+                            head.add(helmet);
+                            const lamp = new THREE.Mesh(unitGeos.box, materials.emissiveYellow);
+                            lamp.scale.set(0.15, 0.15, 0.15);
+                            lamp.position.set(0, 0.4, 0.5);
+                            head.add(lamp);
+                            break;
+                        }
+                        case 'soldier_helmet': {
+                            const helmet = new THREE.Mesh(unitGeos.box, materials.themeAcc.soldierHelmet);
+                            helmet.scale.set(1.0, 0.55, 1.0);
+                            helmet.position.set(0, 0.55, 0);
+                            helmet.castShadow = false;
+                            head.add(helmet);
+                            break;
+                        }
+                        case 'beanie': {
+                            const beanie = new THREE.Mesh(unitGeos.box, materials.themeAcc.beanie);
+                            beanie.scale.set(1.0, 0.55, 1.0);
+                            beanie.position.set(0, 0.55, 0);
+                            beanie.castShadow = false;
+                            head.add(beanie);
+                            break;
+                        }
+                        case 'cap': {
+                            const capMesh = new THREE.Mesh(unitGeos.box, materials.themeAcc.cap);
+                            capMesh.scale.set(0.95, 0.40, 0.95);
+                            capMesh.position.set(0, 0.55, 0);
+                            capMesh.castShadow = false;
+                            head.add(capMesh);
+                            break;
+                        }
+                        case 'beard': {
+                            // Dark plane on lower face — lumberjack.
+                            const beard = new THREE.Mesh(unitGeos.plane, materials.themeAcc.beard);
+                            beard.scale.set(0.85, 0.45, 1);
+                            beard.position.set(0, -0.30, 0.45);
+                            beard.castShadow = false;
+                            head.add(beard);
+                            break;
+                        }
+                        case 'goggles': {
+                            // Two small dark boxes on eyes — wasteland raider.
+                            const gMat = materials.themeAcc.goggles;
+                            const gL = new THREE.Mesh(unitGeos.box, gMat);
+                            gL.scale.set(0.20, 0.18, 0.18);
+                            gL.position.set(0.15, 0.10, 0.45);
+                            head.add(gL);
+                            const gR = new THREE.Mesh(unitGeos.box, gMat);
+                            gR.scale.set(0.20, 0.18, 0.18);
+                            gR.position.set(-0.15, 0.10, 0.45);
+                            head.add(gR);
+                            break;
+                        }
+                        case 'nvg': {
+                            // Two green emissive boxes on eyes — bunker mutant.
+                            const nvgMat = materials.themeAcc.nvg;
+                            const nL = new THREE.Mesh(unitGeos.box, nvgMat);
+                            nL.scale.set(0.20, 0.16, 0.18);
+                            nL.position.set(0.15, 0.08, 0.45);
+                            head.add(nL);
+                            const nR = new THREE.Mesh(unitGeos.box, nvgMat);
+                            nR.scale.set(0.20, 0.16, 0.18);
+                            nR.position.set(-0.15, 0.08, 0.45);
+                            head.add(nR);
+                            break;
+                        }
+                        case 'mouth_bandana': {
+                            const bandana = new THREE.Mesh(unitGeos.plane, materials.themeAcc.mouthBandana);
+                            bandana.scale.set(0.85, 0.35, 1);
+                            bandana.position.set(0, -0.20, 0.51);
+                            bandana.castShadow = false;
+                            head.add(bandana);
+                            break;
+                        }
+                        case 'bandana_neck': {
+                            const bandana = new THREE.Mesh(unitGeos.box, materials.themeAcc.neckBandana);
+                            bandana.scale.set(0.7, 0.2, 0.5);
+                            bandana.position.set(0, -0.5, 0.05);
+                            bandana.castShadow = false;
+                            head.add(bandana);
+                            break;
+                        }
+                        case 'name_tag': {
+                            // Small yellow plane on chest — supermarket employee.
+                            const tag = new THREE.Mesh(unitGeos.plane, materials.themeAcc.nameTag);
+                            tag.scale.set(0.18, 0.10, 1);
+                            tag.position.set(0.18, 0.10, 0.51);
+                            tag.castShadow = false;
+                            torso.add(tag);
+                            break;
+                        }
+                        case 'tie': {
+                            // Thin red stripe down torso front — businessman.
+                            const tieMesh = new THREE.Mesh(unitGeos.box, materials.themeAcc.tie);
+                            tieMesh.scale.set(0.10, 0.85, 0.10);
+                            tieMesh.position.set(0, -0.05, 0.21);
+                            tieMesh.castShadow = false;
+                            torso.add(tieMesh);
+                            break;
+                        }
+                        case 'briefcase': {
+                            // Small box in left hand — businessman. Disable the player/raider
+                            // armR-gun logic by checking — but only raider-type spawns reach this
+                            // branch via theme, and raider has its own gun on armR. The briefcase
+                            // attaches to armL so they don't collide.
+                            const brief = new THREE.Mesh(unitGeos.box, materials.themeAcc.briefcase);
+                            brief.scale.set(0.35, 0.25, 0.50);
+                            brief.position.set(0, -0.55, 0.05);
+                            brief.rotation.x = Math.PI / 2;
+                            brief.castShadow = false;
+                            armL.add(brief);
+                            break;
+                        }
+                        case 'bullet_belt': {
+                            // 5 small boxes diagonally across chest — soldier.
+                            for (let i = 0; i < 5; i++) {
+                                const b = new THREE.Mesh(unitGeos.box, materials.themeAcc.bulletBelt);
+                                b.scale.set(0.08, 0.08, 0.05);
+                                b.position.set(-0.30 + i * 0.15, 0.20 - i * 0.05, 0.21);
+                                b.castShadow = false;
+                                torso.add(b);
+                            }
+                            break;
+                        }
+                        case 'armor_plate': {
+                            // Box on chest — bunker mutant.
+                            const plate = new THREE.Mesh(unitGeos.box, materials.themeAcc.armorPlate);
+                            plate.scale.set(0.6, 0.55, 0.18);
+                            plate.position.set(0, 0.0, 0.21);
+                            plate.castShadow = false;
+                            torso.add(plate);
+                            break;
+                        }
+                        case 'pickaxe': {
+                            // Pickaxe strapped to back — tunnel miner. Local var pickHead
+                            // avoids shadowing the `head` mesh var in this function scope.
+                            const handle = new THREE.Mesh(unitGeos.box, materials.wood);
+                            handle.scale.set(0.05, 1.2, 0.05);
+                            handle.position.set(0, 0.2, -0.45);
+                            handle.rotation.x = 0.2;
+                            handle.castShadow = false;
+                            torso.add(handle);
+                            const pickHead = new THREE.Mesh(unitGeos.box, materials.steelDark);
+                            pickHead.scale.set(0.40, 0.08, 0.08);
+                            pickHead.position.set(0, 0.75, -0.45);
+                            pickHead.castShadow = false;
+                            torso.add(pickHead);
+                            break;
                         }
                     }
                 }
@@ -12886,6 +13701,463 @@
             return opts;
         }
 
+        // Part 2 Stage 7 (Task 13): returns a theme-override object for the 7 Roblox-character
+        // enemy types based on the current location index. Visuals-only — stats/AI unchanged.
+        // Maps LOCATION INDEX (not theme name, since two grass-themed locations want distinct
+        // looks: Camp Dawn = campers, Quiet Forest = lumberjacks). Returns null for an unknown
+        // index (defensive — callers fall back to the default per-type colors).
+        function getEnemyThemeOverride(locIdx) {
+            const locKeyMap = {
+                0: 'lab', 1: 'grass_camper', 2: 'forest_lumberjack', 3: 'supermarket',
+                4: 'city', 5: 'amusement_clown', 6: 'wasteland_raider', 7: 'tunnel_miner',
+                8: 'military_soldier', 9: 'bunker_mutant'
+            };
+            const themeAccessoriesByTheme = {
+                lab: ['surgical_mask'],
+                grass_camper: ['bandana_neck', 'cap'],
+                forest_lumberjack: ['beanie', 'beard'],
+                supermarket: ['name_tag', 'cap'],
+                city: ['tie', 'briefcase'],
+                amusement_clown: ['clown_nose', 'clown_hair'],
+                wasteland_raider: ['goggles', 'mouth_bandana'],
+                tunnel_miner: ['miner_helmet', 'pickaxe'],
+                military_soldier: ['soldier_helmet', 'bullet_belt'],
+                bunker_mutant: ['nvg', 'armor_plate']
+            };
+            const key = locKeyMap[locIdx];
+            if (!key) return null;
+            return {
+                themeFace: key,
+                themeTorso: key,
+                themeSkin: key,
+                themeLegs: key,
+                themeAccessories: themeAccessoriesByTheme[key]
+            };
+        }
+
+        // -----------------------------------------------------------------
+        // Part 2 Stage 7 (Task 13) — location-themed boss builder.
+        // Each of the 10 locations gets a distinct boss appearance: Patient
+        // Zero (lab — mutated scientist + tentacle arm + syringe), Camp
+        // Stalker (grass — ranger hat + rifle), Rotting Elder (forest — mossy
+        // ent with branch arms + glowing eyes), Butcher of Aisle 9
+        // (supermarket — fat apron + cleaver), Irradiated Colossus (city —
+        // suit + extra mutated arm + briefcase), Carnival King (amusement —
+        // clown with 5 hair cones + giant nose + hammer), Raider Warlord
+        // (wasteland — rust armor + spike pauldrons + gas mask + scrap cape +
+        // dual weapons), Tunnel Horror (tunnel — pale hunched miner +
+        // headlamp + pickaxe + blue eyes), Iron Commander (military — soldier
+        // + helmet + ammo belt + rifle + dog tags), Omega Super Mutant
+        // (bunker — enhanced mega-robot with NVG + green radiation seams +
+        // tactical armor plates). All preserve the same userData fields used
+        // by Task 11 boss-rage + phase mechanics (hp/maxHp/speed/dmg/baseSpeed/
+        // plasmaCooldown/dmgReduction/bossDmgMult/lastShot/lastSummon/bossName/
+        // bossPhase/rageTriggered/rageActive/lastAoEPulse/lastRageSpark/
+        // lastSlam/isFinalBoss/accentMat). The bossTheme for each location is
+        // derived from the location index via the locKeyMap below (so no
+        // LOCATIONS-boss-config change is needed — the bossTheme field is
+        // implicit per location).
+        // -----------------------------------------------------------------
+        function buildThemedBoss(bossCfg, bossStats, locIdx) {
+            const locKeyMap = {
+                0: 'lab', 1: 'grass', 2: 'forest', 3: 'supermarket',
+                4: 'city', 5: 'amusement', 6: 'wasteland', 7: 'tunnel',
+                8: 'military', 9: 'bunker'
+            };
+            const themeKey = locKeyMap[locIdx] || 'bunker';
+            // accentMat is the recolorable accent — Task 11 phase transitions
+            // (rage / phase 2 / phase 3) recolor this material via setHex().
+            const accentMat = new THREE.MeshStandardMaterial({
+                color: bossCfg.color, roughness: 0.5, metalness: 0.4,
+                emissive: bossCfg.color, emissiveIntensity: 0.3
+            });
+            const group = new THREE.Group();
+
+            // Per-theme material picks (torso/head/limbs/weapon). Falls back to
+            // the existing mega-robot materials for the bunker final boss.
+            let torsoMat, headMat, limbsMat, weaponMat;
+            switch (themeKey) {
+                case 'lab':
+                    torsoMat = materials.themeTorsos.lab; headMat = materials.themeFaces.lab;
+                    limbsMat = materials.themeSkin.lab; weaponMat = materials.steelDark;
+                    break;
+                case 'grass':
+                    torsoMat = materials.themeTorsos.grass_camper; headMat = materials.themeFaces.grass_camper;
+                    limbsMat = materials.themeSkin.grass_camper; weaponMat = materials.steelDark;
+                    break;
+                case 'forest':
+                    torsoMat = materials.wood; headMat = materials.leaf;
+                    limbsMat = materials.wood; weaponMat = materials.wood;
+                    break;
+                case 'supermarket':
+                    torsoMat = materials.themeTorsos.supermarket; headMat = materials.themeFaces.supermarket;
+                    limbsMat = materials.themeSkin.supermarket; weaponMat = materials.steelDark;
+                    break;
+                case 'city':
+                    torsoMat = materials.themeTorsos.city; headMat = materials.themeFaces.city;
+                    limbsMat = materials.themeSkin.city; weaponMat = materials.themeAcc.briefcase;
+                    break;
+                case 'amusement':
+                    torsoMat = materials.themeTorsos.amusement_clown; headMat = materials.themeFaces.amusement_clown;
+                    limbsMat = materials.themeSkin.amusement_clown; weaponMat = materials.steelDark;
+                    break;
+                case 'wasteland':
+                    torsoMat = materials.themeTorsos.wasteland_raider; headMat = materials.themeFaces.wasteland_raider;
+                    limbsMat = materials.themeSkin.wasteland_raider; weaponMat = materials.steelDark;
+                    break;
+                case 'tunnel':
+                    torsoMat = materials.themeTorsos.tunnel_miner; headMat = materials.themeFaces.tunnel_miner;
+                    limbsMat = materials.themeSkin.tunnel_miner; weaponMat = materials.steelDark;
+                    break;
+                case 'military':
+                    torsoMat = materials.themeTorsos.military_soldier; headMat = materials.themeFaces.military_soldier;
+                    limbsMat = materials.themeSkin.military_soldier; weaponMat = materials.steelDark;
+                    break;
+                case 'bunker':
+                default:
+                    torsoMat = materials.bossMetal; headMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+                    limbsMat = materials.bossMetal; weaponMat = materials.steelDark;
+                    break;
+            }
+
+            // ---- MATERIAL CLONE (rage-isolation) ----
+            // Clone the picked materials so the boss has its OWN instances. This is
+            // critical because the Task 11 boss-rage mechanic (update3DEnemies)
+            // traverses the boss and calls `material.emissive.setHex(0x660000)` on
+            // every mesh — if the boss shared material instances with regular
+            // enemies (themeTorsos.X is used by both), the rage tint would also
+            // color every regular enemy in the level. Cloning isolates the boss's
+            // materials so rage only affects the boss. Cloning a fresh material
+            // (e.g. the bunker headMat) is a no-op cost-wise.
+            torsoMat = torsoMat.clone();
+            headMat  = headMat.clone();
+            limbsMat = limbsMat.clone();
+            weaponMat = weaponMat.clone();
+
+            // ---- CORE STRUCTURE (shared across all themed bosses) ----
+            const torsoGeo = new THREE.BoxGeometry(2.0, 2.2, 1.6);
+            const headGeo  = new THREE.BoxGeometry(0.9, 0.9, 0.9);
+            const armGeo   = new THREE.BoxGeometry(0.45, 1.8, 0.45);
+            const legGeo   = new THREE.BoxGeometry(0.55, 1.6, 0.55);
+
+            const torso = new THREE.Mesh(torsoGeo, torsoMat);
+            torso.position.y = 1.7;
+            torso.castShadow = true;
+            group.add(torso);
+            group.userData.torso = torso;
+
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 3.1;
+            head.castShadow = true;
+            group.add(head);
+            group.userData.head = head;
+
+            // Accent eye/laser line (recolorable via accentMat)
+            const laser = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.15, 0.15), accentMat);
+            laser.position.set(0, 3.15, 0.46);
+            group.add(laser);
+
+            // Accent pauldrons (recolorable via accentMat — used for Task 11 phases)
+            const pauldronGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+            const pL = new THREE.Mesh(pauldronGeo, accentMat);
+            pL.position.set(-1.25, 2.5, 0); pL.castShadow = true; group.add(pL);
+            const pR = new THREE.Mesh(pauldronGeo, accentMat);
+            pR.position.set(1.25, 2.5, 0); pR.castShadow = true; group.add(pR);
+
+            // Arms (two by default; lab boss replaces the left with a tentacle)
+            const armL = new THREE.Mesh(armGeo, limbsMat);
+            armL.geometry.translate(0, -0.7, 0);
+            armL.position.set(-1.15, 2.5, 0);
+            armL.castShadow = true;
+            group.add(armL);
+
+            const armR = new THREE.Mesh(armGeo, limbsMat);
+            armR.geometry.translate(0, -0.7, 0);
+            armR.position.set(1.15, 2.5, 0);
+            armR.castShadow = true;
+            group.add(armR);
+
+            // Legs (two by default; forest boss uses root-base instead)
+            const legL = new THREE.Mesh(legGeo, limbsMat);
+            legL.position.set(-0.5, 0.8, 0);
+            legL.castShadow = true;
+            group.add(legL);
+            const legR = new THREE.Mesh(legGeo, limbsMat);
+            legR.position.set(0.5, 0.8, 0);
+            legR.castShadow = true;
+            group.add(legR);
+
+            // Default weapon (themed by weaponMat). Some themes override below.
+            const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.4, 0.3), weaponMat);
+            weapon.position.set(1.4, 1.7, 0.3);
+            weapon.rotation.z = -0.4;
+            weapon.castShadow = true;
+            group.add(weapon);
+
+            // ---- THEME-SPECIFIC EXTRAS ----
+            if (themeKey === 'lab') {
+                // Patient Zero — mutated scientist with a green tentacle arm
+                // and a syringe weapon. Smaller than other bosses (a mutated
+                // researcher, not a giant).
+                armL.visible = false;
+                // Clone zombieSkin so the lab boss's tentacle has its OWN material
+                // instance (same rage-isolation reason as the core materials above).
+                const tentacle = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.22, 0.34, 2.2, 8), materials.zombieSkin.clone());
+                tentacle.position.set(-1.15, 1.6, 0);
+                tentacle.rotation.z = 0.3;
+                tentacle.castShadow = true;
+                group.add(tentacle);
+                // Syringe in right hand
+                weapon.scale.set(0.6, 0.6, 1.6);
+                weapon.position.set(1.4, 1.8, 0.5);
+                weapon.rotation.set(0.3, 0, -0.4);
+                // Biohazard glow sphere on chest
+                const glow = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), materials.emissiveGreen);
+                glow.position.set(0, 2.2, 0.6);
+                group.add(glow);
+                group.scale.set(0.85, 0.85, 0.85);
+            } else if (themeKey === 'grass') {
+                // Camp Stalker — ranger hat + hunting rifle. Hat materials cloned
+                // for rage-isolation (themeSkin.grass_camper is shared with regular
+                // camper enemies).
+                const hatBrim = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.7, 0.7, 0.1, 8), materials.themeSkin.grass_camper.clone());
+                hatBrim.position.set(0, 3.55, 0);
+                hatBrim.castShadow = true;
+                group.add(hatBrim);
+                const hatTop = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.35, 0.35, 0.3, 8), materials.themeSkin.grass_camper.clone());
+                hatTop.position.set(0, 3.7, 0);
+                group.add(hatTop);
+                // Hunting rifle (longer, pointing forward)
+                weapon.scale.set(0.25, 0.25, 1.8);
+                weapon.rotation.set(Math.PI / 2, 0, -0.4);
+            } else if (themeKey === 'forest') {
+                // Rotting Elder — mossy ent with branch arms + root legs +
+                // glowing green eyes. No handheld weapon (uses branches).
+                armL.scale.set(0.6, 1.3, 0.6); armR.scale.set(0.6, 1.3, 0.6);
+                legL.scale.set(1.4, 0.85, 1.4); legR.scale.set(1.4, 0.85, 1.4);
+                const eyeGeo = new THREE.SphereGeometry(0.12, 6, 4);
+                const eyeL = new THREE.Mesh(eyeGeo, materials.emissiveGreen);
+                eyeL.position.set(-0.18, 3.2, 0.45);
+                group.add(eyeL);
+                const eyeR = new THREE.Mesh(eyeGeo, materials.emissiveGreen);
+                eyeR.position.set(0.18, 3.2, 0.45);
+                group.add(eyeR);
+                // Moss overlay on torso. materials.leaf cloned for rage-isolation.
+                const moss = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.2, 1.7), materials.leaf.clone());
+                moss.position.set(0, 1.4, 0);
+                moss.castShadow = true;
+                group.add(moss);
+                weapon.visible = false;
+            } else if (themeKey === 'supermarket') {
+                // Butcher of Aisle 9 — fat body + white apron + butcher hat +
+                // big meat cleaver.
+                torso.scale.set(1.3, 1.0, 1.2);
+                const hat = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.0, 0.25, 1.0),
+                    new THREE.MeshLambertMaterial({ color: 0xf5f5f4 }));
+                hat.position.set(0, 3.65, 0);
+                group.add(hat);
+                // Big red-tinted cleaver
+                weapon.scale.set(0.9, 1.4, 0.2);
+                weapon.material = new THREE.MeshLambertMaterial({ color: 0x991b1b });
+            } else if (themeKey === 'city') {
+                // Irradiated Colossus — taller-than-wide mutated businessman
+                // with extra arm + briefcase + radiation glow.
+                group.scale.set(0.9, 1.2, 0.9);
+                // Clone zombieSkin so the city boss's extra mutated arm has its OWN
+                // material instance (same rage-isolation reason as the core materials).
+                const armExtra = new THREE.Mesh(armGeo.clone(), materials.zombieSkin.clone());
+                armExtra.geometry.translate(0, -0.7, 0);
+                armExtra.position.set(0.8, 2.6, -0.5);
+                armExtra.castShadow = true;
+                group.add(armExtra);
+                const radGlow = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.25, 8, 6), materials.emissiveGreen);
+                radGlow.position.set(0, 1.7, 0.8);
+                group.add(radGlow);
+                // Briefcase in left hand (replace default weapon). Clone the
+                // shared briefcase material for rage-isolation (themeAcc.
+                // briefcase shared with regular city businessmen enemies).
+                weapon.material = materials.themeAcc.briefcase.clone();
+                weapon.scale.set(0.6, 0.5, 0.7);
+                weapon.position.set(-1.3, 1.3, 0.4);
+                weapon.rotation.set(0, 0, 0);
+            } else if (themeKey === 'amusement') {
+                // Carnival King — clown with 5 wild hair cones + giant red
+                // nose + hammer weapon + oversized red shoes. Hair cone
+                // materials cloned for rage-isolation (clownHair shared with
+                // regular clown enemies).
+                const hairColors = materials.themeAcc.clownHair;
+                for (let i = 0; i < 5; i++) {
+                    const cone = new THREE.Mesh(
+                        new THREE.ConeGeometry(0.18, 0.45, 6),
+                        hairColors[i % hairColors.length].clone());
+                    const a = (i / 5) * Math.PI * 2;
+                    cone.position.set(Math.cos(a) * 0.45, 3.7, Math.sin(a) * 0.45);
+                    cone.rotation.z = (Math.random() - 0.5) * 0.3;
+                    group.add(cone);
+                }
+                const nose = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.25, 8, 6), materials.themeAcc.clownNose);
+                nose.position.set(0, 3.0, 0.5);
+                group.add(nose);
+                // Big hammer weapon
+                weapon.scale.set(0.7, 1.0, 0.7);
+                weapon.position.set(1.5, 1.4, 0.3);
+                weapon.rotation.set(0, 0, -0.7);
+                // Oversized red shoes
+                const shoeGeo = new THREE.BoxGeometry(0.85, 0.3, 0.95);
+                const shoeMat = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
+                const shoeL = new THREE.Mesh(shoeGeo, shoeMat);
+                shoeL.position.set(-0.5, 0.15, 0.1);
+                group.add(shoeL);
+                const shoeR = new THREE.Mesh(shoeGeo, shoeMat);
+                shoeR.position.set(0.5, 0.15, 0.1);
+                group.add(shoeR);
+            } else if (themeKey === 'wasteland') {
+                // Raider Warlord — rust-metal armor + spike pauldrons + gas
+                // mask + scrap cape + dual weapons. Spike material cloned for
+                // rage-isolation (steelDark shared with level props + player
+                // raider gun bodies).
+                const spikeGeo = new THREE.ConeGeometry(0.18, 0.5, 6);
+                const spikeMat = materials.steelDark.clone();
+                for (let i = 0; i < 4; i++) {
+                    const sL = new THREE.Mesh(spikeGeo, spikeMat);
+                    sL.position.set(-1.25, 2.85 + i * 0.1, -0.2 + i * 0.15);
+                    sL.rotation.z = Math.PI;
+                    group.add(sL);
+                    const sR = new THREE.Mesh(spikeGeo, spikeMat);
+                    sR.position.set(1.25, 2.85 + i * 0.1, -0.2 + i * 0.15);
+                    sR.rotation.z = Math.PI;
+                    group.add(sR);
+                }
+                // Gas mask on face front
+                const mask = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.7, 0.5, 0.2),
+                    new THREE.MeshLambertMaterial({ color: 0x1f2937 }));
+                mask.position.set(0, 3.1, 0.45);
+                group.add(mask);
+                // Scrap cape (dark plane behind torso)
+                const cape = new THREE.Mesh(
+                    new THREE.PlaneGeometry(2.5, 2.2),
+                    new THREE.MeshLambertMaterial({ color: 0x3a2410, side: THREE.DoubleSide }));
+                cape.position.set(0, 1.6, -0.85);
+                cape.castShadow = true;
+                group.add(cape);
+                // Second weapon (left hand)
+                const weapon2 = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.3, 1.4, 0.3), weaponMat);
+                weapon2.position.set(-1.4, 1.7, 0.3);
+                weapon2.rotation.z = 0.4;
+                weapon2.castShadow = true;
+                group.add(weapon2);
+            } else if (themeKey === 'tunnel') {
+                // Tunnel Horror — pale hunched miner with dead headlamp +
+                // pickaxe + glowing blue eyes.
+                torso.rotation.x = 0.2; // hunched posture
+                head.position.z = 0.3;
+                head.position.y = 2.95;
+                // Miner helmet with (dead) headlamp. Helmet material cloned
+                // for rage-isolation (themeAcc.minerHelmet shared with regular
+                // tunnel-miner enemies).
+                const helmet = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.95, 0.3, 0.95), materials.themeAcc.minerHelmet.clone());
+                helmet.position.set(0, 3.4, 0);
+                group.add(helmet);
+                const lamp = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.18, 0.18, 0.18), materials.emissiveYellow);
+                lamp.position.set(0, 3.35, 0.5);
+                group.add(lamp);
+                // Glowing blue eyes
+                const eyeGeo = new THREE.SphereGeometry(0.1, 6, 4);
+                const eyeBlueMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+                const eyeL = new THREE.Mesh(eyeGeo, eyeBlueMat);
+                eyeL.position.set(-0.18, 3.1, 0.4);
+                group.add(eyeL);
+                const eyeR = new THREE.Mesh(eyeGeo, eyeBlueMat);
+                eyeR.position.set(0.18, 3.1, 0.4);
+                group.add(eyeR);
+                // Pickaxe weapon (long handle + cross head). Pick head
+                // material cloned for rage-isolation (steelDark shared).
+                weapon.scale.set(0.15, 1.6, 0.15);
+                weapon.position.set(1.4, 1.7, 0.3);
+                weapon.rotation.set(0.1, 0, -0.4);
+                const pickHeadMesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.7, 0.12, 0.12), materials.steelDark.clone());
+                pickHeadMesh.position.set(1.4, 2.5, 0.3);
+                group.add(pickHeadMesh);
+            } else if (themeKey === 'military') {
+                // Iron Commander — soldier with combat helmet + ammo belt +
+                // rifle + dog tags. Helmet + bullet materials cloned for
+                // rage-isolation (themeAcc.soldierHelmet / bulletBelt shared
+                // with regular military-soldier enemies).
+                const helmetMat = materials.themeAcc.soldierHelmet.clone();
+                const helmet = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.0, 0.45, 1.0), helmetMat);
+                helmet.position.set(0, 3.45, 0);
+                group.add(helmet);
+                // Ammo belt across chest (6 bullets) — all share one cloned mat.
+                const bulletMat = materials.themeAcc.bulletBelt.clone();
+                for (let i = 0; i < 6; i++) {
+                    const b = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.18, 0.18, 0.08), bulletMat);
+                    b.position.set(-1.0 + i * 0.4, 2.0, 0.85);
+                    group.add(b);
+                }
+                // Dog tags
+                const tags = new THREE.Mesh(
+                    new THREE.PlaneGeometry(0.2, 0.15),
+                    new THREE.MeshBasicMaterial({ color: 0x9ca3af, side: THREE.DoubleSide }));
+                tags.position.set(0.2, 1.5, 0.81);
+                group.add(tags);
+                // Rifle (long)
+                weapon.scale.set(0.22, 0.22, 1.8);
+                weapon.rotation.set(Math.PI / 2, 0, -0.4);
+            } else if (themeKey === 'bunker') {
+                // Omega Super Mutant — enhanced mega-robot. Bigger, with NVG
+                // green lenses, tactical armor plates, green radiation glow
+                // seams. This is the final boss — most imposing. Same 3-phase
+                // mechanics as before (preserved via userData fields). NVG
+                // lenses are MeshBasicMaterial (no emissive, no clone needed).
+                // Armor plate material cloned for rage-isolation (themeAcc.
+                // armorPlate shared with regular bunker-mutant enemies).
+                group.scale.set(1.1, 1.1, 1.1);
+                const eyeGeo = new THREE.SphereGeometry(0.13, 6, 4);
+                const eyeL = new THREE.Mesh(eyeGeo, materials.themeAcc.nvg);
+                eyeL.position.set(-0.2, 3.15, 0.45);
+                group.add(eyeL);
+                const eyeR = new THREE.Mesh(eyeGeo, materials.themeAcc.nvg);
+                eyeR.position.set(0.2, 3.15, 0.45);
+                group.add(eyeR);
+                // Tactical armor plates (chest + belly) — share one cloned mat.
+                const plateGeo = new THREE.BoxGeometry(1.6, 0.6, 0.2);
+                const plateMat = materials.themeAcc.armorPlate.clone();
+                const plate1 = new THREE.Mesh(plateGeo, plateMat);
+                plate1.position.set(0, 2.1, 0.85);
+                group.add(plate1);
+                const plate2 = new THREE.Mesh(plateGeo, plateMat);
+                plate2.position.set(0, 1.3, 0.85);
+                group.add(plate2);
+                // Green radiation glow seams
+                const seamMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+                const seam1 = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.06, 1.7), seamMat);
+                seam1.position.set(0, 2.5, 0);
+                group.add(seam1);
+                const seam2 = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.06, 1.7), seamMat);
+                seam2.position.set(0, 1.5, 0);
+                group.add(seam2);
+                // Big rifle
+                weapon.scale.set(0.25, 0.25, 1.9);
+                weapon.rotation.set(Math.PI / 2, 0, -0.4);
+            }
+
+            group.userData.accentMat = accentMat; // ref for Task 11 phase recoloring
+            return group;
+        }
+
         function spawn3DEnemy(x, z, type) {
             if (!scene) return; // Safety guard
             let enemy;
@@ -12894,8 +14166,22 @@
             const isRobloxEnemy = (type === 'zombie'      || type === 'zombie_fast' ||
                                    type === 'zombie_fat'  || type === 'zombie_slime' ||
                                    type === 'zombie_acid' || type === 'zombie_bomber' ||
-                                   type === 'raider');
+                                   type === 'raider'      || type === 'zombie_flying');
             const variationOpts = isRobloxEnemy ? generateEnemyVariation(type) : null;
+            // Part 2 Stage 7 (Task 13): merge in the location-theme override (visuals-only).
+            // The Task 9 random accessories/tints still apply ON TOP of the theme look —
+            // e.g. a clown still rolls random blood + a 30% chance of a tattered rag, plus
+            // the theme-mandated red nose + wild hair. Stats/AI unchanged.
+            if (isRobloxEnemy && variationOpts) {
+                const themeOverride = getEnemyThemeOverride(gameState.currentLocationIndex);
+                if (themeOverride) {
+                    variationOpts.themeFace = themeOverride.themeFace;
+                    variationOpts.themeTorso = themeOverride.themeTorso;
+                    variationOpts.themeSkin = themeOverride.themeSkin;
+                    variationOpts.themeLegs = themeOverride.themeLegs;
+                    variationOpts.themeAccessories = themeOverride.themeAccessories;
+                }
+            }
             
             if (type === 'zombie') {
                 enemy = createRobloxCharacter(0x3f6212, 0x15803d, 0x1c1917, true, false, false, variationOpts);
@@ -12927,6 +14213,57 @@
                 enemy = createRobloxCharacter(0x334155, 0xffdbac, 0x475569, true, false, false, variationOpts); // Raider camo
                 enemy.userData.hp = 110; enemy.userData.speed = 2.3; enemy.userData.dmg = 8;
                 enemy.userData.lastShot = 0;
+            } else if (type === 'zombie_flying') {
+                // Part 2 Stage 8 (Task 14): flying zombie. Hovers above ground, dive-attacks
+                // the player. Built as a Roblox character (so Task 9 variation + Task 13 theme
+                // override apply — flying clown in amusement, flying soldier on asphalt, etc.)
+                // with 2 angled wing meshes on the back + a faint hover-glow disc beneath.
+                // The AI block at the top of update3DEnemies reads userData.isFlying and
+                // `continue`s past the ground-only walk/collision logic below.
+                enemy = createRobloxCharacter(0x4c1d95, 0x15803d, 0x1c1917, true, false, false, variationOpts);
+                enemy.userData.hp = 85; enemy.userData.speed = 3.2; enemy.userData.dmg = 9;
+
+                // Flight userData — consumed by the flying-AI block in update3DEnemies.
+                enemy.userData.isFlying    = true;
+                enemy.userData.flightHeight = 2.2 + Math.random() * 0.8;  // 2.2 - 3.0 units above ground
+                enemy.userData.flightSeed   = Math.random() * 100;         // per-enemy sine-bob phase
+                enemy.userData.diveCooldown = 0;                            // dive-attack timer (ms epoch)
+
+                // Wings — 2 large angled boxes on the back. Color follows the location theme's
+                // accentColor (clown → pink, soldier → slate, raider → amber, etc.) so the wings
+                // read as theme-flavored (tattered parachute for soldiers, bat-wingish for clowns,
+                // mossy rags for campers, etc.). Falls back to dark tattered if theme missing.
+                const _flyingTheme = getTheme((LOCATIONS[gameState.currentLocationIndex] || {}).theme);
+                const _wingColor = (_flyingTheme && _flyingTheme.accentColor != null) ? _flyingTheme.accentColor : 0x1a1a1a;
+                const _wingMat = new THREE.MeshStandardMaterial({
+                    color: _wingColor, roughness: 0.9, metalness: 0.0, side: THREE.DoubleSide
+                });
+                const _wingL = new THREE.Mesh(unitGeos.box, _wingMat);
+                _wingL.scale.set(0.05, 0.8, 1.2);            // thin, tall, wide — like a bat wing
+                _wingL.position.set(0.4, 0.25, -0.2);        // upper-back, slightly behind torso
+                _wingL.rotation.z = -0.3;
+                _wingL.rotation.y = 0.4;
+                _wingL.castShadow = false;                   // wings are thin → skip shadow cost
+                enemy.userData.torso.add(_wingL);
+                enemy.userData.wingL = _wingL;
+                const _wingR = _wingL.clone();
+                _wingR.position.x = -0.4;
+                _wingR.rotation.z = 0.3;
+                _wingR.rotation.y = -0.4;
+                enemy.userData.torso.add(_wingR);
+                enemy.userData.wingR = _wingR;
+
+                // Hover glow — a faint flat disc under the body (Basic mat → not affected by
+                // light, always reads as a hover indicator). Theme-colored for cohesion.
+                const _glowMat = new THREE.MeshBasicMaterial({
+                    color: _wingColor, transparent: true, opacity: 0.3
+                });
+                const _hoverGlow = new THREE.Mesh(unitGeos.cyl, _glowMat);
+                _hoverGlow.scale.set(0.5, 0.02, 0.5);
+                _hoverGlow.position.set(0, -0.55, 0);        // just below the torso
+                _hoverGlow.castShadow = false;
+                enemy.userData.torso.add(_hoverGlow);
+                enemy.userData.hoverGlow = _hoverGlow;
             } else if (type === 'mutant') {
                 // Quadruped Zombie Dog / Mutant Hound
                 enemy = new THREE.Group();
@@ -13017,34 +14354,15 @@
                 enemy.userData.hp = 160; enemy.userData.speed = 3.0; enemy.userData.dmg = 12;
                 enemy.userData.leapCooldown = 0;
             } else if (type === 'boss') {
-                // Per-location boss — appearance and health scale with the location's boss config.
+                // Part 2 Stage 7 (Task 13): themed boss — visual appearance now varies per
+                // location. buildThemedBoss() returns a THREE.Group with theme-specific
+                // geometry/materials (lab scientist, forest ent, clown king, etc.). The same
+                // userData fields are set on the returned group so Task 11 boss-rage + phase
+                // mechanics (and the plasma-spit / minion-summon / ground-slam logic in
+                // update3DEnemies) work unchanged. Stats/AI unchanged.
                 let bossCfg = (LOCATIONS[gameState.currentLocationIndex] || {}).boss || { name: "Super Mutant", hp: 1500, color: 0xff1a1a };
                 let bossStats = getBossStats(); // geometric HP + per-location damage scaling
-                let accentMat = new THREE.MeshStandardMaterial({ color: bossCfg.color, roughness: 0.5, metalness: 0.4, emissive: bossCfg.color, emissiveIntensity: 0.3 });
-
-                // Mega robot reactor
-                enemy = new THREE.Group();
-                let torso = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.4, 2.4), materials.bossMetal);
-                torso.position.y = 1.8;
-                torso.castShadow = true;
-                enemy.add(torso);
-
-                // Shoulder pauldrons tinted with the boss accent color for per-location identity
-                let pauldronGeo = new THREE.BoxGeometry(0.7, 0.7, 0.7);
-                let pL = new THREE.Mesh(pauldronGeo, accentMat);
-                pL.position.set(-1.5, 2.6, 0); pL.castShadow = true; enemy.add(pL);
-                let pR = new THREE.Mesh(pauldronGeo, accentMat);
-                pR.position.set(1.5, 2.6, 0); pR.castShadow = true; enemy.add(pR);
-
-                // Head
-                let head = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), new THREE.MeshLambertMaterial({ color: 0xffffff }));
-                head.position.set(0, 3.5, 0);
-                enemy.add(head);
-
-                // Accent-colored glowing eye line
-                let laser = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.2), accentMat);
-                laser.position.set(0, 3.5, 0.52);
-                enemy.add(laser);
+                enemy = buildThemedBoss(bossCfg, bossStats, gameState.currentLocationIndex);
 
                 enemy.userData.hp = bossStats.hp; enemy.userData.maxHp = bossStats.hp;
                 enemy.userData.speed = 1.3; enemy.userData.dmg = Math.round(20 * bossStats.dmgMult);
@@ -13063,7 +14381,8 @@
                 enemy.userData.lastRageSpark = 0;      // red-spark emission timer while enraged
                 enemy.userData.lastSlam = 0;           // ground-slam cooldown (already used in update3DEnemies)
                 enemy.userData.isFinalBoss = !!(LOCATIONS[gameState.currentLocationIndex] && LOCATIONS[gameState.currentLocationIndex].isFinal);
-                enemy.userData.accentMat = accentMat;  // keep a ref so phase transitions can recolor it
+                // accentMat is set inside buildThemedBoss() and exposed via enemy.userData.accentMat
+                // so Task 11 phase transitions can recolor it.
 
                 // Register as the active boss and reveal the boss health bar
                 activeBoss = enemy;
@@ -13123,6 +14442,7 @@
             else if (enemy.userData.type === 'zombie_fat') xp = 40;
             else if (enemy.userData.type === 'raider') xp = 35;
             else if (enemy.userData.type === 'mutant') xp = 50;
+            else if (enemy.userData.type === 'zombie_flying') xp = 22;
             else if (enemy.userData.type === 'boss') xp = 500;
             
             gainXp(xp);
@@ -13890,7 +15210,7 @@
                                     let dx = b.position.x - e.position.x;
                                     let dz = b.position.z - e.position.z;
                                     let distXZ = Math.sqrt(dx * dx + dz * dz);
-                                    let hitRadius = (e.userData.type === 'boss') ? 1.8 : 0.7;
+                                    let hitRadius = (e.userData.type === 'boss') ? 1.8 : (e.userData.isFlying ? 0.95 : 0.7);
                                     if (distXZ < hitRadius) {
                                         // Hit enemy! Roll for a critical hit (chance scales with Agility and Sharpshooter perk).
                                         let bonusCrit = (gameState.runPerks && gameState.runPerks.critChanceBonus) ? gameState.runPerks.critChanceBonus : 0;
@@ -14358,6 +15678,92 @@
                     }
                 }
                 
+                // Part 2 Stage 8 (Task 14): FLYING ZOMBIE AI. These hover above ground,
+                // ignore wall collisions (they're airborne), and dive to attack the player.
+                // The `continue` at the end of each branch skips the ground-only AI below.
+                if (e.userData.isFlying) {
+                    // Maintain hover altitude with a per-enemy sine bob for variety.
+                    const _flyTargetY = e.userData.flightHeight + Math.sin(time * 0.003 + e.userData.flightSeed) * 0.3;
+                    e.position.y += (_flyTargetY - e.position.y) * 0.1;
+                    
+                    // Detection — same range tier as zombie_fast.
+                    let _flyDetect = 16.0;
+                    if (Date.now() < lastFireTime + 1500) _flyDetect += 15.0;
+                    const _flyDist = e.position.distanceTo(playerGroup.position);
+                    
+                    if (_flyDist < _flyDetect) e.userData.state = 'aggro';
+                    else if (_flyDist > _flyDetect * 1.5) e.userData.state = 'patrol';
+                    
+                    if (e.userData.state !== 'aggro') {
+                        // PATROL: drift slowly in air, pick random waypoints (no walls —
+                        // flying ignores collisions, only clamps to level bounds).
+                        if (!e.userData.patrolTarget) {
+                            e.userData.patrolTarget = new THREE.Vector3(e.position.x, 0, e.position.z);
+                        }
+                        const _ptgt = e.userData.patrolTarget;
+                        const _td = Math.hypot(e.position.x - _ptgt.x, e.position.z - _ptgt.z);
+                        if (_td < 0.6) {
+                            _ptgt.set(
+                                e.position.x + THREE.MathUtils.randFloat(-8, 8),
+                                0,
+                                e.position.z + THREE.MathUtils.randFloat(-8, 8)
+                            );
+                        }
+                        const _pa = Math.atan2(_ptgt.x - e.position.x, _ptgt.z - e.position.z);
+                        e.rotation.y = _pa;
+                        const _ps = e.userData.speed * 0.4;
+                        e.position.x += Math.sin(_pa) * _ps * dt;
+                        e.position.z += Math.cos(_pa) * _ps * dt;
+                        // Clamp to level bounds so fliers can't drift off the map edge.
+                        const _bound = ((LOCATIONS[gameState.currentLocationIndex] || {size:40}).size / 2) - 2;
+                        e.position.x = Math.max(-_bound, Math.min(_bound, e.position.x));
+                        e.position.z = Math.max(-_bound, Math.min(_bound, e.position.z));
+                        // Slow wing flap, idle legs.
+                        if (e.userData.wingL) e.userData.wingL.rotation.z = Math.sin(time * 0.02) * 0.4 - 0.3;
+                        if (e.userData.wingR) e.userData.wingR.rotation.z = -Math.sin(time * 0.02) * 0.4 + 0.3;
+                        if (e.userData.legL) e.userData.legL.rotation.x = 0;
+                        if (e.userData.legR) e.userData.legR.rotation.x = 0;
+                        continue; // skip ground-AI
+                    }
+                    
+                    // AGGRO: chase player through air, dive to attack when close.
+                    const _fa = Math.atan2(playerGroup.position.x - e.position.x, playerGroup.position.z - e.position.z);
+                    e.rotation.y = _fa;
+                    
+                    if (_flyDist < 2.5) {
+                        // DIVE — drop altitude toward player.
+                        e.position.y += (0.8 - e.position.y) * 0.15;
+                        if (_flyDist < 1.4 && Date.now() > e.userData.diveCooldown) {
+                            // Attack!
+                            damagePlayer(e.userData.dmg, 'a flying zombie dive');
+                            e.userData.diveCooldown = Date.now() + 1200;
+                            // After a successful dive, climb back to a new random hover height.
+                            e.userData.flightHeight = 2.5 + Math.random();
+                        }
+                    } else {
+                        // Chase at flight height.
+                        e.position.y += (e.userData.flightHeight - e.position.y) * 0.08;
+                    }
+                    
+                    const _chaseSp = e.userData.speed;
+                    e.position.x += Math.sin(_fa) * _chaseSp * dt;
+                    e.position.z += Math.cos(_fa) * _chaseSp * dt;
+                    // Clamp to level bounds.
+                    const _bound2 = ((LOCATIONS[gameState.currentLocationIndex] || {size:40}).size / 2) - 2;
+                    e.position.x = Math.max(-_bound2, Math.min(_bound2, e.position.x));
+                    e.position.z = Math.max(-_bound2, Math.min(_bound2, e.position.z));
+                    
+                    // Wing flap — faster when diving.
+                    const _flapSp = (_flyDist < 2.5) ? 0.04 : 0.02;
+                    if (e.userData.wingL) e.userData.wingL.rotation.z = Math.sin(time * _flapSp) * 0.5 - 0.3;
+                    if (e.userData.wingR) e.userData.wingR.rotation.z = -Math.sin(time * _flapSp) * 0.5 + 0.3;
+                    // Legs dangle (airborne — slight sway).
+                    if (e.userData.legL) e.userData.legL.rotation.x = Math.sin(time * 0.01) * 0.2;
+                    if (e.userData.legR) e.userData.legR.rotation.x = -Math.sin(time * 0.01) * 0.2;
+                    
+                    continue; // skip ground-AI
+                }
+                
                 // 1. Calculate detection range based on type & weapon noise
                 let baseRange = 12.0;
                 if (e.userData.type === 'zombie_fast') baseRange = 16.0;
@@ -14612,9 +16018,14 @@
                     // Separation push (PATCH 1.5: grid query instead of O(n²) scan — 78x78 -> 78x~9).
                     // enemyGrid was rebuilt at the top of update3DEnemies this frame. Uses _gridQueryBuf2
                     // to avoid clobbering _gridQueryBuf (which the enemy-wall checks above may have used).
+                    // Part 2 Stage 8 (Task 14): flying zombies are airborne — ground separation
+                    // never applies to them (they're at y≈2.5, well above the 0.75 threshold, but
+                    // the explicit skip makes the intent clear and future-proofs against any later
+                    // tweak to the threshold).
                     enemyGrid.queryPoint(e.position.x, e.position.z, _gridQueryBuf2);
                     for (let gi = 0; gi < _gridQueryBuf2.length; gi++) {
                         const other = _gridQueryBuf2[gi];
+                        if (other.userData.isFlying) continue; // skip airborne enemies
                         if (e !== other && other.userData.type.startsWith('zombie')) {
                             let edist = e.position.distanceTo(other.position);
                             if (edist < 0.75) {

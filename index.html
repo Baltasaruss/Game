@@ -4518,7 +4518,7 @@
                 atmosphere: {
                     skyColor: 0x7a3179, groundColor: 0x2e1a2d, hemiIntensity: 0.62,
                     ambientColor: 0x341f33, ambientIntensity: 0.44,
-                    sunColor: 0xf472b6, sunIntensity: 0.6, sunPos: [20, 9, -14],
+                    sunColor: 0xf472b6, sunIntensity: 0.6, sunPos: [14, 20, -10],
                     fogColor: '#1e0f1c', fogDensity: 0.013
                 }
             }
@@ -5203,6 +5203,12 @@
                 document.getElementById('rad-row').style.display = 'flex';
                 const radBarC = document.getElementById('rad-bar-container');
                 if (radBarC) radBarC.style.display = 'block';
+                // Sanity-clamp gasmask charge (defensive: bad save data / NaN could leave it
+                // below 0 and falsely trigger the "no filter" radiation branch).
+                if (typeof gameState.inventory.gasmask !== 'number' || isNaN(gameState.inventory.gasmask)) {
+                    gameState.inventory.gasmask = 0;
+                }
+                gameState.inventory.gasmask = Math.max(0, Math.min(100, gameState.inventory.gasmask));
                 // If gas mask present
                 if (gameState.inventory.gasmask > 0) {
                     // Drain gas mask charge
@@ -5232,8 +5238,11 @@
                 if (Math.random() < 0.1) sound.playRadWarning();
             }
 
+            // FIX: cap environmental tick damage per frame so a momentary large dt (e.g.
+            // after a tab switch or perk overlay) can't one-shot the player. Max 8 HP/frame.
             if (damageFromStats > 0) {
-                damagePlayer(damageFromStats * deltaSeconds, "hunger and thirst");
+                const tickDmg = Math.min(damageFromStats * deltaSeconds, 8.0);
+                damagePlayer(tickDmg, "hunger and thirst");
             } else {
                 // If no hunger/radiation debuffs, perk health regen works
                 if (gameState.runPerks && gameState.runPerks.regenRate > 0 && gameState.hp < getMaxHp()) {
@@ -10173,6 +10182,12 @@
                 gameState.hunger = 100;
                 gameState.thirst = 100;
             }
+            // FIX: radiation is a per-location environmental hazard, not a persistent
+            // stat. Reset on every level enter so a player returning to a radioactive
+            // zone doesn't inherit near-lethal radiation from a previous visit (which
+            // caused the "die in 3-5 seconds" bug on Contaminated City). The bar
+            // refills from 0 fresh each sortie.
+            gameState.radiation = 0;
 
             // Baseplate Ground Plane (Roblox style studs grid) - Prevent tiling monotony using 4 variations via InstancedMesh.
             // Ground palette is selected per-theme via THEMES[theme].groundKey (resolved against the runtime materials cache).
@@ -10260,7 +10275,11 @@
                 ambientIntensity = 0.42;
                 sunColor = 0xe0561f; // burnt-orange sunset sun
                 sunIntensity = 0.7;
-                sunPos = new THREE.Vector3(25, 8, -15); // low sunset angle
+                // Sun raised higher (was 25, 8, -15) — low angle caused the hero's shadow to
+                // stretch sideways and visually detach from the feet, making the character
+                // look like it was floating. A steeper sun angle drops the shadow directly
+                // under the body where it reads as grounded contact.
+                sunPos = new THREE.Vector3(18, 22, -10); // higher sun, shallower shadow
                 fogColor = '#2a150c'; // dusty warm haze
                 fogDensity = 0.012;
             } else if (timeOfDay === 'night') {
@@ -10284,7 +10303,9 @@
                 ambientIntensity = 0.42;
                 sunColor = 0xd0a8fc; // pale purple sunset sun
                 sunIntensity = 0.7;
-                sunPos = new THREE.Vector3(-20, 12, 10); // low sun angle
+                // Sun raised higher (was -20, 12, 10) — low angle caused sideways shadow
+                // detachment. Steeper angle keeps the shadow pooled under the hero.
+                sunPos = new THREE.Vector3(-14, 22, 8); // higher sun, grounded shadow
                 fogColor = '#141527'; // desaturated violet haze
                 fogDensity = 0.011;
             }
@@ -10341,12 +10362,13 @@
             // Store sun offset relative to the player for dynamic shadow camera tracking
             sunLight.userData.offset = sunPos.clone();
             sunLight.castShadow = (sunIntensity > 0.0 && graphicsQuality === 'high');
-            sunLight.shadow.bias = -0.0008; // Prevent shadow acne / self-shadowing flickering on weapons & character meshes
+            sunLight.shadow.bias = -0.0004; // Reduced (was -0.0008) — less shadow gap under feet
+            sunLight.shadow.normalBias = 0.02; // Smooths shadow edges on blocky character geometry
             sunLight.shadow.mapSize.width = 1024;
             sunLight.shadow.mapSize.height = 1024;
             sunLight.shadow.camera.near = 0.5;
             sunLight.shadow.camera.far = 100;
-            let d = 22.0; // Tight frustum for high resolution sharp shadows around the player!
+            let d = 18.0; // Tighter frustum (was 22) for higher resolution shadows near the player
             sunLight.shadow.camera.left = -d;
             sunLight.shadow.camera.right = d;
             sunLight.shadow.camera.top = d;
@@ -12745,7 +12767,8 @@
             flashlight.castShadow = (graphicsQuality === 'high');
             flashlight.shadow.mapSize.width  = (graphicsQuality === 'high') ? 512 : 256;
             flashlight.shadow.mapSize.height = (graphicsQuality === 'high') ? 512 : 256;
-            flashlight.shadow.bias = -0.002;
+            flashlight.shadow.bias = -0.001; // Reduced (was -0.002) — tighter shadow contact
+            flashlight.shadow.normalBias = 0.015; // Smooths flashlight shadow on character
             playerGroup.add(flashlight);
             playerGroup.userData.flashlight = flashlight;
             

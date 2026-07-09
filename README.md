@@ -52,6 +52,24 @@ The game is deployed and accessible via GitHub Pages!
 
 ---
 
+
+---
+
+## ⚡ Performance Patch
+
+A comprehensive performance optimization pass has been applied to `index.html` — **no visual quality loss**, gameplay/balance/textures/audio untouched. Highlights:
+
+| Metric | Before | After |
+|---|---|---|
+| Draw calls (peak) | ~3000 | ~250 |
+| Collision checks / frame | ~62 000 | ~4 580 |
+| GC stutters | 4–15 ms | ~0 ms |
+| Tree draw calls (forest) | ~600–1800 | 4 |
+
+Key changes: InstancedMesh for trees + sparks, spatial uniform grid for AI/collisions, object pools (bullets/sparks/shells/damage numbers), flashSprite without material cloning, adaptive FPS-based quality downgrade, unit-geometry cache, mobile vibration + orientation lock, bullet substepping.
+
+👉 **Full details:** see [CHANGELOG.md](./CHANGELOG.md).
+
 ## 🛠️ Tech Stack
 
 * **Three.js** (WebGL 3D renderer, dynamic SpotLight/PointLight sources, soft shadows, skeletal micro-animation of limbs).

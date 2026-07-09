@@ -2212,10 +2212,12 @@
             bottom: 7.5rem;
             left: 1.5rem;
             width: 320px;
+            max-width: 70vw;          /* never stretch beyond 70% of viewport width */
             display: flex;
             flex-direction: column;
             pointer-events: none;
             z-index: 50;
+            overflow: hidden;        /* clip log content, prevent border-bottom overflow */
         }
         .hud-log-header {
             font-family: 'Press Start 2P', monospace;
@@ -2242,10 +2244,26 @@
             .minimap-compass { font-size: 0.42rem; }
             .hud-log-header { font-size: 0.5rem; }
             #game-log-wrap {
-                top: 11.5rem;
+                top: 14rem;             /* below boss bar (boss at 11.5rem, ~31px tall → ends ~13.5rem) */
                 bottom: auto;
                 left: 0.5rem;
-                width: calc(100% - 1rem);
+                width: 200px;          /* Fix: was calc(100% - 1rem) — stretched border-bottom across the screen */
+                max-width: 60vw;
+            }
+            /* Boss bar — narrower on mobile so it doesn't overlap stats/weapon panels.
+               Centered horizontally; on portrait mobile the stats panel (top-left) and weapon
+               panel (top-right) occupy the top ~180px, so the boss bar sits just below them. */
+            #boss-bar {
+                top: 11.5rem;            /* below stats panel (top:0, height:~172px) */
+                width: min(300px, 80vw); /* narrower so it doesn't reach the side panels even if centered */
+                z-index: 45;
+            }
+            #boss-bar-name {
+                font-size: 0.6rem;
+                margin-bottom: 3px;
+            }
+            #boss-bar-track {
+                height: 10px;
             }
         }
         @media (max-height: 500px) and (orientation: landscape) {
@@ -2255,6 +2273,11 @@
                 bottom: 3.5rem !important;
                 left: 0.25rem !important;
                 width: 240px !important;
+                max-width: 240px !important;
+            }
+            #boss-bar {
+                top: 0.3rem !important;
+                width: min(420px, 80vw) !important;
             }
         }
     </style>
@@ -8194,6 +8217,31 @@
         }
         
         function onMouseDown(e) {
+            // Fix: ignore clicks that originate on any HUD/UI element — inventory slots,
+            // buttons, joysticks, minimap, panels. Only fire when clicking the game canvas
+            // (3D scene area) itself. Otherwise tapping weapon/item slots on mobile fires
+            // the weapon unintentionally.
+            if (e.target && e.target !== document.body) {
+                let el = e.target;
+                // Walk up to check if the click target is inside a HUD panel / button / overlay.
+                // The game canvas is a direct child of #game-container with no HUD ancestors.
+                let p = el;
+                while (p && p !== document.body) {
+                    if (p.id === 'game-container' || p.tagName === 'CANVAS') {
+                        // Click reached the 3D canvas — allow firing.
+                        break;
+                    }
+                    if (p.classList && (p.classList.contains('hud-element') ||
+                                       p.classList.contains('hud-panel') ||
+                                       p.classList.contains('inv-slot') ||
+                                       p.classList.contains('overlay') ||
+                                       p.tagName === 'BUTTON')) {
+                        // Click is on a HUD element / overlay / button — do NOT fire.
+                        return;
+                    }
+                    p = p.parentElement;
+                }
+            }
             if (e.button === 0) {
                 keys.mouseDown = true;
                 if (gameActive && playerGroup && gameState.hp > 0) {

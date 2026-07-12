@@ -13973,10 +13973,8 @@
                 // Local scatter helper — matches the placeThemed pattern used in
                 // build3DProceduralWalls but lives here in populate3DLevel so we can
                 // also issue deterministic anchor placements (gate, vault door, ceiling).
-                // FIX: sizeR was N*1.8 (way outside the map — props spawned beyond walls,
-                // creating invisible collider walls everywhere). Now clamped to actual
-                // playable area (N/2 - 3) so props stay inside the level bounds.
-                let sizeR = N / 2 - 3;
+                // sizeRange matches the wall bounds (walls at ±N*2, props at ±N*1.8).
+                let sizeR = N * 1.8;
                 function scatter(count, fn, opts) {
                     opts = opts || {};
                     for (let i = 0; i < count; i++) {
@@ -16549,10 +16547,9 @@
                 }
 
                 // Task 15 — clamp player to level bounds (prevents falling off the map edge).
-                // FIX: was (size/2)-1 (too tight — player got stuck against wall colliders).
-                // Now (size/2)-0.3 gives a tiny margin so the player can reach the wall but
-                // not fall through. The wall colliders themselves handle the actual blocking.
-                const _levelBound = (LOCATIONS[gameState.currentLocationIndex].size / 2) - 0.3;
+                // Walls are at ±N*2 (build3DProceduralWalls). Clamp to ±N*1.9 so the player
+                // can reach but not pass the boundary walls.
+                const _levelBound = (LOCATIONS[gameState.currentLocationIndex].size * 1.9);
                 playerGroup.position.x = Math.max(-_levelBound, Math.min(_levelBound, playerGroup.position.x));
                 playerGroup.position.z = Math.max(-_levelBound, Math.min(_levelBound, playerGroup.position.z));
 
